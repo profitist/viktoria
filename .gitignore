@@ -264,3 +264,6 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# Feature planning artifacts (local only)
+agents/features/

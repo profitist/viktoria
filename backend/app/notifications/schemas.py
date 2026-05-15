@@ -5,6 +5,19 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 
+class NotificationListQuery(BaseModel):
+    """Query-параметры для GET /api/v1/notifications."""
+
+    workspace_id: UUID
+    unread: bool | None = None
+
+
+class ReadResponse(BaseModel):
+    """Ответ на PATCH /api/v1/notifications/{id}/read. Сериализуется в {}."""
+
+    pass
+
+
 class NotificationOut(BaseModel):
     """
     In-app уведомление пользователя. Хранится в БД, доставляется через WebSocket (JSON-RPC метод
