@@ -21,12 +21,6 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/api/v1")
 
-
-@app.get("/api/v1/health")
-async def health(current_user: User = Depends(get_current_user)) -> dict:
-    return {"status": "ok", "user_id": str(current_user.id)}
-
-
 @app.get("/")
 async def root():
     return {

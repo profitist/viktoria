@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 import jwt
 from fastapi import HTTPException
-from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,17 +14,15 @@ from app.config import settings
 
 _refresh_blocklist: set[str] = set()
 
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-_DUMMY_HASH: str = _pwd_context.hash("dummy-timing-protection")
+_DUMMY_HASH: bytes = bcrypt.hashpw(b"dummy-timing-protection", bcrypt.gensalt())
 
 
 def hash_password(plain: str) -> str:
-    return _pwd_context.hash(plain)
+    return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return _pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
 def create_access_token(user_id: str) -> str:
@@ -76,7 +74,7 @@ async def login(db: AsyncSession, data: LoginRequest) -> tuple[User, str, str]:
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
     if user is None:
-        verify_password("dummy", _DUMMY_HASH)
+        bcrypt.checkpw(b"dummy", _DUMMY_HASH)
         raise HTTPException(
             status_code=401,
             detail="invalid credentials",
