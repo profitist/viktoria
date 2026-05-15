@@ -1,0 +1,62 @@
+# Victory Kanban — Frontend Infrastructure
+
+## API клиент (frontend/lib/api.ts)
+apiFetch<T>(path, options?) — HTTP запрос с Bearer токеном, auto-refresh при 401
+api.get/post/patch/put/delete — хелперы с JSON-парсингом и типизацией
+Токены: access в памяти модуля (JS var), refresh в sessionStorage["refresh_token"]
+При 401: читает refresh_token → POST /api/v1/auth/refresh → повторяет запрос
+При двойном 401: вызывает logout(), бросает Error("Session expired")
+Mutex refreshPromise — защита от гонки при параллельных 401
+Экспорты: apiFetch, api, setAccessToken, getAccessToken, registerLogoutCallback
+
+## WebSocket (frontend/lib/ws.ts)
+WsClient(workspaceId, getToken: () => string | null)
+ws.connect() — открывает WS: {NEXT_PUBLIC_WS_URL}/ws/{workspaceId}?token=...
+ws.on(method, handler) / ws.off(method, handler) — подписка/отписка
+ws.disconnect() — разрывает соединение, отменяет reconnect
+JSON-RPC методы: board.task_created, board.task_updated, board.task_moved, board.task_deleted, notification.created, event_log.entry
+Reconnect: exponential backoff 1s→2s→4s→...→30s; сброс при onopen
+onerror не инициирует reconnect (делегирует onclose)
+getToken — геттер, не значение; при reconnect получает актуальный токен
+
+## Auth контекст (frontend/app/providers.tsx)
+useAuth() → { user, isLoading, isAuthenticated, login, logout, refresh }
+login(email, password) → POST /api/v1/auth/login, сохраняет токены, устанавливает user
+logout() → очищает токены и sessionStorage, редирект на /login
+refresh() — прямой fetch (не через apiFetch, нет рекурсии); восстанавливает user из sessionStorage["user"]
+При монтировании: registerLogoutCallback(logout) + restore session если есть refresh_token
+isLoading=true пока сессия не восстановлена — рендерить защищённый контент только при isLoading=false
+Providers = QueryClientProvider (снаружи) + AuthProvider (внутри)
+Экспорты: default Providers, AuthContext, useAuth
+
+## Типы (frontend/lib/types.ts)
+25 TypeScript типов по контрактам backend:
+User {id, email, name}
+Task {id, title, description, column_id, workspace_id, priority: TaskPriority, tags, assignee_id, created_at, deadline, deadline_urgency: DeadlineUrgency}
+Board {id, columns: Column[]}
+Column {id, name, position, color?, tasks: Task[]}
+Workspace {id, name, slug, role: WorkspaceRole}
+AutomationRule {id, workspace_id, name, active, trigger: RuleTrigger, condition: RuleCondition|null, action: RuleAction}
+Notification {id, type, message, read, created_at}
+AuditLogEntry {id, event_type, actor: AuditActor, task_id, task_title?, changes: AuditChange[], created_at}
+JsonRpcMessage {jsonrpc: "2.0", method, params: Record<string, unknown>}
+TaskDraft {title, description, priority: TaskPriority, tags}
+DeadlineUrgency: "none"|"soon"|"critical"
+TaskPriority: "low"|"medium"|"high"|"critical"
+WorkspaceRole: "owner"|"admin"|"member"
+RuleTrigger: "task.created"|"task.moved"|"task.updated"|"deadline.approaching"
+RuleActionType: "move_to_column"|"add_tag"|"notify_members"
++ WorkspaceSettings, WorkspaceMember, RuleCondition, RuleActionParams, RuleAction
++ GroomQuestion, GroomAnswer, GroomSession (AI-груминг)
++ AuditChange, AuditActor
+
+## Зависимости
+providers.tsx → api.ts, types.ts
+ws.ts → types.ts
+api.ts → (нет импортов из проекта)
+types.ts → (нет импортов)
+Нет циклов. api.ts не знает о React — взаимодействие через registerLogoutCallback.
+
+## Env переменные
+NEXT_PUBLIC_API_URL — базовый URL HTTP API (default: http://localhost:8000)
+NEXT_PUBLIC_WS_URL — базовый URL WebSocket (default: ws://localhost:8000)
