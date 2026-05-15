@@ -4,6 +4,98 @@
 
 ---
 
+## Backend Auth (FEAT-0002)
+
+Реализована JWT-аутентификация: регистрация, логин, refresh, logout. Все роуты в `/api/v1/auth/`. Зависимость `get_current_user` используется во всех защищённых роутерах.
+
+---
+
+### Конфигурация
+
+Файл `backend/app/config.py` — pydantic-settings (`BaseSettings`), читает переменные окружения и `.env`.
+
+| Переменная | Обязательна | Описание |
+|-----------|------------|---------|
+| `DATABASE_URL` | да | URL PostgreSQL (asyncpg) |
+| `JWT_SECRET` | да | Секрет подписи токенов, **минимум 32 символа**, не `"changeme"` |
+| `JWT_ALGORITHM` | нет | Алгоритм JWT (default: `"HS256"`) |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | нет | Срок жизни access-токена (default: `15`) |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | нет | Срок жизни refresh-токена (default: `30`) |
+
+`field_validator` на `jwt_secret` бросает `ValueError` при пустом, коротком (<32 символов) или равном `"changeme"` значении — приложение не запустится с небезопасным секретом.
+
+Глобальный синглтон `settings = Settings()` импортируется во все модули `app`.
+
+---
+
+### Зависимость get_current_user
+
+```python
+from app.auth.deps import get_current_user
+```
+
+Использование в роутере:
+
+```python
+from fastapi import Depends
+from app.auth.deps import get_current_user
+from app.auth.models import User
+
+@router.get("/me")
+async def get_me(current_user: User = Depends(get_current_user)) -> UserOut:
+    return UserOut.model_validate(current_user)
+```
+
+**Что делает:** извлекает Bearer-токен через `OAuth2PasswordBearer`, вызывает `decode_token`, проверяет `type == "access"`, парсит `sub` как UUID, загружает `User` из БД через `db.get`.
+
+**Что возвращает:** объект `User` (SQLAlchemy-модель) из PostgreSQL.
+
+**Что бросает:** `HTTPException(401)` с `headers={"WWW-Authenticate": "Bearer"}` в случаях:
+- отсутствие / невалидный / истёкший токен
+- `type != "access"` (например, передан refresh-токен)
+- невалидный UUID в `sub`
+- пользователь не найден в БД
+
+---
+
+### JWT токены
+
+| Параметр | access_token | refresh_token |
+|---------|-------------|--------------|
+| `type` в payload | `"access"` | `"refresh"` |
+| `sub` | UUID пользователя (str) | UUID пользователя (str) |
+| Срок жизни | 15 мин (default) | 30 дней (default) |
+| Алгоритм | HS256 (default) | HS256 (default) |
+
+Поле `type` обязательно проверяется: `get_current_user` отклонит refresh-токен, `refresh_access_token` отклонит access-токен.
+
+---
+
+### Blocklist
+
+`_refresh_blocklist: set[str]` — модульная переменная в `service.py`.
+
+- При `logout` валидный refresh-токен добавляется в set.
+- `refresh_access_token` проверяет наличие токена в blocklist перед выдачей нового access-токена.
+- **MVP-ограничение:** данные хранятся в памяти процесса, **сбрасываются при рестарте**. В I-02+ перенести в Redis или таблицу БД.
+
+---
+
+### Эндпоинты auth
+
+Префикс: `/api/v1/auth` (подключён в `main.py`).
+
+| Метод | Путь | Запрос | Ответ |
+|-------|------|--------|-------|
+| `POST` | `/register` | `{ email, password, name }` | `{ access_token, refresh_token, user: { id, email, name } }` / 409 email занят |
+| `POST` | `/login` | `{ email, password }` | `{ access_token, refresh_token, user }` / 401 invalid credentials |
+| `POST` | `/refresh` | `{ refresh_token }` | `{ access_token }` / 401 токен невалиден или в blocklist |
+| `POST` | `/logout` | `{ refresh_token }` + `Authorization: Bearer <access_token>` | `{}` |
+
+Все 401-ответы содержат заголовок `WWW-Authenticate: Bearer` согласно RFC 7235.
+
+---
+
 ## Frontend Infrastructure (FEAT-0001)
 
 Базовые утилиты фронтенда: авторизованные HTTP-запросы, WebSocket-подписки, React-контекст аутентификации, TypeScript-типы по контрактам бэкенда.
