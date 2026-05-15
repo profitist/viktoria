@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(xargs cat)",
+      "Bash(DATABASE_URL=postgresql+asyncpg://x:x@localhost/x JWT_SECRET=testsecret python -c ' *)",
+      "Bash(DATABASE_URL=postgresql+asyncpg://x:x@localhost/x JWT_SECRET=testsecret .venv/bin/python -c ' *)",
+      "Bash(git fetch *)",
+      "Bash(git rebase *)",
+      "Bash(git stash *)",
+      "Bash(DATABASE_URL=postgresql+asyncpg://u:p@localhost/db JWT_SECRET=supersecretkey1234567890abcdef12 python *)",
+      "Bash(docker compose build *)"
     ]
   }
 }

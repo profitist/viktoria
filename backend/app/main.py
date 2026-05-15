@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import engine
+from app.notifications.router import ws_router as _notifications_ws_router
 
 MODULE_NAMES = (
     "auth",
@@ -84,6 +85,7 @@ def create_application() -> FastAPI:
         api_router.include_router(_load_router(module_name))
 
     application.include_router(api_router)
+    application.include_router(_notifications_ws_router)
     return application
 
 

@@ -1,20 +1,36 @@
-## FEAT-0002 JWT Auth FastAPI Backend — CTO Review Fixes — 2026-05-15
+## FEAT-0002 — WebSocket Hub + JSON-RPC + Notifications REST
+Дата: 2026-05-16
+Статус: APPROVED (CTO review passed, 6 issues resolved)
+Файлы: backend/app/notifications/hub.py, jsonrpc.py, router.py, service.py; backend/app/auth/deps.py
 
-- **ISSUE-001 (major)** `backend/app/auth/deps.py` — `uuid.UUID(user_id)` обёрнут в `try/except ValueError`; невалидный `sub` возвращает 401 вместо 500.
-- **ISSUE-002 (minor)** `backend/app/auth/service.py` — Добавлен `_DUMMY_HASH` на уровне модуля; при отсутствии пользователя вызывается `verify_password("dummy", _DUMMY_HASH)` для защиты от timing-атаки / user enumeration.
-- **ISSUE-003 (minor)** `backend/app/config.py` — `field_validator` для `jwt_secret` расширен: теперь проверяет `len < 32`, отклоняя пустые и короткие секреты.
-- **ISSUE-004 (minor)** `backend/app/auth/service.py` — `logout` проверяет токен через `decode_token` перед добавлением в blocklist; невалидные токены игнорируются (идемпотентность).
-- **ISSUE-005 (minor)** `backend/app/main.py` — Удалён незащищённый endpoint `GET /protected` (тестовая заглушка).
-- **ISSUE-006 (minor)** `backend/app/auth/service.py`, `backend/app/auth/deps.py` — Все 401-ответы дополнены `headers={"WWW-Authenticate": "Bearer"}` согласно RFC 7235.
+### CTO Review — 6 issues resolved
+- ISSUE-001 (critical): Error Hiding в broadcast — добавлен _logger.warning с exc перед disconnect; bare except заменён на except Exception as exc
+- ISSUE-002 (critical): close(4001) вызывался до accept() — исправлен порядок: accept() → close(4001) → return во всех путях отказа
+- ISSUE-003 (major): AsyncSession удерживалась на весь lifetime WS — сессия создаётся через async with _SessionFactory() только для шага проверки членства, закрывается сразу после
+- ISSUE-004 (major): JWT не проверял claim type — добавлена проверка payload.get("type") == "access" с InvalidToken при несовпадении
+- ISSUE-005 (minor): mark_as_read не делал refresh после commit — добавлен await session.refresh(notification) для консистентности с БД
+- ISSUE-006 (minor): REST router без tags — создан отдельный rest_router = APIRouter(tags=["notifications"]), WS-router остался без тега; оба зарегистрированы в main.py явно
 
-## FEAT-0002 JWT Auth FastAPI Backend — 2026-05-15
+### Изменения реализации
+- Создан `backend/app/auth/deps.py` — `decode_token(token) -> UUID` + `get_current_user` dependency (Bearer-заголовок → User из БД, HTTPException 401 при ошибке)
+- Создан `backend/app/notifications/jsonrpc.py` — 7 констант методов JSON-RPC 2.0 + чистая функция `build(method, params) -> dict`
+- Создан `backend/app/notifications/hub.py` — класс `ConnectionManager` с методами `connect/disconnect/broadcast/connection_count` + singleton `manager`; broadcast итерирует по копии списка, ошибки одного клиента не прерывают рассылку
+- Создан `backend/app/notifications/service.py` — `get_notifications()`, `mark_as_read()`, `NotificationNotFound`
+- Обновлён `backend/app/notifications/schemas.py` — добавлены `NotificationListQuery` и `ReadResponse`
+- Создан `backend/app/notifications/router.py` — WS endpoint `/ws/{workspace_id}` (JWT валидация до accept, код 4001 при ошибке), REST `GET /api/v1/notifications`, REST `PATCH /api/v1/notifications/{id}/read`
+- Обновлён `backend/app/database.py` — добавлены `get_session` dependency, async engine и sessionmaker
+- Обновлён `backend/app/main.py` — подключён `notifications_router` без prefix (WS и REST endpoints объявлены с полными путями)
 
-- Создан `backend/app/config.py` (pydantic-settings: DATABASE_URL, JWT_SECRET, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS; field_validator защищает от jwt_secret="changeme")
-- Дополнен `backend/app/database.py` (async_engine, async_session_factory с expire_on_commit=False, get_session Depends-генератор)
-- Создан `backend/app/auth/service.py` (hash_password, verify_password, create_access_token, create_refresh_token, decode_token, register, login, refresh_access_token, logout; in-memory _refresh_blocklist)
-- Создан `backend/app/auth/deps.py` (oauth2_scheme, get_current_user с проверкой type=="access" и db.get по UUID)
-- Создан `backend/app/auth/router.py` (POST /register, /login, /refresh, /logout; AccessTokenResponse для /refresh)
-- Дополнен `backend/app/main.py` (include_router auth_router prefix=/api/v1, GET /api/v1/health с Depends(get_current_user))
+## FEAT-0002 WebSocket Hub + In-App Notifications — 2026-05-16 (pre-review)
+
+- Создан `backend/app/auth/deps.py` — `decode_token(token) -> UUID` + `get_current_user` dependency (Bearer-заголовок → User из БД, HTTPException 401 при ошибке)
+- Создан `backend/app/notifications/jsonrpc.py` — 7 констант методов JSON-RPC 2.0 + чистая функция `build(method, params) -> dict`
+- Создан `backend/app/notifications/hub.py` — класс `ConnectionManager` с методами `connect/disconnect/broadcast/connection_count` + singleton `manager`; broadcast итерирует по копии списка, ошибки одного клиента не прерывают рассылку
+- Создан `backend/app/notifications/service.py` — `get_notifications()`, `mark_as_read()`, `NotificationNotFound`
+- Обновлён `backend/app/notifications/schemas.py` — добавлены `NotificationListQuery` и `ReadResponse`
+- Создан `backend/app/notifications/router.py` — WS endpoint `/ws/{workspace_id}` (JWT валидация до accept, код 4001 при ошибке), REST `GET /api/v1/notifications`, REST `PATCH /api/v1/notifications/{id}/read`
+- Обновлён `backend/app/database.py` — добавлены `get_session` dependency, async engine и sessionmaker
+- Обновлён `backend/app/main.py` — подключён `notifications_router` без prefix (WS и REST endpoints объявлены с полными путями)
 
 ## FEAT-0001 Frontend Scaffold — CTO Review Fixes — 2026-05-15
 

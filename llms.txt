@@ -1,3 +1,35 @@
+# Victory Kanban — Backend Core
+
+## Стек
+Python 3.12, FastAPI, SQLAlchemy 2.0 async (asyncpg), PyJWT, bcrypt, aio-pika, pydantic-settings
+Пакетный менеджер: pip + requirements.txt (backend/requirements.txt)
+Docker: python:3.12-slim, pip install -r requirements.txt
+
+## Точка входа (backend/app/main.py)
+Минимальный FastAPI-app с CORS (origins: ["http://localhost:3000"])
+Подключены: notifications WS router (без prefix), notifications REST router (tag="notifications")
+Health: GET / → {"status": "ok"}
+config.py отсутствует — env-переменные читаются напрямую из os.environ в каждом модуле
+
+## БД (backend/app/database.py)
+_DATABASE_URL = os.environ["DATABASE_URL"] — fail-fast при старте
+_engine = create_async_engine(DATABASE_URL)
+_SessionFactory = async_sessionmaker(engine, expire_on_commit=False) — используется в auth/deps и notifications/router для ручного управления сессиями
+get_session() — AsyncGenerator[AsyncSession] для FastAPI Depends в REST
+Base(DeclarativeBase) — базовый класс ORM с NAMING_CONVENTION для alembic
+TimestampMixin — добавляет created_at: TIMESTAMP(timezone=True) с server_default
+
+## Auth (backend/app/auth/deps.py)
+InvalidToken(Exception) — кастомное исключение; в WS → close(4001), в REST → HTTPException 401
+decode_token(token: str) -> UUID — HS256 JWT; проверяет type=="access" и sub; JWT_SECRET из os.environ
+get_current_user — FastAPI Depends; парсит Bearer, ищет User в БД; HTTPException 401 при ошибке
+Используй decode_token напрямую в WS, get_current_user через Depends в REST
+
+## ENV переменные (обязательные)
+DATABASE_URL — postgresql+asyncpg://...
+JWT_SECRET — минимум 32 символа (HS256)
+RABBITMQ_URL — amqp://... (опционально, consumer не реализован)
+
 # Victory Kanban — Frontend Infrastructure
 
 ## API клиент (frontend/lib/api.ts)
@@ -61,11 +93,43 @@ types.ts → (нет импортов)
 NEXT_PUBLIC_API_URL — базовый URL HTTP API (default: http://localhost:8000)
 NEXT_PUBLIC_WS_URL — базовый URL WebSocket (default: ws://localhost:8000)
 
-## Backend Auth (backend/app/auth/)
-config.py: Settings(database_url, jwt_secret ≥32 chars, jwt_algorithm="HS256", access_token_expire_minutes=15, refresh_token_expire_days=30); field_validator отклоняет jwt_secret<32 символов и "changeme"; синглтон settings = Settings()
-service.py: hash_password, verify_password, create_access_token, create_refresh_token, decode_token, register(→409 если email занят), login(→401 invalid credentials; timing-safe через _DUMMY_HASH), refresh_access_token(проверяет type=="refresh" и blocklist), logout(добавляет refresh_token в blocklist; невалидные игнорируются)
-deps.py: get_current_user → User (проверяет type=="access", UUID-парсинг sub, db.get; все 401 с WWW-Authenticate: Bearer)
-router.py: POST /api/v1/auth/register → TokenResponse, POST /api/v1/auth/login → TokenResponse, POST /api/v1/auth/refresh → AccessTokenResponse {access_token}, POST /api/v1/auth/logout → {}
-Blocklist: _refresh_blocklist = set[str] в service.py, in-memory, сбрасывается при рестарте (MVP); в I-02+ перенести в Redis/БД
-Все 401-ответы включают заголовок WWW-Authenticate: Bearer (RFC 7235)
-access_token payload: {sub: user_uuid_str, exp, type: "access"}; refresh_token payload: {sub, exp, type: "refresh"}
+# Victory Kanban — Backend: Notifications Module (FEAT-0002)
+
+## WebSocket Hub (backend/app/notifications/hub.py)
+Endpoint: ws://{host}/ws/{workspace_id}?token={access_token}
+Singleton `manager = ConnectionManager()` — импортируется из app.notifications.hub
+manager.connect(workspace_id: str, websocket) — accept + send Greeting, fail-fast
+manager.disconnect(workspace_id: str, websocket) — синхронный, idempotent, вызывается из finally и broadcast
+manager.broadcast(workspace_id: str, message: dict) — рассылка всем клиентам workspace; итерирует по копии списка; ошибка одного клиента логируется WARNING и не прерывает рассылку
+manager.connection_count(workspace_id: str) -> int — кол-во соединений для workspace
+Thread-safe: asyncio однопоточная event loop, mutex не нужен
+При рестарте процесса все клиенты переподключаются самостоятельно (in-memory состояние)
+
+## JSON-RPC контракты (backend/app/notifications/jsonrpc.py)
+build(method: str, params: dict) -> dict — собирает {"jsonrpc": "2.0", "method": ..., "params": ...}
+Константы (Final[str]): CONNECTED="connection.established", TASK_CREATED="board.task_created", TASK_UPDATED="board.task_updated", TASK_MOVED="board.task_moved", TASK_DELETED="board.task_deleted", NOTIFICATION_CREATED="notification.created", EVENT_LOG_ENTRY="event_log.entry"
+Все сообщения — JSON-RPC 2.0 notifications (без поля id, без ожидания ответа от клиента)
+
+## WS Endpoint — авторизация
+Токен в query-параметре ?token=... (не в заголовке — ограничение браузерного WebSocket API)
+Порядок: decode_token(token) → проверка WorkspaceMember → manager.connect → receive_text loop → finally disconnect
+Невалидный токен или не-член workspace: accept() → close(code=4001) → return
+Сессия БД открывается/закрывается только для шага проверки членства (async with _SessionFactory()), в receive loop БД не используется
+WebSocketDisconnect → break из цикла, finally вызывает disconnect
+
+## REST endpoints (backend/app/notifications/router.py — rest_router, tag="notifications")
+GET /api/v1/notifications?workspace_id={uuid}&unread=true|false
+  Auth: Authorization: Bearer <token>
+  200: list[{id, type, message, read, created_at}] — [] если нет уведомлений (не 404)
+  401: нет/невалидный токен
+PATCH /api/v1/notifications/{notification_id}/read
+  Auth: Authorization: Bearer <token>, тело пустое
+  200: {}
+  401: нет токена
+  404: уведомление не найдено или принадлежит другому пользователю
+
+## Auth зависимости (backend/app/auth/deps.py)
+decode_token(token: str) -> UUID — HS256 JWT, проверяет type=="access" и sub; InvalidToken при ошибке
+get_current_user — FastAPI Depends для REST; парсит Bearer, возвращает User; HTTPException 401 при ошибке
+InvalidToken — кастомное исключение (не HTTPException); в WS приводит к close(4001), в REST — к 401
+JWT_SECRET из os.environ["JWT_SECRET"] при старте процесса; алгоритм HS256
