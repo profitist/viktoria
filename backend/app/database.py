@@ -1,14 +1,29 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import AsyncGenerator, Final
+from typing import Final
 
 from sqlalchemy import MetaData, func
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from app.config import settings
+from app.config import get_settings
+
+_settings = get_settings()
+
+engine = create_async_engine(
+    _settings.database_url,
+    pool_pre_ping=True,
+)
+
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autoflush=False,
+)
 
 NAMING_CONVENTION: Final[dict[str, str]] = {
     "ix": "ix_%(table_name)s_%(column_0_N_name)s",
@@ -31,24 +46,6 @@ class TimestampMixin:
     )
 
 
-async_engine = create_async_engine(
-    settings.database_url,
-    echo=False,
-    pool_pre_ping=True,
-)
-
-async_session_factory = async_sessionmaker(
-    bind=async_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False,
-    autocommit=False,
-)
-
-
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    session = async_session_factory()
-    try:
+async def get_session() -> AsyncIterator[AsyncSession]:
+    async with AsyncSessionLocal() as session:
         yield session
-    finally:
-        await session.close()
