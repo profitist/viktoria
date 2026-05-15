@@ -13,13 +13,13 @@
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
 | T-001 | Docker Compose: все сервисы + .env.example | infra | — | todo | #1 | `docker-compose.yml`, `.env.example` |
-| T-002 | Backend: main.py + config + async DB | backend | — | todo | #2 | `backend/app/main.py`, `backend/app/config.py`, `backend/app/database.py` |
-| T-003 | SQLAlchemy-модели всех модулей + Alembic init | backend | — | todo | #3 | `backend/app/auth/models.py`, `backend/app/workspace/models.py`, `backend/app/board/models.py`, `backend/app/tasks/models.py`, `backend/app/automation/models.py`, `backend/app/notifications/models.py`, `backend/app/audit/models.py`, `backend/alembic/` |
-| T-004 | Pydantic-схемы всех модулей | backend | — | todo | #4 | `backend/app/auth/schemas.py`, `backend/app/workspace/schemas.py`, `backend/app/board/schemas.py`, `backend/app/tasks/schemas.py`, `backend/app/automation/schemas.py`, `backend/app/notifications/schemas.py`, `backend/app/audit/schemas.py` |
-| T-005 | Auth: JWT utils + register/login/refresh/logout | auth | — | todo | #5 | `backend/app/auth/service.py`, `backend/app/auth/router.py` |
-| T-006 | RabbitMQ: EventEnvelope + publisher + consumer skeleton | events | — | todo | #6 | `backend/app/events/types.py`, `backend/app/events/publisher.py`, `backend/app/events/consumer.py` |
+| T-002 | Backend: main.py + config + async DB | backend | @xionter | in progress | #2 | `backend/app/main.py`, `backend/app/config.py`, `backend/app/database.py` |
+| T-003 | SQLAlchemy-модели всех модулей + Alembic init | backend | @xionter | done | #3 | `backend/app/auth/models.py`, `backend/app/workspace/models.py`, `backend/app/board/models.py`, `backend/app/tasks/models.py`, `backend/app/automation/models.py`, `backend/app/notifications/models.py`, `backend/app/audit/models.py`, `backend/alembic/` |
+| T-004 | Pydantic-схемы всех модулей | backend | @profitist | done | #4 | `backend/app/auth/schemas.py`, `backend/app/workspace/schemas.py`, `backend/app/board/schemas.py`, `backend/app/tasks/schemas.py`, `backend/app/automation/schemas.py`, `backend/app/notifications/schemas.py`, `backend/app/audit/schemas.py` |
+| T-005 | Auth: JWT utils + register/login/refresh/logout | auth | @pavilk | in progress | #5 | `backend/app/auth/service.py`, `backend/app/auth/router.py` |
+| T-006 | RabbitMQ: EventEnvelope + publisher + consumer skeleton | events | @frakin-000 | in progress | #6 | `backend/app/events/types.py`, `backend/app/events/publisher.py`, `backend/app/events/consumer.py` |
 | T-007 | WebSocket hub + JSON-RPC builder + WS endpoint | notifications | — | todo | #7 | `backend/app/notifications/hub.py`, `backend/app/notifications/jsonrpc.py`, `backend/app/notifications/router.py` |
-| T-008 | Frontend: providers + api.ts + ws.ts + types.ts | frontend | — | done | #8 | `frontend/app/providers.tsx`, `frontend/lib/api.ts`, `frontend/lib/ws.ts`, `frontend/lib/types.ts` |
+| T-008 | Frontend: providers + api.ts + ws.ts + types.ts | frontend | @pavilk | done | #8 | `frontend/app/providers.tsx`, `frontend/lib/api.ts`, `frontend/lib/ws.ts`, `frontend/lib/types.ts` |
 
 ## Backlog (I-02+)
 
