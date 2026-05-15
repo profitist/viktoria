@@ -60,3 +60,12 @@ types.ts → (нет импортов)
 ## Env переменные
 NEXT_PUBLIC_API_URL — базовый URL HTTP API (default: http://localhost:8000)
 NEXT_PUBLIC_WS_URL — базовый URL WebSocket (default: ws://localhost:8000)
+
+## Backend Auth (backend/app/auth/)
+config.py: Settings(database_url, jwt_secret ≥32 chars, jwt_algorithm="HS256", access_token_expire_minutes=15, refresh_token_expire_days=30); field_validator отклоняет jwt_secret<32 символов и "changeme"; синглтон settings = Settings()
+service.py: hash_password, verify_password, create_access_token, create_refresh_token, decode_token, register(→409 если email занят), login(→401 invalid credentials; timing-safe через _DUMMY_HASH), refresh_access_token(проверяет type=="refresh" и blocklist), logout(добавляет refresh_token в blocklist; невалидные игнорируются)
+deps.py: get_current_user → User (проверяет type=="access", UUID-парсинг sub, db.get; все 401 с WWW-Authenticate: Bearer)
+router.py: POST /api/v1/auth/register → TokenResponse, POST /api/v1/auth/login → TokenResponse, POST /api/v1/auth/refresh → AccessTokenResponse {access_token}, POST /api/v1/auth/logout → {}
+Blocklist: _refresh_blocklist = set[str] в service.py, in-memory, сбрасывается при рестарте (MVP); в I-02+ перенести в Redis/БД
+Все 401-ответы включают заголовок WWW-Authenticate: Bearer (RFC 7235)
+access_token payload: {sub: user_uuid_str, exp, type: "access"}; refresh_token payload: {sub, exp, type: "refresh"}
