@@ -1,12 +1,10 @@
-import os
-
 import aio_pika
 from aio_pika.abc import AbstractChannel
 from fastapi import FastAPI
 
+from app.config import get_settings
 from app.events.types import EventEnvelope
 
-RABBITMQ_URL_ENV = "RABBITMQ_URL"
 DEFAULT_RABBITMQ_URL = "amqp://guest:guest@rabbitmq:5672/"
 EVENTS_EXCHANGE = "kanban_events"
 
@@ -18,7 +16,7 @@ async def get_channel(app: FastAPI) -> AbstractChannel:
 
     connection = getattr(app.state, "rabbitmq_connection", None)
     if connection is None or connection.is_closed:
-        rabbitmq_url = os.getenv(RABBITMQ_URL_ENV, DEFAULT_RABBITMQ_URL)
+        rabbitmq_url = get_settings().rabbitmq_url or DEFAULT_RABBITMQ_URL
         connection = await aio_pika.connect_robust(rabbitmq_url)
         app.state.rabbitmq_connection = connection
 

@@ -9,6 +9,7 @@ import aio_pika
 from aio_pika.abc import AbstractIncomingMessage
 from fastapi import FastAPI
 from pydantic import ValidationError
+from sqlalchemy import select
 
 from app.events.publisher import EVENTS_EXCHANGE, get_channel
 from app.events.types import EventEnvelope, EventType
@@ -35,7 +36,7 @@ async def start_consumer(app: FastAPI) -> None:
     for routing_key in get_args(EventType):
         await queue.bind(exchange, routing_key=routing_key)
 
-    await queue.consume(process_message)
+    app.state.rabbitmq_consumer_tag = await queue.consume(process_message)
 
 
 async def process_message(message: AbstractIncomingMessage) -> None:
@@ -62,11 +63,27 @@ async def process_message(message: AbstractIncomingMessage) -> None:
 
 
 async def enrich_event(event: EventEnvelope) -> dict[str, Any]:
+    from app.auth.models import User
+    from app.database import AsyncSessionLocal
+    from app.tasks.models import Task
+    from app.workspace.models import Workspace
+
+    async with AsyncSessionLocal() as session:
+        actor_name = await session.scalar(
+            select(User.name).where(User.id == event.actor_id)
+        )
+        workspace_name = await session.scalar(
+            select(Workspace.name).where(Workspace.id == event.workspace_id)
+        )
+        task_title = await session.scalar(
+            select(Task.title).where(Task.id == event.task_id)
+        )
+
     return {
         **event.model_dump(mode="json"),
-        "actor_name": None,
-        "workspace_name": None,
-        "task_title": None,
+        "actor_name": actor_name,
+        "workspace_name": workspace_name,
+        "task_title": task_title,
     }
 
 
