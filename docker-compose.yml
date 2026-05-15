@@ -1,0 +1,35 @@
+services:
+  backend:
+    build:
+      context: .
+      target: backend
+    container_name: victory-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
+    ports:
+      - "127.0.0.1:8001:8001"
+
+  frontend:
+    build:
+      context: .
+      target: frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+    container_name: victory-frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - backend
