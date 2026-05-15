@@ -45,13 +45,10 @@ EXPOSE 3000
 CMD ["npm", "run", "start"]
 
 
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS backend
+FROM python:3.12-slim AS backend
 
 WORKDIR /app/backend
 
-ENV PATH="/app/backend/.venv/bin:${PATH}"
-ENV UV_COMPILE_BYTECODE=1
-ENV UV_LINK_MODE=copy
 ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update \
@@ -60,11 +57,10 @@ RUN apt-get update \
         libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY backend/pyproject.toml backend/uv.lock backend/.python-version ./
-RUN uv sync --frozen --no-dev --no-install-project
+COPY backend/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ ./
-RUN uv sync --frozen --no-dev
 
 EXPOSE 8001
 
