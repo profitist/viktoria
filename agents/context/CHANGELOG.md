@@ -1,3 +1,21 @@
+## FEAT-0002 JWT Auth FastAPI Backend — CTO Review Fixes — 2026-05-15
+
+- **ISSUE-001 (major)** `backend/app/auth/deps.py` — `uuid.UUID(user_id)` обёрнут в `try/except ValueError`; невалидный `sub` возвращает 401 вместо 500.
+- **ISSUE-002 (minor)** `backend/app/auth/service.py` — Добавлен `_DUMMY_HASH` на уровне модуля; при отсутствии пользователя вызывается `verify_password("dummy", _DUMMY_HASH)` для защиты от timing-атаки / user enumeration.
+- **ISSUE-003 (minor)** `backend/app/config.py` — `field_validator` для `jwt_secret` расширен: теперь проверяет `len < 32`, отклоняя пустые и короткие секреты.
+- **ISSUE-004 (minor)** `backend/app/auth/service.py` — `logout` проверяет токен через `decode_token` перед добавлением в blocklist; невалидные токены игнорируются (идемпотентность).
+- **ISSUE-005 (minor)** `backend/app/main.py` — Удалён незащищённый endpoint `GET /protected` (тестовая заглушка).
+- **ISSUE-006 (minor)** `backend/app/auth/service.py`, `backend/app/auth/deps.py` — Все 401-ответы дополнены `headers={"WWW-Authenticate": "Bearer"}` согласно RFC 7235.
+
+## FEAT-0002 JWT Auth FastAPI Backend — 2026-05-15
+
+- Создан `backend/app/config.py` (pydantic-settings: DATABASE_URL, JWT_SECRET, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS; field_validator защищает от jwt_secret="changeme")
+- Дополнен `backend/app/database.py` (async_engine, async_session_factory с expire_on_commit=False, get_session Depends-генератор)
+- Создан `backend/app/auth/service.py` (hash_password, verify_password, create_access_token, create_refresh_token, decode_token, register, login, refresh_access_token, logout; in-memory _refresh_blocklist)
+- Создан `backend/app/auth/deps.py` (oauth2_scheme, get_current_user с проверкой type=="access" и db.get по UUID)
+- Создан `backend/app/auth/router.py` (POST /register, /login, /refresh, /logout; AccessTokenResponse для /refresh)
+- Дополнен `backend/app/main.py` (include_router auth_router prefix=/api/v1, GET /api/v1/health с Depends(get_current_user))
+
 ## FEAT-0001 Frontend Scaffold — CTO Review Fixes — 2026-05-15
 
 - **ISSUE-001 (critical)** `frontend/lib/api.ts` — Исправлен mutex race condition: `refreshPromise` обнуляется через `await`, а не в `.finally()`. Введена отдельная функция `executeRefresh()`, `doRefresh()` управляет mutex-ом.
