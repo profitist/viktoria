@@ -1,42 +1,90 @@
-from fastapi import Depends, FastAPI
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+from importlib import import_module
+
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.auth.deps import get_current_user
-from app.auth.models import User
-from app.auth.router import router as auth_router
+from app.config import get_settings
+from app.database import engine
 
-app = FastAPI()
-
-origins = [
-    "http://localhost:3000",
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+MODULE_NAMES = (
+    "auth",
+    "workspace",
+    "board",
+    "tasks",
+    "automation",
+    "notifications",
+    "audit",
 )
 
-app.include_router(auth_router, prefix="/api/v1")
 
-@app.get("/")
-async def root():
-    return {
-        "status": "ok",
-    }
+def _load_router(module_name: str) -> APIRouter:
+    try:
+        module = import_module(f"app.{module_name}.router")
+    except ModuleNotFoundError as exc:
+        if exc.name != f"app.{module_name}.router":
+            raise
+        return APIRouter(prefix=f"/{module_name}", tags=[module_name])
+
+    router = getattr(module, "router", None)
+    if not isinstance(router, APIRouter):
+        raise RuntimeError(f"app.{module_name}.router must expose `router = APIRouter(...)`.")
+    return router
 
 
-@app.get("/api/v1/health")
-async def health():
-    return {
-        "status": "ok",
-    }
+async def _start_rabbitmq_consumer(app: FastAPI) -> None:
+    app.state.rabbitmq_consumer = None
 
 
-@app.get("/protected")
-async def protected():
-    return {
-        "message": "Backend connected successfully",
-    }
+async def _stop_rabbitmq_consumer(app: FastAPI) -> None:
+    consumer = getattr(app.state, "rabbitmq_consumer", None)
+    if consumer is None:
+        return
+    close_method = getattr(consumer, "close", None)
+    if callable(close_method):
+        result = close_method()
+        if hasattr(result, "__await__"):
+            await result
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await _start_rabbitmq_consumer(app)
+    try:
+        yield
+    finally:
+        await _stop_rabbitmq_consumer(app)
+        await engine.dispose()
+
+
+def create_application() -> FastAPI:
+    settings = get_settings()
+    application = FastAPI(
+        title=settings.app_name,
+        lifespan=lifespan,
+    )
+
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    api_router = APIRouter(prefix=settings.api_v1_prefix)
+
+    @api_router.get("/health")
+    async def healthcheck() -> dict[str, str]:
+        return {"status": "ok"}
+
+    for module_name in MODULE_NAMES:
+        api_router.include_router(_load_router(module_name))
+
+    application.include_router(api_router)
+    return application
+
+
+app = create_application()
