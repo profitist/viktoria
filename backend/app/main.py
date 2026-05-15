@@ -23,6 +23,13 @@ async def root():
     }
 
 
+@app.get("/api/v1/health")
+async def health():
+    return {
+        "status": "ok",
+    }
+
+
 @app.get("/protected")
 async def protected():
     return {
