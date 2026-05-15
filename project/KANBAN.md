@@ -13,7 +13,7 @@
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
 | T-001 | Docker Compose: все сервисы + .env.example | infra | — | todo | #1 | `docker-compose.yml`, `.env.example` |
-| T-002 | Backend: main.py + config + async DB | backend | — | todo | #2 | `backend/app/main.py`, `backend/app/config.py`, `backend/app/database.py` |
+| T-002 | Backend: main.py + config + async DB | backend | @xionter | in progress | #2 | `backend/app/main.py`, `backend/app/config.py`, `backend/app/database.py` |
 | T-003 | SQLAlchemy-модели всех модулей + Alembic init | backend | @xionter | done | #3 | `backend/app/auth/models.py`, `backend/app/workspace/models.py`, `backend/app/board/models.py`, `backend/app/tasks/models.py`, `backend/app/automation/models.py`, `backend/app/notifications/models.py`, `backend/app/audit/models.py`, `backend/alembic/` |
 | T-004 | Pydantic-схемы всех модулей | backend | @profitist | done | #4 | `backend/app/auth/schemas.py`, `backend/app/workspace/schemas.py`, `backend/app/board/schemas.py`, `backend/app/tasks/schemas.py`, `backend/app/automation/schemas.py`, `backend/app/notifications/schemas.py`, `backend/app/audit/schemas.py` |
 | T-005 | Auth: JWT utils + register/login/refresh/logout | auth | @pavilk | in progress | #5 | `backend/app/auth/service.py`, `backend/app/auth/router.py` |
