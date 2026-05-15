@@ -1,12 +1,10 @@
-import {
-  ClerkProvider,
-  Show,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-} from "@clerk/nextjs";
-
+import type { Metadata } from "next";
 import "./globals.css";
+import Providers from "./providers";
+
+export const metadata: Metadata = {
+  title: "Victory Kanban",
+};
 
 export default function RootLayout({
   children,
@@ -16,20 +14,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ClerkProvider>
-          <header className="flex gap-4 p-4 border-b">
-            <Show when="signed-out">
-              <SignInButton />
-              <SignUpButton />
-            </Show>
-
-            <Show when="signed-in">
-              <UserButton />
-            </Show>
-          </header>
-
-          {children}
-        </ClerkProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
