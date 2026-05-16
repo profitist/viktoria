@@ -13,9 +13,9 @@ from app.auth.deps import get_current_user
 from app.auth.models import User
 from app.database import get_session
 from app.events.publisher import get_channel
-from app.tasks.schemas import TaskCreate, TaskMoveRequest, TaskOut, TaskPatch
+from app.tasks.schemas import SimilarTaskCandidate, TaskCreate, TaskMoveRequest, TaskOut, TaskPatch
 from app.tasks.service import (
-    DuplicateTaskError,
+    SimilarTasksFound,
     create_task,
     delete_task,
     get_task,
@@ -31,12 +31,21 @@ class TaskResponse(BaseModel):
     task: TaskOut
 
 
-def _duplicate_task_response(exc: DuplicateTaskError) -> JSONResponse:
+def _similar_tasks_response(exc: SimilarTasksFound) -> JSONResponse:
+    candidates = [
+        SimilarTaskCandidate(
+            id=task.id,
+            title=task.title,
+            column_name=task.column.name,
+            similarity=round(similarity, 2),
+        )
+        for task, similarity in exc.candidates
+    ]
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
         content={
-            "detail": "task already exists",
-            "existing_task_id": str(exc.existing_task_id),
+            "detail": "similar_tasks_found",
+            "candidates": [c.model_dump(mode="json") for c in candidates],
         },
     )
 
@@ -59,8 +68,8 @@ async def create_task_route(
             current_user=current_user,
             channel=channel,
         )
-    except DuplicateTaskError as exc:
-        return _duplicate_task_response(exc)
+    except SimilarTasksFound as exc:
+        return _similar_tasks_response(exc)
 
     return TaskResponse(task=task)
 
@@ -86,18 +95,14 @@ async def update_task_route(
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
     channel: Annotated[AbstractChannel, Depends(_get_publish_channel)],
-) -> TaskResponse | JSONResponse:
-    try:
-        task = await update_task(
-            session=session,
-            task_id=task_id,
-            payload=payload,
-            current_user=current_user,
-            channel=channel,
-        )
-    except DuplicateTaskError as exc:
-        return _duplicate_task_response(exc)
-
+) -> TaskResponse:
+    task = await update_task(
+        session=session,
+        task_id=task_id,
+        payload=payload,
+        current_user=current_user,
+        channel=channel,
+    )
     return TaskResponse(task=task)
 
 

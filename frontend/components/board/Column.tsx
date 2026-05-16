@@ -16,6 +16,7 @@ interface ColumnProps {
   column: ColumnType;
   onTaskCreate: (columnId: string, data: AddTaskData) => Promise<void>;
   onCardClick: (task: Task) => void;
+  onOpenTask?: (taskId: string) => void;
 }
 
 function SortableTaskCard({ task, onCardClick }: { task: Task; onCardClick: (task: Task) => void }) {
@@ -40,7 +41,7 @@ function SortableTaskCard({ task, onCardClick }: { task: Task; onCardClick: (tas
   );
 }
 
-export default function Column({ column, onTaskCreate, onCardClick }: ColumnProps) {
+export default function Column({ column, onTaskCreate, onCardClick, onOpenTask }: ColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
@@ -108,6 +109,7 @@ export default function Column({ column, onTaskCreate, onCardClick }: ColumnProp
           <AddTaskForm
             onSubmit={handleTaskCreate}
             onCancel={() => setIsAddingTask(false)}
+            onOpenTask={onOpenTask}
           />
         )}
       </div>

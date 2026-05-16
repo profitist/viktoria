@@ -1,6 +1,23 @@
 # Kanban
 
-## Iteration I-04 (active) — Цель: уведомления + admin-панель
+## Iteration I-05 (active) — Цель: workspace onboarding + автоматизации + дубликаты
+
+**DoD:**
+- Новый пользователь после регистрации видит форму создания workspace, после — попадает на доску
+- `/` редиректит на `/board` (убрана debug-страница)
+- Admin UI правил автоматизации работает с реальной бэкенд-схемой (structured поля вместо JSON-textarea)
+- `POST /api/v1/tasks` с похожим названием → 409 + candidates; фронт показывает диалог выбора
+- Правило `auto_assign_balanced` назначает задачу участнику с минимальным числом активных задач
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-024 | Workspace onboarding: create page + root redirect | frontend | — | todo | #52 | `frontend/app/page.tsx`, `frontend/app/(app)/workspace/create/page.tsx`, `frontend/app/(app)/board/BoardPageClient.tsx` |
+| T-025 | Fix automation admin UI (schema + structured form) | frontend | — | todo | #53 | `frontend/components/admin/AutomationRules.tsx` |
+| T-026 | Auto load-balancing: action type + consumer | automation | — | todo | #54 | `backend/app/automation/schemas.py`, `backend/app/events/consumer.py` |
+| T-027 | Duplicate detection: backend 409 + candidates | tasks | — | todo | #55 | `backend/app/tasks/service.py`, `backend/app/tasks/router.py` |
+| T-028 | Duplicate detection: frontend modal | frontend | — | todo | #56 | `frontend/components/board/DuplicateModal.tsx`, `frontend/components/board/AddTaskForm.tsx` |
+
+## Iteration I-04 (closed, tag: iter-04-stable) — Цель: уведомления + admin-панель
 
 **DoD:**
 - Колокольчик в шапке показывает badge с непрочитанными; клик открывает панель, mark-as-read работает
@@ -10,10 +27,10 @@
 
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
-| T-020 | Notification bell + unread panel | frontend | — | todo | #44 | `frontend/components/notifications/NotificationBell.tsx`, `frontend/app/(app)/AppShell.tsx` |
-| T-021 | Consumer: persist notifications + automation hook | notifications | — | todo | #46 | `backend/app/notifications/service.py`, `backend/app/events/consumer.py` |
-| T-022 | Automation: service + router (CRUD rules) | automation | — | todo | #45 | `backend/app/automation/service.py`, `backend/app/automation/router.py` |
-| T-023 | Admin page: column editor + automation rules UI | frontend | — | todo | #47 | `frontend/app/(app)/admin/page.tsx`, `frontend/components/admin/ColumnEditor.tsx`, `frontend/components/admin/AutomationRules.tsx`, `frontend/components/sidebar/Sidebar.tsx` |
+| T-020 | Notification bell + unread panel | frontend | @frakin-000 | done | #44 | `frontend/components/notifications/NotificationBell.tsx`, `frontend/app/(app)/AppShell.tsx` |
+| T-021 | Consumer: persist notifications + automation hook | notifications | @xionter | done | #46 | `backend/app/notifications/service.py`, `backend/app/events/consumer.py` |
+| T-022 | Automation: service + router (CRUD rules) | automation | @xionter | done | #45 | `backend/app/automation/service.py`, `backend/app/automation/router.py` |
+| T-023 | Admin page: column editor + automation rules UI | frontend | @pavilk | done | #47 | `frontend/app/(app)/admin/page.tsx`, `frontend/components/admin/ColumnEditor.tsx`, `frontend/components/admin/AutomationRules.tsx`, `frontend/components/sidebar/Sidebar.tsx` |
 
 ## Iteration I-03 (closed, tag: iter-03-stable) — Цель: трекер задач — полное управление задачами
 

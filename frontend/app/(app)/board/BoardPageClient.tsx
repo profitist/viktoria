@@ -155,6 +155,15 @@ export default function BoardPageClient() {
     setSelectedTask(task);
   }, []);
 
+  const handleOpenTask = useCallback((taskId: string) => {
+    const found = board?.columns.flatMap((c) => c.tasks).find((t) => t.id === taskId) ?? null;
+    if (found) {
+      setSelectedTask(found);
+    } else {
+      showToast("Задача уже удалена", "info");
+    }
+  }, [board]);
+
   const handleCloseModal = useCallback(() => {
     setSelectedTask(null);
   }, []);
@@ -254,6 +263,7 @@ export default function BoardPageClient() {
         priority: data.priority,
         description: data.description,
         deadline: data.deadline,
+        ...(data.force ? { force: true } : {}),
       });
       setBoard((prev) => {
         if (!prev) return prev;
@@ -291,6 +301,7 @@ export default function BoardPageClient() {
         onTaskMove={handleTaskMove}
         onTaskCreate={handleTaskCreate}
         onCardClick={handleCardClick}
+        onOpenTask={handleOpenTask}
       />
       {selectedTask && workspaceId && (
         <TaskModal

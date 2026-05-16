@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import difflib
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
@@ -21,10 +22,10 @@ from app.tasks.schemas import TaskCreate, TaskMoveRequest, TaskOut, TaskPatch
 from app.workspace.models import WorkspaceMember
 
 
-class DuplicateTaskError(Exception):
-    def __init__(self, existing_task_id: UUID) -> None:
-        self.existing_task_id = existing_task_id
-        super().__init__("task already exists")
+class SimilarTasksFound(Exception):
+    def __init__(self, candidates: list[tuple[Task, float]]) -> None:
+        self.candidates = candidates
+        super().__init__("similar tasks found")
 
 
 async def create_task(
@@ -37,13 +38,14 @@ async def create_task(
     workspace_id = column.board.workspace_id
     await _require_workspace_member(session, workspace_id, current_user.id)
 
-    duplicate = await _find_duplicate_task(
-        session=session,
-        column_id=payload.column_id,
-        title=payload.title,
-    )
-    if duplicate is not None:
-        raise DuplicateTaskError(duplicate.id)
+    if not payload.force:
+        candidates = await find_similar_tasks(
+            session=session,
+            workspace_id=workspace_id,
+            title=payload.title,
+        )
+        if candidates:
+            raise SimilarTasksFound(candidates)
 
     task = Task(
         title=payload.title,
@@ -93,14 +95,6 @@ async def update_task(
         )
 
     if "title" in payload.model_fields_set and payload.title != task.title:
-        duplicate = await _find_duplicate_task(
-            session=session,
-            column_id=task.column_id,
-            title=payload.title,
-            exclude_task_id=task.id,
-        )
-        if duplicate is not None:
-            raise DuplicateTaskError(duplicate.id)
         task.title = payload.title
         changed_fields["title"] = payload.title
 
@@ -329,19 +323,35 @@ async def _require_workspace_member(
     return membership
 
 
-async def _find_duplicate_task(
+async def find_similar_tasks(
     session: AsyncSession,
-    column_id: UUID,
+    workspace_id: UUID,
     title: str,
-    exclude_task_id: UUID | None = None,
-) -> Task | None:
-    stmt = select(Task).where(
-        Task.column_id == column_id,
-        Task.title == title,
+    threshold: float = 0.6,
+    max_tasks: int = 500,
+) -> list[tuple[Task, float]]:
+    # Лимит предотвращает деградацию на больших workspace (OWASP API4:2023).
+    # 500 задач достаточно для практического fuzzy-поиска — статистически
+    # охватывает активный бэклог любого реального проекта.
+    result = await session.execute(
+        select(Task)
+        .options(selectinload(Task.column))
+        .where(Task.workspace_id == workspace_id)
+        .limit(max_tasks)
     )
-    if exclude_task_id is not None:
-        stmt = stmt.where(Task.id != exclude_task_id)
-    return await session.scalar(stmt)
+    tasks = result.scalars().all()
+    if not tasks:
+        return []
+
+    title_lower = title.lower()
+    candidates: list[tuple[Task, float]] = []
+    for task in tasks:
+        ratio = difflib.SequenceMatcher(None, title_lower, task.title.lower()).ratio()
+        if ratio >= threshold:
+            candidates.append((task, ratio))
+
+    candidates.sort(key=lambda x: x[1], reverse=True)
+    return candidates[:5]
 
 
 def _build_event(

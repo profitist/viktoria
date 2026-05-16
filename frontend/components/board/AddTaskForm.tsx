@@ -2,18 +2,21 @@
 
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import { ApiError } from "@/lib/api";
-import type { TaskPriority } from "@/lib/types";
+import type { DuplicateCandidate, TaskPriority } from "@/lib/types";
+import DuplicateModal from "./DuplicateModal";
 
 export interface AddTaskData {
   title: string;
   priority: TaskPriority;
   description?: string;
   deadline?: string;
+  force?: boolean;
 }
 
 interface AddTaskFormProps {
   onSubmit: (data: AddTaskData) => Promise<void>;
   onCancel: () => void;
+  onOpenTask?: (taskId: string) => void;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -46,7 +49,7 @@ function SectionLabel({ text }: { text: string }) {
   );
 }
 
-export default function AddTaskForm({ onSubmit, onCancel }: AddTaskFormProps) {
+export default function AddTaskForm({ onSubmit, onCancel, onOpenTask }: AddTaskFormProps) {
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [description, setDescription] = useState("");
@@ -54,16 +57,18 @@ export default function AddTaskForm({ onSubmit, onCancel }: AddTaskFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [duplicateCandidates, setDuplicateCandidates] = useState<DuplicateCandidate[] | null>(null);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  async function handleSubmit() {
+  async function handleSubmit(force?: boolean) {
     const trimmed = title.trim();
     if (trimmed.length === 0) return;
-    if (trimmed.length > 255) {
+    if (trimmed.length > 500) {
       setError("Слишком длинное название");
       return;
     }
@@ -76,13 +81,21 @@ export default function AddTaskForm({ onSubmit, onCancel }: AddTaskFormProps) {
       priority,
       description: description.trim() || undefined,
       deadline: deadline || undefined,
+      ...(force ? { force: true } : {}),
     };
 
     try {
       await onSubmit(data);
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
-        setError("Задача с таким названием уже есть в этой колонке");
+        const body = (e as ApiError).body as { candidates?: DuplicateCandidate[] } | undefined;
+        const candidates = body?.candidates ?? [];
+        if (candidates.length > 0) {
+          setDuplicateCandidates(candidates);
+          setShowDuplicateModal(true);
+        } else {
+          setError("Не удалось создать задачу. Попробуйте ещё раз");
+        }
       } else if ((e as Error).message.toLowerCase().includes("failed to fetch")) {
         setError("Нет соединения с сервером");
       } else {
@@ -93,10 +106,30 @@ export default function AddTaskForm({ onSubmit, onCancel }: AddTaskFormProps) {
     }
   }
 
+  function handleDuplicateSelectCandidate(id: string) {
+    // Вызываем onCancel() первым — закрывает AddTaskForm (компонент размонтируется).
+    // setShowDuplicateModal/setDuplicateCandidates не нужны — state умрёт вместе с компонентом.
+    onCancel();
+    onOpenTask?.(id);
+  }
+
+  async function handleDuplicateCreateNew() {
+    setShowDuplicateModal(false);
+    await handleSubmit(true);
+  }
+
+  function handleDuplicateCancel() {
+    setShowDuplicateModal(false);
+    setDuplicateCandidates(null);
+    setError(null);
+  }
+
   function handleTitleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") handleSubmit();
     if (e.key === "Escape") onCancel();
   }
+
+  const showModal = showDuplicateModal && duplicateCandidates !== null;
 
   const canSubmit = title.trim().length > 0 && !isSubmitting;
 
@@ -212,7 +245,7 @@ export default function AddTaskForm({ onSubmit, onCancel }: AddTaskFormProps) {
       {/* Actions */}
       <div style={{ display: "flex", gap: "8px" }}>
         <button
-          onClick={handleSubmit}
+          onClick={() => handleSubmit()}
           disabled={!canSubmit}
           className="flex-1 text-sm px-3 py-1.5 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
           style={{ background: "#3B82F6" }}
@@ -240,6 +273,15 @@ export default function AddTaskForm({ onSubmit, onCancel }: AddTaskFormProps) {
           Отмена
         </button>
       </div>
+
+      {showModal && (
+        <DuplicateModal
+          candidates={duplicateCandidates!}
+          onSelectCandidate={handleDuplicateSelectCandidate}
+          onCreateNew={handleDuplicateCreateNew}
+          onCancel={handleDuplicateCancel}
+        />
+      )}
     </div>
   );
 }

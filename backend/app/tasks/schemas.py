@@ -18,7 +18,7 @@ DeadlineUrgency = Literal["none", "soon", "critical"]
 
 
 class TaskCreate(BaseModel):
-    """Тело запроса создания задачи. Перед сохранением сервис проверяет дубликат по title+column."""
+    """Тело запроса создания задачи. Перед сохранением сервис проверяет похожие задачи."""
 
     title: str = Field(min_length=1, max_length=500)
     description: str | None = None
@@ -30,6 +30,8 @@ class TaskCreate(BaseModel):
     assignee_id: UUID | None = None
     """UUID участника workspace. Если None — задача не назначена."""
     deadline: datetime | None = None
+    force: bool = False
+    """Если True — пропускает проверку похожих задач и создаёт задачу немедленно."""
 
 
 class TaskPatch(BaseModel):
@@ -71,9 +73,10 @@ class TaskOut(BaseModel):
     """Вычисляется на backend, не хранится в БД. Используется фронтом для цветовой индикации карточки."""
 
 
-class DuplicateCheckOut(BaseModel):
-    """Ответ на проверку существования задачи с таким же названием в колонке."""
+class SimilarTaskCandidate(BaseModel):
+    """Кандидат-дубликат для 409-ответа при создании задачи."""
 
-    exists: bool
-    task_id: UUID | None = None
-    """UUID найденной задачи-дубликата. None если exists=False."""
+    id: UUID
+    title: str
+    column_name: str
+    similarity: float = Field(ge=0.0, le=1.0)

@@ -1,3 +1,22 @@
+## FEAT-0006 — Duplicate Task Detection — 2026-05-16
+
+Статус: DONE (`npx tsc --noEmit` — 0 ошибок)
+
+**Создан 1 файл, изменено 9 файлов.**
+
+- Изменён `backend/app/tasks/schemas.py` — добавлено поле `force: bool = False` в `TaskCreate`; `DuplicateCheckOut` заменён на `SimilarTaskCandidate(id, title, column_name, similarity)`
+- Изменён `backend/app/tasks/service.py` — `DuplicateTaskError` и `_find_duplicate_task` удалены; добавлен `SimilarTasksFound(candidates: list[tuple[Task, float]])`; добавлена `find_similar_tasks(session, workspace_id, title, threshold=0.6)` → top-5 по `difflib.SequenceMatcher`, `selectinload(Task.column)`; `create_task` проверяет `force` и вызывает `find_similar_tasks`; `update_task` — блок дубликат-проверки удалён; добавлен `import difflib`
+- Изменён `backend/app/tasks/router.py` — `DuplicateTaskError` → `SimilarTasksFound`; `_duplicate_task_response` → `_similar_tasks_response` возвращает `{"detail": "similar_tasks_found", "candidates": [...SimilarTaskCandidate]}`; `update_task_route` очищен от try/except дубликатов
+- Изменён `frontend/lib/api.ts` — `ApiError` получил поле `body?: unknown`; `handleError` сохраняет распарсенное тело ответа в `body`
+- Изменён `frontend/lib/types.ts` — добавлен `DuplicateCandidate { id, title, column_name, similarity }`
+- Создан `frontend/components/board/DuplicateModal.tsx` — overlay fixed z-40 + карточка z-41 по центру; exact match (similarity=1.0) с border-left #FCD34D и title #FCD34D; badge колонки с усечением >15 символов; Escape → onCancel; role="button" с Enter; анимация opacity+translateY 150ms
+- Изменён `frontend/components/board/AddTaskForm.tsx` — `AddTaskData` получил `force?: boolean`; добавлен prop `onOpenTask?`; `handleSubmit(force?)` при 409 парсит `e.body.candidates` и показывает `DuplicateModal`; три handler-а: selectCandidate/createNew/cancel
+- Изменён `frontend/components/board/Column.tsx` — добавлен prop `onOpenTask?`, пробрасывается в `AddTaskForm`
+- Изменён `frontend/components/board/KanbanBoard.tsx` — добавлен prop `onOpenTask?`, пробрасывается в `Column`
+- Изменён `frontend/app/(app)/board/BoardPageClient.tsx` — добавлен `handleOpenTask(taskId)` (flat-map по всем колонкам → setSelectedTask); `handleTaskCreate` передаёт `force` в POST; `onOpenTask={handleOpenTask}` передан в `KanbanBoard`
+
+**Архитектура:** fuzzy-поиск выполняется на backend (difflib, in-memory, без DB-индексов, ≤5 кандидатов, threshold=0.6); фронт обрабатывает 409 с body и показывает DuplicateModal; force=true пропускает проверку.
+
 ## FEAT-0007 — Admin Page (ColumnEditor + AutomationRules) — 2026-05-16
 
 Статус: DONE (`npm run build` — чисто, `/admin` в роутах; `npx tsc --noEmit` — 0 ошибок)

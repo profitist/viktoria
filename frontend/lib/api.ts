@@ -137,7 +137,8 @@ export async function apiFetch(
 export class ApiError extends Error {
   constructor(
     message: string,
-    public readonly status: number
+    public readonly status: number,
+    public readonly body?: unknown
   ) {
     super(message);
     this.name = "ApiError";
@@ -149,14 +150,15 @@ export class ApiError extends Error {
 // =============================================================================
 
 async function handleError(res: Response): Promise<never> {
+  let body: unknown;
   let detail: string | undefined;
   try {
-    const body = await res.json();
-    detail = body?.detail;
+    body = await res.json();
+    detail = (body as { detail?: string })?.detail;
   } catch {
     // Тело не распарсилось — используем статус-код
   }
-  throw new ApiError(detail ?? `HTTP ${res.status}`, res.status);
+  throw new ApiError(detail ?? `HTTP ${res.status}`, res.status, body);
 }
 
 // =============================================================================

@@ -55,6 +55,13 @@ export interface Task {
   deadline_urgency: DeadlineUrgency;
 }
 
+export interface DuplicateCandidate {
+  id: string;
+  title: string;
+  column_name: string;
+  similarity: number;
+}
+
 // =============================================================================
 // Раздел 4 — Доска
 // =============================================================================
