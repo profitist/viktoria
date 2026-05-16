@@ -22,6 +22,7 @@ MODULE_NAMES = (
     "notifications",
     "audit",
     "project",
+    "tags",
 )
 
 

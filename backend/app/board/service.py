@@ -25,6 +25,8 @@ from app.board.schemas import (
 from app.tasks.models import Subtask, Task
 from app.tasks.schemas import SubtaskProgress, TaskOut
 from app.tasks.service import compute_deadline_urgency
+from app.tags.schemas import TagOut
+from app.tags.service import get_task_tags_by_task_id
 from app.workspace.models import WorkspaceMember, WorkspaceRole
 
 DEFAULT_COLUMNS = ("To Do", "In Progress", "Done")
@@ -68,7 +70,8 @@ async def get_board_with_columns(
 ) -> BoardOut:
     await _require_workspace_member(session, workspace_id, current_user.id)
     board = await get_or_create_board(session, workspace_id)
-    return _build_board_out(board)
+    tags_by_task_id = await _get_board_task_tags(session, board)
+    return _build_board_out(board, tags_by_task_id)
 
 
 async def list_boards(
@@ -122,7 +125,8 @@ async def get_board(
     board = await _get_board_or_404(session, board_id)
     await _require_workspace_member(session, board.workspace_id, current_user.id)
     is_favorite = await _is_favorite(session, current_user.id, board.id)
-    return _build_board_detail(board, is_favorite)
+    tags_by_task_id = await _get_board_task_tags(session, board)
+    return _build_board_detail(board, is_favorite, tags_by_task_id)
 
 
 async def patch_board(
@@ -153,7 +157,8 @@ async def patch_board(
 
     reloaded_board = await _get_board_or_404(session, board.id)
     is_favorite = await _is_favorite(session, current_user.id, board.id)
-    return _build_board_detail(reloaded_board, is_favorite)
+    tags_by_task_id = await _get_board_task_tags(session, reloaded_board)
+    return _build_board_detail(reloaded_board, is_favorite, tags_by_task_id)
 
 
 async def delete_board(
@@ -497,8 +502,24 @@ def _build_board_list_item(board: Board, favorite_ids: set[UUID]) -> BoardListIt
     )
 
 
-def _build_board_detail(board: Board, is_favorite: bool) -> BoardDetail:
-    board_out = _build_board_out(board)
+async def _get_board_task_tags(
+    session: AsyncSession,
+    board: Board,
+) -> dict[UUID, list[TagOut]]:
+    task_ids = [
+        task.id
+        for column in board.columns
+        for task in column.tasks
+    ]
+    return await get_task_tags_by_task_id(session, task_ids)
+
+
+def _build_board_detail(
+    board: Board,
+    is_favorite: bool,
+    tags_by_task_id: dict[UUID, list[TagOut]],
+) -> BoardDetail:
+    board_out = _build_board_out(board, tags_by_task_id)
     return BoardDetail(
         id=board.id,
         name=board.name,
@@ -509,7 +530,10 @@ def _build_board_detail(board: Board, is_favorite: bool) -> BoardDetail:
     )
 
 
-def _build_board_out(board: Board) -> BoardOut:
+def _build_board_out(
+    board: Board,
+    tags_by_task_id: dict[UUID, list[TagOut]],
+) -> BoardOut:
     return BoardOut(
         id=board.id,
         columns=[
@@ -527,7 +551,7 @@ def _build_board_out(board: Board) -> BoardOut:
                         board_id=task.board_id,
                         workspace_id=task.workspace_id,
                         priority=task.priority.value,
-                        tags=list(task.tags),
+                        tags=tags_by_task_id.get(task.id, []),
                         assignee_id=task.assignee_id,
                         created_at=task.created_at,
                         deadline=task.deadline,

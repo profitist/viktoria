@@ -15,6 +15,8 @@ from app.auth.models import User
 from app.board.models import Column
 from app.events.publisher import publish
 from app.events.types import EventEnvelope
+from app.tags.schemas import TagOut
+from app.tags.service import get_task_tags_by_task_id, replace_task_tags
 from app.tasks.models import DeadlineUrgency as DeadlineUrgencyModel
 from app.tasks.models import Subtask, Task, TaskPriority as TaskPriorityModel
 from app.tasks.schemas import SubtaskCreate, SubtaskOut, SubtaskUpdate, TaskCreate, TaskMoveRequest, TaskOut, TaskPatch
@@ -53,14 +55,17 @@ async def create_task(
         board_id=column.board_id,
         workspace_id=workspace_id,
         priority=TaskPriorityModel(payload.priority),
-        tags=list(payload.tags),
+        tags=[],
         assignee_id=payload.assignee_id,
         deadline=payload.deadline,
         deadline_urgency=DeadlineUrgencyModel(compute_deadline_urgency(payload.deadline)),
     )
     session.add(task)
+    await session.flush()
+    await replace_task_tags(session, task, payload.tags)
     await session.commit()
     await session.refresh(task)
+    task_out = await _to_task_out(session, task)
 
     await publish(
         _build_event(
@@ -68,12 +73,12 @@ async def create_task(
             workspace_id=task.workspace_id,
             task_id=task.id,
             actor_id=current_user.id,
-            payload=_task_payload(task),
+            payload=_task_payload(task, task_out.tags),
         ),
         channel,
     )
 
-    return _to_task_out(task)
+    return task_out
 
 
 async def update_task(
@@ -120,10 +125,9 @@ async def update_task(
             changed_fields["priority"] = priority.value
 
     if "tags" in payload.model_fields_set and payload.tags is not None:
-        tags = list(payload.tags)
-        if tags != task.tags:
-            task.tags = tags
-            changed_fields["tags"] = tags
+        tags, tags_changed = await replace_task_tags(session, task, payload.tags)
+        if tags_changed:
+            changed_fields["tags"] = _serialize_tags(tags)
 
     if "assignee_id" in payload.model_fields_set and payload.assignee_id != task.assignee_id:
         task.assignee_id = payload.assignee_id
@@ -139,10 +143,11 @@ async def update_task(
             changed_fields["deadline_urgency"] = task.deadline_urgency.value
 
     if not changed_fields:
-        return _to_task_out(task)
+        return await _to_task_out(session, task)
 
     await session.commit()
     await session.refresh(task)
+    task_out = await _to_task_out(session, task)
 
     await publish(
         _build_event(
@@ -155,7 +160,7 @@ async def update_task(
         channel,
     )
 
-    return _to_task_out(task)
+    return task_out
 
 
 async def move_task(
@@ -195,6 +200,8 @@ async def move_task(
     from_board_id = task.board_id
     task.column_id = payload.column_id
     task.board_id = target_column.board_id
+    if from_board_id != task.board_id:
+        await replace_task_tags(session, task, list(task.tags or []))
 
     await session.commit()
     await session.refresh(task)
@@ -218,7 +225,7 @@ async def move_task(
         channel,
     )
 
-    return _to_task_out(task)
+    return await _to_task_out(session, task)
 
 
 async def delete_task(
@@ -262,7 +269,7 @@ async def get_task(
 ) -> TaskOut:
     task = await _get_task_or_404(session, task_id)
     await _require_workspace_member(session, task.workspace_id, current_user.id)
-    return _to_task_out(task)
+    return await _to_task_out(session, task)
 
 
 async def list_tasks(
@@ -289,7 +296,8 @@ async def list_tasks(
 
     result = await session.execute(stmt.order_by(Task.created_at.asc(), Task.id.asc()))
     tasks = result.scalars().all()
-    return [_to_task_out(task) for task in tasks]
+    tags_by_task_id = await get_task_tags_by_task_id(session, [task.id for task in tasks])
+    return [_build_task_out(task, tags_by_task_id.get(task.id, [])) for task in tasks]
 
 
 def compute_deadline_urgency(deadline: datetime | None) -> str:
@@ -384,7 +392,7 @@ def _build_event(
     )
 
 
-def _task_payload(task: Task) -> dict[str, Any]:
+def _task_payload(task: Task, tags: list[TagOut]) -> dict[str, Any]:
     return _serialize_value(
         {
             "id": task.id,
@@ -394,7 +402,7 @@ def _task_payload(task: Task) -> dict[str, Any]:
             "board_id": task.board_id,
             "workspace_id": task.workspace_id,
             "priority": task.priority,
-            "tags": list(task.tags),
+            "tags": _serialize_tags(tags),
             "assignee_id": task.assignee_id,
             "created_at": task.created_at,
             "deadline": task.deadline,
@@ -403,7 +411,12 @@ def _task_payload(task: Task) -> dict[str, Any]:
     )
 
 
-def _to_task_out(task: Task) -> TaskOut:
+async def _to_task_out(session: AsyncSession, task: Task) -> TaskOut:
+    tags_by_task_id = await get_task_tags_by_task_id(session, [task.id])
+    return _build_task_out(task, tags_by_task_id.get(task.id, []))
+
+
+def _build_task_out(task: Task, tags: list[TagOut]) -> TaskOut:
     return TaskOut(
         id=task.id,
         title=task.title,
@@ -412,7 +425,7 @@ def _to_task_out(task: Task) -> TaskOut:
         board_id=task.board_id,
         workspace_id=task.workspace_id,
         priority=task.priority.value,
-        tags=list(task.tags),
+        tags=tags,
         assignee_id=task.assignee_id,
         created_at=task.created_at,
         deadline=task.deadline,
@@ -420,6 +433,8 @@ def _to_task_out(task: Task) -> TaskOut:
     )
 
 
+def _serialize_tags(tags: list[TagOut]) -> list[dict[str, Any]]:
+    return [tag.model_dump(mode="json") for tag in tags]
 async def get_subtasks(
     session: AsyncSession,
     task_id: UUID,
