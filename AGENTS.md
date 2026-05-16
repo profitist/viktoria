@@ -554,3 +554,172 @@ app/(app)/board/page.tsx       — владелец Board state, WS-подпис
 - `useSortable({ id: task.id })` во внутреннем `SortableTaskCard`-враппере в `Column`
 - `DragOverlay` рендерит клон карточки (передаёт `isDragging={false}` чтобы клон не был полупрозрачным)
 - В `onDragEnd`: если `over.id` — это `task.id`, ищем колонку задачи; если `column.id` — вставляем в конец
+
+---
+
+## Frontend: App Layout + EventLogPanel (FEAT-0003 / T-014)
+
+Авторизованные страницы оборачиваются в общий layout с sidebar-навигацией и панелью реального времени EventLogPanel. WsClient управляется через React Context, а не создаётся на уровне страницы.
+
+---
+
+### WsContext — провайдер WebSocket-соединения
+
+**Файл:** `frontend/contexts/WsContext.tsx`
+
+```ts
+import { useWs } from "@/contexts/WsContext";
+
+function MyComponent() {
+  const { init, on, off, workspaceId } = useWs();
+}
+```
+
+**Интерфейс контекста:**
+
+```ts
+interface WsContextValue {
+  // Инициализирует WS-соединение. Идемпотентен: повторный вызов с тем же
+  // workspaceId — no-op. Повторный вызов с другим workspaceId — disconnect + reconnect.
+  init: (workspaceId: string) => void;
+
+  // Подписка на JSON-RPC метод. Безопасно вызывать до init().
+  on: (method: string, handler: WsHandler) => void;
+
+  // Отписка. Безопасно вызывать если handler не зарегистрирован.
+  off: (method: string, handler: WsHandler) => void;
+
+  // Текущий workspaceId (null — соединение не инициализировано).
+  // Реактивен: изменение вызывает ре-рендер потребителей.
+  workspaceId: string | null;
+}
+
+type WsHandler = (params: Record<string, unknown>) => void;
+```
+
+**Как работает провайдер `WsProvider`:**
+
+- Держит `WsClient | null` в `useRef`.
+- `workspaceId` — `useState<string | null>(null)`: реактивен, обновляется при каждом `init()`.
+- `value`-объект стабилизирован через `useMemo([init, on, off, workspaceId])` — потребители не ре-рендерятся без причины.
+- При `init(wsId)` с существующим клиентом с тем же `wsId` — no-op.
+- При `init(wsId)` с другим `wsId` — старый клиент дисконнектится, создаётся и подключается новый.
+
+**Ключевой инвариант `on()`:** `on()` всегда пишет хэндлер в `pendingHandlers` (Map<string, Set<WsHandler>>) — единственный источник истины. Если `WsClient` уже создан, хэндлер немедленно проксируется в него. При следующем `init()` все `pendingHandlers` переносятся в новый `WsClient` — хэндлеры не теряются при смене workspace. `init()` никогда не делает `pendingHandlers.clear()`.
+
+**`useWs()` — fail-fast:** если компонент вызывает `useWs()` вне `WsProvider`, бросается `Error("useWs must be used within WsProvider")`. Не `return undefined`, не `return null`.
+
+**Lifecycle:** `WsProvider` размонтируется только при логауте. `disconnect()` вызывается только в cleanup `useEffect` провайдера — страницы не должны вызывать `disconnect()`.
+
+**Кто инициализирует соединение:** только `BoardPage` — она единственная знает `workspaceId` из `useSearchParams()`. Layout и `EventLogPanel` не знают `workspaceId` напрямую.
+
+---
+
+### App Layout (`(app)/layout.tsx`)
+
+**Файл:** `frontend/app/(app)/layout.tsx`
+
+Обёртывает все авторизованные страницы. Структура:
+
+```
+WsProvider
+  └── div.flex.h-screen.overflow-hidden
+        ├── Sidebar          (w-56, bg-gray-900, flex-shrink-0)
+        ├── main.flex-1.overflow-y-auto
+        │     └── {children}   ← Board / Admin / AI Groom
+        └── EventLogPanel    (w-[300px], bg-gray-900, flex-shrink-0)
+```
+
+`Sidebar` и `EventLogPanel` монтируются один раз и **не размонтируются** при навигации между страницами — App Router сохраняет layout-компоненты. Список событий в `EventLogPanel` сохраняется при переходе `Board → Admin → AI Groom`.
+
+---
+
+### Sidebar
+
+**Файл:** `frontend/components/sidebar/Sidebar.tsx`
+
+Отображает название workspace (заглушка или из sessionStorage) и три пункта навигации. Активный пункт определяется через `usePathname()`.
+
+| Пункт | Путь |
+|-------|------|
+| Board | `/board` |
+| Admin | `/admin` |
+| AI Groom | `/ai-groom` |
+
+**Состояния NavItem:**
+- Обычный: `text-gray-400 hover:bg-gray-800 hover:text-white`
+- Активный: `bg-gray-800 text-white`
+
+`Sidebar` не использует `WsContext`.
+
+---
+
+### EventLogPanel
+
+**Файл:** `frontend/components/event-log/EventLogPanel.tsx`
+
+Отображает поток событий event pipeline в реальном времени. Подписывается на WS через `useWs()`.
+
+**Подписка:**
+
+```ts
+const { on, off } = useWs();
+
+const handler = useCallback((params: Record<string, unknown>) => {
+  const entry = parseEventLogEntry(params); // fail-fast
+  setEntries((prev) => {
+    const next = [...prev, entry];
+    return next.length > MAX_ENTRIES ? next.slice(next.length - MAX_ENTRIES) : next;
+  });
+}, []);
+
+useEffect(() => {
+  on("event_log.entry", handler);
+  return () => off("event_log.entry", handler);
+}, [on, off, handler]);
+```
+
+**FIFO-50:** максимум 50 записей. При превышении — удаляется самая старая (slice с начала). Логика внутри `setState`-колбэка — гарантия консистентности при React 18 batched updates.
+
+**Автоскролл:** отдельный `useEffect([entries])`. Прокрутка срабатывает только если пользователь находится внизу (`scrollTop + clientHeight >= scrollHeight - 40px`). Если пользователь прокрутил вверх — автоскролл не прерывает чтение.
+
+**Кнопка «Очистить»:** сбрасывает `entries` в `[]`. Всегда активна (нет disabled-состояния).
+
+**Пустой список:** отображает `«Нет событий»` по центру панели.
+
+**Цвета статусов (текст статуса в `LogEntry`):**
+
+| Статус | Tailwind |
+|--------|----------|
+| `received` | `text-gray-400` |
+| `deduped` | `text-yellow-400` |
+| `enriched` | `text-blue-400` |
+| `broadcast` | `text-green-400` |
+| неизвестный | `text-gray-500` |
+
+**Формат строки:** `[HH:MM:SS] event_type → status` (monospace, `text-xs`).
+
+**Адаптивность:** `hidden min-[900px]:flex` — скрывается при viewport < 900px.
+
+---
+
+### Парсеры WS-payload (`lib/types.ts`)
+
+Все парсеры используют паттерн fail-fast: бросают `Error` при невалидном payload. Ошибка перехватывается в `WsClient.dispatch`, не крашит UI, следующие события продолжают обрабатываться.
+
+**`parseEventLogEntry(params)`** — парсит payload метода `event_log.entry`:
+
+```ts
+import { parseEventLogEntry, EventLogEntry } from "@/lib/types";
+
+// Бросает Error если любое поле не является string
+const entry: EventLogEntry = parseEventLogEntry(params);
+```
+
+Поля `EventLogEntry`: `event_id`, `event_type`, `status` (`EventLogStatus | string`), `detail`, `ts` (ISO 8601).
+
+**`parseBoardTask(params)`** — парсит `{ task: Task }` из board.* событий. Проверяет обязательные поля объекта task (`id`, `title` и др.). Бросает `Error` при невалидном payload.
+
+**`parseMoveParams(params)`** — парсит `{ task: Task, column_id: string, position: number }` из `board.task_moved`. Бросает `Error` при невалидном payload.
+
+**Правило:** никаких `as`-кастов в WS-обработчиках. Все `Record<string, unknown>` payload проходят через соответствующий парсер.

@@ -133,3 +133,44 @@ decode_token(token: str) -> UUID — HS256 JWT, проверяет type=="access
 get_current_user — FastAPI Depends для REST; парсит Bearer, возвращает User; HTTPException 401 при ошибке
 InvalidToken — кастомное исключение (не HTTPException); в WS приводит к close(4001), в REST — к 401
 JWT_SECRET из os.environ["JWT_SECRET"] при старте процесса; алгоритм HS256
+
+# Victory Kanban — App Layout + EventLogPanel (FEAT-0003 / T-014)
+
+## WsContext (frontend/contexts/WsContext.tsx)
+useWs() → { init, on, off, workspaceId }
+Бросает Error если вызван вне WsProvider (fail-fast, не return null)
+init(wsId: string) — идемпотентен: повторный вызов с тем же wsId — no-op; с другим — disconnect + reconnect
+workspaceId: string | null — реактивный (useState), null пока init() не вызван
+value стабилизирован через useMemo([init, on, off, workspaceId]) — нет лишних ре-рендеров потребителей
+Инвариант on(): всегда пишет в pendingHandlers (источник истины) И проксирует в wsRef.current если WsClient создан
+init() не делает pendingHandlers.clear() — все хэндлеры переносятся в новый WsClient при смене workspace
+off() удаляет из pendingHandlers и из wsRef.current (симметрично on())
+disconnect() вызывает только WsProvider в своём cleanup — страницы не должны disconnect()
+
+## App Layout (frontend/app/(app)/layout.tsx)
+WsProvider → div.flex.h-screen.overflow-hidden → Sidebar + main.flex-1.overflow-y-auto{children} + EventLogPanel
+Sidebar и EventLogPanel монтируются один раз — не размонтируются при навигации между страницами
+workspaceId знает только BoardPage (useSearchParams) — она вызывает init(wsId), layout и EventLogPanel не знают wsId напрямую
+
+## Sidebar (frontend/components/sidebar/Sidebar.tsx)
+Навигация: Board (/board), Admin (/admin), AI Groom (/ai-groom)
+Активный пункт: usePathname() — совпадение пути
+Стили: w-56 bg-gray-900; активный NavItem: bg-gray-800 text-white; обычный: text-gray-400
+Не использует WsContext
+
+## EventLogPanel (frontend/components/event-log/EventLogPanel.tsx)
+Подписка: ws.on("event_log.entry", handler) при монтировании, ws.off() в cleanup
+FIFO-50: максимум 50 записей; при превышении slice(length - 50) внутри setState-колбэка
+Автоскролл: useEffect([entries]); срабатывает только если scrollTop + clientHeight >= scrollHeight - 40
+Кнопка «Очистить»: setEntries([]), всегда активна
+Адаптивность: hidden min-[900px]:flex
+Цвета статуса: received=text-gray-400, deduped=text-yellow-400, enriched=text-blue-400, broadcast=text-green-400, unknown=text-gray-500
+Формат строки: [HH:MM:SS] event_type → status (font-mono text-xs)
+
+## Парсеры в frontend/lib/types.ts
+Все парсеры fail-fast: throw Error при невалидном payload; ошибка перехватывается WsClient.dispatch, не крашит UI
+parseEventLogEntry(params) → EventLogEntry — проверяет все 5 полей как string: event_id, event_type, status, detail, ts
+EventLogEntry.status: EventLogStatus | string (forward-совместимость с неизвестными статусами)
+parseBoardTask(params) → Task — проверяет { task: object } с обязательными полями id, title; throw при невалидном
+parseMoveParams(params) → { task: Task, column_id: string, position: number } — throw при невалидном
+Правило: никаких небезопасных as-кастов в WS-обработчиках; все Record<string, unknown> → через парсер

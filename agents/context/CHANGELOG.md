@@ -1,3 +1,12 @@
+## T-014 — CTO Review Fixes для FEAT-0003 — 2026-05-16
+
+### 4 issue resolved
+
+- **ISSUE-001 (major)**: `WsContext.tsx` — добавлен `useState<string | null>` для реактивного `workspaceId`; `value`-объект стабилизирован через `useMemo([init, on, off, workspaceId])` — устранены лишние ре-рендеры всех потребителей
+- **ISSUE-002 (major)**: `WsContext.tsx` — `on()` теперь всегда пишет в `pendingHandlers` (источник истины) И проксирует в `wsRef.current` если WsClient уже создан; `init()` при reconnect не делает `pendingHandlers.clear()` — все хэндлеры переносятся в новый WsClient
+- **ISSUE-003 (minor)**: `LogEntry.tsx` — `formatTime()` проверяет `isNaN(date.getTime())` и возвращает `"--:--:--"` вместо `"[NaN:NaN:NaN]"`
+- **ISSUE-004 (major)**: `lib/types.ts` — добавлены fail-fast парсеры `parseBoardTask()` и `parseMoveParams()`; `board/page.tsx` — все небезопасные `as`-касты в WS-обработчиках заменены на вызовы этих парсеров
+
 ## FEAT-0003 — Kanban Board UI — 2026-05-16
 
 - Установлены `@dnd-kit/core ^6.3.1` и `@dnd-kit/sortable ^10.0.0`
