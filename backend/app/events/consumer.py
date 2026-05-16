@@ -269,6 +269,7 @@ async def _add_task_tag(
     enriched_event: dict[str, Any],
     params: dict[str, Any],
 ) -> None:
+    from app.tags.service import add_tag_name_to_task
     from app.tasks.models import Task
 
     tag = params.get("tag")
@@ -286,9 +287,7 @@ async def _add_task_tag(
         logger.warning("automation add_tag skipped: task not found")
         return
 
-    tags = list(task.tags or [])
-    if tag not in tags:
-        task.tags = [*tags, tag]
+    await add_tag_name_to_task(session, task, tag)
 
 
 async def _suggest_assignee_balanced(
@@ -389,7 +388,12 @@ def _condition_matches(
         if isinstance(actual, str):
             return str(expected) in actual
         if isinstance(actual, (list, tuple, set)):
-            return expected in actual
+            if expected in actual:
+                return True
+            return any(
+                isinstance(item, dict) and item.get("name") == expected
+                for item in actual
+            )
         return False
     if operator == "gt":
         try:

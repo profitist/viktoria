@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.tags.schemas import TagOut, TagRef
+
 TaskPriority = Literal["low", "medium", "high", "critical"]
 """Приоритет задачи. Влияет на сортировку и визуальную индикацию в UI."""
 
@@ -27,7 +29,7 @@ class TaskCreate(BaseModel):
     board_id: UUID | None = None
     """Доска задачи. В T-030 станет обязательной для дедупликации и фильтрации."""
     priority: TaskPriority = "medium"
-    tags: list[str] = []
+    tags: list[str] = Field(default_factory=list)
     """Свободные теги. Используются в условиях правил автоматизации."""
     assignee_id: UUID | None = None
     """UUID участника workspace. Если None — задача не назначена."""
@@ -40,7 +42,7 @@ class TaskPatch(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=500)
     description: str | None = None
     priority: TaskPriority | None = None
-    tags: list[str] | None = None
+    tags: list[str | TagRef] | None = None
     assignee_id: UUID | None = None
     deadline: datetime | None = None
 
@@ -86,7 +88,7 @@ class TaskOut(BaseModel):
     board_id: UUID
     workspace_id: UUID
     priority: TaskPriority
-    tags: list[str]
+    tags: list[TagOut]
     assignee_id: UUID | None
     created_at: datetime
     deadline: datetime | None
