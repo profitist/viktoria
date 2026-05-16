@@ -62,6 +62,8 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        BACKEND_URL: http://victory-backend:8000
     container_name: victory-frontend
     restart: unless-stopped
     environment:

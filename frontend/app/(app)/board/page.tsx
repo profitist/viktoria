@@ -214,14 +214,22 @@ function BoardPageContent() {
   if (!board) return null;
 
   return (
-    <div className="min-h-full bg-gray-100">
+    <div className="min-h-full bg-[#050505]">
       <KanbanBoard
         board={board}
         onTaskMove={handleTaskMove}
         onTaskCreate={handleTaskCreate}
       />
       {toast && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50">
+        <div
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 text-sm px-4 py-2 rounded-lg z-50"
+          style={{
+            background: "#111111",
+            border: "1px solid rgba(255,255,255,0.08)",
+            color: "rgba(255,255,255,0.72)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.6)",
+          }}
+        >
           {toast}
         </div>
       )}

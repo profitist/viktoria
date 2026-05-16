@@ -47,59 +47,121 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-8 w-full max-w-md">
-      <h2 className="text-2xl font-bold mb-1">Victory Kanban</h2>
-      <p className="text-sm text-gray-500 mb-6">Войдите в аккаунт</p>
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="email" className="text-sm font-medium text-gray-700">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="user@example.com"
-          />
+    <div className="w-full max-w-md px-4">
+      <div
+        className="rounded-2xl p-10"
+        style={{
+          background: "#0B0B0B",
+          border: "1px solid rgba(255,255,255,0.08)",
+          backdropFilter: "blur(12px)",
+        }}
+      >
+        <div className="mb-8">
+          <h1
+            className="text-xl font-semibold uppercase tracking-[0.2em] text-white"
+          >
+            VIKTORIA
+          </h1>
+          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.45)" }}>
+            Войдите в аккаунт
+          </p>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="password" className="text-sm font-medium text-gray-700">
-            Пароль
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="email"
+              className="text-xs uppercase tracking-widest font-medium"
+              style={{ color: "rgba(255,255,255,0.45)" }}
+            >
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="user@example.com"
+              className="rounded-lg px-3 py-3 text-sm text-white outline-none transition-all"
+              style={{
+                background: "#0B0B0B",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "#fff",
+              }}
+              onFocus={(e) =>
+                (e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)")
+              }
+              onBlur={(e) =>
+                (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")
+              }
+            />
+          </div>
 
-        {error !== null && (
-          <p className="text-red-500 text-sm">{error}</p>
-        )}
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="password"
+              className="text-xs uppercase tracking-widest font-medium"
+              style={{ color: "rgba(255,255,255,0.45)" }}
+            >
+              Пароль
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="rounded-lg px-3 py-3 text-sm text-white outline-none transition-all"
+              style={{
+                background: "#0B0B0B",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "#fff",
+              }}
+              onFocus={(e) =>
+                (e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)")
+              }
+              onBlur={(e) =>
+                (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")
+              }
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={isLoading || !email || !password}
-          className="bg-blue-600 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {isLoading ? "Вход…" : "Войти"}
-        </button>
-      </form>
+          {error !== null && (
+            <p className="text-sm text-red-400">{error}</p>
+          )}
 
-      <p className="text-sm text-gray-500 mt-4 text-center">
-        Нет аккаунта?{" "}
-        <Link href="/register" className="text-blue-600 hover:underline">
-          Зарегистрироваться
-        </Link>
-      </p>
+          <button
+            type="submit"
+            disabled={isLoading || !email || !password}
+            className="rounded-lg px-4 py-3 text-sm font-medium text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ background: "#3B82F6" }}
+            onMouseEnter={(e) => {
+              if (!isLoading && email && password) {
+                e.currentTarget.style.background = "#2563EB";
+                e.currentTarget.style.boxShadow = "0 0 20px rgba(59,130,246,0.3)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#3B82F6";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            {isLoading ? "Вход…" : "Войти"}
+          </button>
+        </form>
+
+        <p className="text-sm mt-6 text-center" style={{ color: "rgba(255,255,255,0.45)" }}>
+          Нет аккаунта?{" "}
+          <Link
+            href="/register"
+            className="transition-colors hover:text-white"
+            style={{ color: "rgba(255,255,255,0.45)" }}
+          >
+            Зарегистрироваться
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

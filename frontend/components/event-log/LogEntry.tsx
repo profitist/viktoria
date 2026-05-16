@@ -1,12 +1,7 @@
 import type { EventLogEntry } from "@/lib/types";
 
-// =============================================================================
-// Вспомогательные функции
-// =============================================================================
-
 function formatTime(isoTs: string): string {
   const date = new Date(isoTs);
-  // ISSUE-003: явный fallback вместо "[NaN:NaN:NaN]" при невалидном timestamp
   if (isNaN(date.getTime())) {
     return "--:--:--";
   }
@@ -16,31 +11,30 @@ function formatTime(isoTs: string): string {
   return `${hh}:${mm}:${ss}`;
 }
 
-function statusColor(status: string): string {
-  switch (status) {
-    case "received":  return "text-gray-400";
-    case "deduped":   return "text-yellow-400";
-    case "enriched":  return "text-blue-400";
-    case "broadcast": return "text-green-400";
-    default:          return "text-gray-500";
-  }
-}
-
-// =============================================================================
-// Компонент
-// =============================================================================
+const STATUS_COLORS: Record<string, string> = {
+  received: "rgba(255,255,255,0.45)",
+  deduped: "#FCD34D",
+  enriched: "#93C5FD",
+  broadcast: "#6EE7B7",
+};
 
 interface LogEntryProps {
   entry: EventLogEntry;
 }
 
 export default function LogEntry({ entry }: LogEntryProps) {
+  const statusColor = STATUS_COLORS[entry.status] ?? "rgba(255,255,255,0.25)";
+
   return (
-    <div className="px-3 py-1 font-mono text-xs leading-5 hover:bg-gray-800/50">
-      <span className="text-gray-500">[{formatTime(entry.ts)}] </span>
-      <span className="text-gray-300">{entry.event_type} </span>
-      <span className="text-gray-500">→ </span>
-      <span className={statusColor(entry.status)}>{entry.status}</span>
+    <div
+      className="px-3 py-1 font-mono text-xs leading-5 transition-colors"
+      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+    >
+      <span style={{ color: "rgba(255,255,255,0.25)" }}>[{formatTime(entry.ts)}] </span>
+      <span style={{ color: "rgba(255,255,255,0.72)" }}>{entry.event_type} </span>
+      <span style={{ color: "rgba(255,255,255,0.25)" }}>→ </span>
+      <span style={{ color: statusColor }}>{entry.status}</span>
     </div>
   );
 }

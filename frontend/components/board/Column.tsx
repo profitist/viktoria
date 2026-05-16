@@ -43,34 +43,40 @@ export default function Column({ column, onTaskCreate }: ColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
-  const columnClasses = [
-    "w-72 flex-shrink-0 bg-gray-50 rounded-xl p-3 flex flex-col gap-2 transition-colors duration-150",
-    isOver ? "border-2 border-dashed border-blue-400 bg-blue-50" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-
   async function handleTaskCreate(title: string) {
     await onTaskCreate(column.id, title);
     setIsAddingTask(false);
   }
 
   return (
-    <div className={columnClasses}>
-      <div className="flex items-center justify-between mb-1">
+    <div
+      className="w-72 flex-shrink-0 flex flex-col gap-2 transition-colors duration-150 rounded-xl p-2"
+      style={isOver ? { background: "rgba(255,255,255,0.03)" } : undefined}
+    >
+      <div className="flex items-center justify-between mb-1 px-1">
         <div className="flex items-center gap-2">
-          <div
-            className="w-2.5 h-2.5 rounded-full bg-gray-400"
-            style={column.color ? { backgroundColor: column.color } : undefined}
-          />
-          <span className="text-sm font-semibold text-gray-700">{column.name}</span>
-          <span className="text-xs text-gray-400 bg-gray-200 rounded-full px-1.5">
+          <span
+            className="text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "rgba(255,255,255,0.45)" }}
+          >
+            {column.name}
+          </span>
+          <span
+            className="text-xs px-1.5 py-0.5 rounded-full"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.45)",
+            }}
+          >
             {column.tasks.length}
           </span>
         </div>
         <button
           onClick={() => setIsAddingTask(true)}
-          className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+          className="text-lg leading-none transition-colors"
+          style={{ color: "rgba(255,255,255,0.25)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.25)")}
         >
           +
         </button>
@@ -78,7 +84,14 @@ export default function Column({ column, onTaskCreate }: ColumnProps) {
 
       <div ref={setNodeRef} className="flex flex-col gap-2 flex-1 min-h-[80px]">
         {column.tasks.length === 0 && !isAddingTask && (
-          <p className="text-xs text-gray-400 text-center py-6">Нет задач</p>
+          <div
+            className="flex items-center justify-center py-6 rounded-lg"
+            style={{ border: "1px dashed rgba(255,255,255,0.08)" }}
+          >
+            <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
+              Нет задач
+            </p>
+          </div>
         )}
 
         <SortableContext
@@ -101,7 +114,10 @@ export default function Column({ column, onTaskCreate }: ColumnProps) {
       {!isAddingTask && (
         <button
           onClick={() => setIsAddingTask(true)}
-          className="text-xs text-gray-400 hover:text-gray-600 text-left mt-1 transition-colors"
+          className="text-xs text-left mt-1 transition-colors px-1"
+          style={{ color: "rgba(255,255,255,0.25)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.25)")}
         >
           + Добавить задачу
         </button>
