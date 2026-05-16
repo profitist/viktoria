@@ -1,3 +1,14 @@
+## FEAT-0014 — Frontend TypeScript типы и API-методы (Comment, Attachment) — 2026-05-17
+
+Статус: DONE (CTO approved, без issues)
+
+**Изменено 2 файла.**
+
+- Изменён `frontend/lib/types.ts` — добавлены 4 интерфейса: `CommentAuthor {id,name}`, `Comment {id,task_id,author,body,mentions:string[],created_at}`, `AttachmentUploader {id,name}`, `Attachment {id,task_id,filename|null,content_type|null,size|null,url,uploaded_by|null,created_at}`
+- Изменён `frontend/lib/api.ts` — импорт расширен (Comment, Attachment); добавлены `commentsApi` (getComments/createComment/deleteComment через api.get/post/delete) и `attachmentsApi` (getAttachments/deleteAttachment через api.get/delete; uploadAttachment через apiFetch напрямую — FormData без ручного Content-Type, handleError при 413/415)
+
+**Архитектура:** `uploadAttachment` обходит `api.post` чтобы не устанавливать Content-Type вручную — браузер сам добавляет multipart/form-data с boundary. `handleError` доступна в том же модуле, пробрасывает ApiError с .status.
+
 ## FEAT-0013 — Attachments StorageService + service + router + composition root — 2026-05-17
 
 Статус: DONE (CTO approved, без issues). **Завершает I-08.**
