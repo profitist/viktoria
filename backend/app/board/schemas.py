@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.tasks.schemas import TaskOut
 
@@ -23,6 +23,22 @@ class ColumnPatch(BaseModel):
     position: int | None = None
     color: str | None = None
 
+class ColumnReorderItem(BaseModel):
+    """Новая позиция конкретной колонки."""
+
+    id: UUID
+    """ID колонки."""
+
+    position: int
+    """Новая позиция колонки."""
+
+
+class ColumnReorder(BaseModel):
+    """Массовое обновление порядка колонок."""
+
+    columns: list[ColumnReorderItem]
+    """Список колонок с новыми position."""
+
 
 class ColumnOut(BaseModel):
     """Колонка доски со списком задач. Возвращается в составе BoardOut."""
@@ -33,7 +49,7 @@ class ColumnOut(BaseModel):
     name: str
     position: int
     color: str | None
-    tasks: list[TaskOut] = []
+    tasks: list[TaskOut] = Field(default_factory=list)
     """Задачи колонки, отсортированные по position. Пустой список если задач нет."""
 
 
@@ -45,3 +61,10 @@ class BoardOut(BaseModel):
     id: UUID
     columns: list[ColumnOut]
     """Колонки отсортированы по полю position по возрастанию."""
+
+class BoardResponse(BaseModel):
+    board: BoardOut
+
+
+class ColumnResponse(BaseModel):
+    column: ColumnOut
