@@ -1,5 +1,24 @@
 # Kanban
 
+## Iteration I-02 (active) — Цель: рабочая канбан-доска end-to-end
+
+**DoD:**
+- `POST /api/v1/workspaces` → `{workspace: {id, name, slug, role: "owner"}}`
+- `GET /api/v1/workspaces/{id}/board` → `{board: {id, columns: [{id, name, tasks:[...]}]}}`
+- `POST /api/v1/tasks` → 200, событие уходит в RabbitMQ
+- `PUT /api/v1/tasks/{id}/move` → 200, через WS клиент получает `board.task_moved`
+- `localhost:3000/login` → форма → вход → редирект на доску
+- `localhost:3000/board` → drag-drop карточек работает, Event Log обновляется в реальном времени
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-009 | Workspace: service + router | workspace | — | todo | #18 | `backend/app/workspace/service.py`, `backend/app/workspace/router.py` |
+| T-010 | Board: service + router (board + columns CRUD) | board | — | todo | #19 | `backend/app/board/service.py`, `backend/app/board/router.py` |
+| T-011 | Tasks: service + router (CRUD + move + deadline_urgency + dedup + publish) | tasks | — | todo | #20 | `backend/app/tasks/service.py`, `backend/app/tasks/router.py` |
+| T-012 | Frontend: auth pages (login + register) | frontend | — | todo | #21 | `frontend/app/(auth)/login/page.tsx`, `frontend/app/(auth)/register/page.tsx`, `frontend/app/(auth)/layout.tsx` |
+| T-013 | Frontend: board page + kanban components | frontend | — | todo | #22 | `frontend/app/(app)/board/page.tsx`, `frontend/components/board/KanbanBoard.tsx`, `frontend/components/board/Column.tsx`, `frontend/components/board/TaskCard.tsx` |
+| T-014 | Frontend: app layout + EventLogPanel | frontend | — | todo | #23 | `frontend/app/(app)/layout.tsx`, `frontend/components/event-log/EventLogPanel.tsx` |
+
 ## Iteration I-01 (closed, tag: iter-01-stable) — Цель: scaffolding всех модулей + Docker Compose + контракты как код
 
 **DoD:**
