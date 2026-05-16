@@ -56,14 +56,17 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Deploy application
+      - name: Deploy application from deploy branch
+        if: github.ref == 'refs/heads/deploy'
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
             "cd /home/snap/viktoria/viktoria && \
-            sudo docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} && \
-            export FRONTEND_IMAGE=ghcr.io/${{ github.repository }}-frontend:${{ github.sha }} && \
-            export BACKEND_IMAGE=ghcr.io/${{ github.repository }}-backend:${{ github.sha }} && \
-            sudo docker-compose -f docker-compose.prod.yml pull && \
-            sudo docker-compose -f docker-compose.prod.yml down && \
-            sudo docker-compose -f docker-compose.prod.yml up -d && \
-            sudo docker-compose -f docker-compose.prod.yml ps"
+             git fetch origin deploy && \
+             git reset --hard origin/deploy && \
+             sudo docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} -p ${{ secrets.GHCR_PAT }} && \
+             export FRONTEND_IMAGE=ghcr.io/${{ github.repository }}-frontend:${{ github.sha }} && \
+             export BACKEND_IMAGE=ghcr.io/${{ github.repository }}-backend:${{ github.sha }} && \
+             sudo docker-compose -f docker-compose.prod.yml pull && \
+             sudo docker-compose -f docker-compose.prod.yml down && \
+             sudo docker-compose -f docker-compose.prod.yml up -d && \
+             sudo docker-compose -f docker-compose.prod.yml ps"
