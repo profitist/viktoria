@@ -39,6 +39,7 @@ async def create_task(
 
     duplicate = await _find_duplicate_task(
         session=session,
+        board_id=column.board_id,
         column_id=payload.column_id,
         title=payload.title,
     )
@@ -49,6 +50,7 @@ async def create_task(
         title=payload.title,
         description=payload.description or "",
         column_id=payload.column_id,
+        board_id=column.board_id,
         workspace_id=workspace_id,
         priority=TaskPriorityModel(payload.priority),
         tags=list(payload.tags),
@@ -95,6 +97,7 @@ async def update_task(
     if "title" in payload.model_fields_set and payload.title != task.title:
         duplicate = await _find_duplicate_task(
             session=session,
+            board_id=task.board_id,
             column_id=task.column_id,
             title=payload.title,
             exclude_task_id=task.id,
@@ -178,8 +181,20 @@ async def move_task(
             detail="column not found",
         )
 
+    duplicate = await _find_duplicate_task(
+        session=session,
+        board_id=target_column.board_id,
+        column_id=payload.column_id,
+        title=task.title,
+        exclude_task_id=task.id,
+    )
+    if duplicate is not None:
+        raise DuplicateTaskError(duplicate.id)
+
     from_column_id = task.column_id
+    from_board_id = task.board_id
     task.column_id = payload.column_id
+    task.board_id = target_column.board_id
 
     await session.commit()
     await session.refresh(task)
@@ -192,6 +207,8 @@ async def move_task(
             actor_id=current_user.id,
             payload=_serialize_value(
                 {
+                    "from_board_id": from_board_id,
+                    "board_id": task.board_id,
                     "from_column_id": from_column_id,
                     "column_id": task.column_id,
                     "position": payload.position,
@@ -252,6 +269,7 @@ async def list_tasks(
     session: AsyncSession,
     workspace_id: UUID,
     current_user: User,
+    board_id: UUID | None = None,
     column_id: UUID | None = None,
     assignee_id: UUID | None = None,
     tag: str | None = None,
@@ -260,6 +278,8 @@ async def list_tasks(
 
     stmt = select(Task).where(Task.workspace_id == workspace_id)
 
+    if board_id is not None:
+        stmt = stmt.where(Task.board_id == board_id)
     if column_id is not None:
         stmt = stmt.where(Task.column_id == column_id)
     if assignee_id is not None:
@@ -331,11 +351,13 @@ async def _require_workspace_member(
 
 async def _find_duplicate_task(
     session: AsyncSession,
+    board_id: UUID,
     column_id: UUID,
     title: str,
     exclude_task_id: UUID | None = None,
 ) -> Task | None:
     stmt = select(Task).where(
+        Task.board_id == board_id,
         Task.column_id == column_id,
         Task.title == title,
     )
@@ -369,6 +391,7 @@ def _task_payload(task: Task) -> dict[str, Any]:
             "title": task.title,
             "description": task.description,
             "column_id": task.column_id,
+            "board_id": task.board_id,
             "workspace_id": task.workspace_id,
             "priority": task.priority,
             "tags": list(task.tags),
@@ -386,6 +409,7 @@ def _to_task_out(task: Task) -> TaskOut:
         title=task.title,
         description=task.description,
         column_id=task.column_id,
+        board_id=task.board_id,
         workspace_id=task.workspace_id,
         priority=task.priority.value,
         tags=list(task.tags),
