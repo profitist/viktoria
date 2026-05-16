@@ -72,6 +72,27 @@ export interface Board {
   columns: Column[];
 }
 
+export interface BoardMeta {
+  id: string;
+  name: string;
+  description: string | null;
+  project_id: string | null;
+  is_favorite: boolean;
+}
+
+export interface BoardDetail extends Board {
+  name: string;
+  description: string | null;
+  project_id: string | null;
+  is_favorite: boolean;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  board_count: number;
+}
+
 // =============================================================================
 // Раздел 5 — Автоматизация
 // =============================================================================

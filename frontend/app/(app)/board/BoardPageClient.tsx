@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, boardsApi } from "@/lib/api";
 import { useWs } from "@/contexts/WsContext";
-import type { Board, Task } from "@/lib/types";
+import type { BoardDetail, Task } from "@/lib/types";
 import { parseBoardTask, parseMoveParams } from "@/lib/types";
 import {
   moveTaskInBoard,
@@ -18,8 +18,13 @@ import TaskModal from "@/components/board/TaskModal";
 import type { AddTaskData } from "@/components/board/AddTaskForm";
 import BoardSkeleton from "@/components/board/BoardSkeleton";
 import ErrorBanner from "@/components/board/ErrorBanner";
+import BoardSwitcher from "@/components/board/BoardSwitcher";
 
-export default function BoardPageClient() {
+interface BoardPageClientProps {
+  boardId: string;
+}
+
+export default function BoardPageClient({ boardId }: BoardPageClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -28,7 +33,7 @@ export default function BoardPageClient() {
 
   const { init, on, off } = useWs();
 
-  const [board, setBoard] = useState<Board | null>(null);
+  const [board, setBoard] = useState<BoardDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: "error" | "info" } | null>(null);
@@ -40,16 +45,15 @@ export default function BoardPageClient() {
   }
 
   const loadBoard = useCallback(async () => {
-    if (!workspaceId) return;
     setIsLoading(true);
     setError(null);
     try {
-      const { board: data } = await api.get<{ board: Board }>(`/api/v1/workspaces/${workspaceId}/board`);
+      const { board: data } = await boardsApi.getDetail(boardId);
       setBoard(data);
     } catch (e) {
       if (e instanceof ApiError && (e.status === 403 || e.status === 404)) {
         setError("Доска недоступна");
-      } else if ((e as Error).message.toLowerCase().includes("failed to fetch")) {
+      } else if ((e as Error).message?.toLowerCase().includes("failed to fetch")) {
         setError("Нет соединения с сервером");
       } else {
         setError("Не удалось загрузить доску");
@@ -57,7 +61,7 @@ export default function BoardPageClient() {
     } finally {
       setIsLoading(false);
     }
-  }, [workspaceId]);
+  }, [boardId]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -67,26 +71,8 @@ export default function BoardPageClient() {
       return;
     }
 
-    if (workspaceId) {
-      loadBoard();
-      return;
-    }
-
-    // Авторизован, но workspace_id в URL нет — резолвим первый доступный
-    api
-      .get<{ id: string }[]>("/api/v1/workspaces/me")
-      .then((ws) => {
-        if (ws.length > 0) {
-          router.replace(`/board?workspace_id=${ws[0].id}`);
-        } else {
-          router.replace("/workspace/create");
-        }
-      })
-      .catch(() => {
-        setError("Не удалось загрузить рабочие пространства");
-        setIsLoading(false);
-      });
-  }, [authLoading, isAuthenticated, workspaceId, loadBoard, router]);
+    loadBoard();
+  }, [authLoading, isAuthenticated, boardId, loadBoard, router]);
 
   const handleTaskCreated = useCallback((params: Record<string, unknown>) => {
     const task = parseBoardTask(params);
@@ -94,7 +80,7 @@ export default function BoardPageClient() {
       if (!prev) return prev;
       const col = prev.columns.find((c) => c.id === task.column_id);
       if (col?.tasks.some((t) => t.id === task.id)) return prev;
-      return addTaskToColumn(prev, task);
+      return addTaskToColumn(prev, task) as BoardDetail;
     });
   }, []);
 
@@ -118,7 +104,7 @@ export default function BoardPageClient() {
     const { taskId, column_id: columnId, position } = parseMoveParams(params);
     setBoard((prev) => {
       if (!prev) return prev;
-      return moveTaskInBoard(prev, taskId, columnId, position);
+      return moveTaskInBoard(prev, taskId, columnId, position) as BoardDetail;
     });
   }, []);
 
@@ -127,13 +113,12 @@ export default function BoardPageClient() {
     if (typeof taskId !== "string") {
       throw new Error(`Invalid board.task_deleted payload: ${JSON.stringify(params)}`);
     }
-    setBoard((prev) => (prev ? deleteTask(prev, taskId) : prev));
+    setBoard((prev) => (prev ? deleteTask(prev, taskId) as BoardDetail : prev));
   }, []);
 
   useEffect(() => {
     if (!workspaceId || !user) return;
 
-    // init идемпотентен: повторный вызов с тем же workspaceId — no-op
     init(workspaceId);
 
     on("board.task_created", handleTaskCreated);
@@ -142,7 +127,6 @@ export default function BoardPageClient() {
     on("board.task_deleted", handleTaskDeleted);
 
     return () => {
-      // Disconnect — обязанность WsProvider при размонтировании layout
       off("board.task_created", handleTaskCreated);
       off("board.task_updated", handleTaskUpdated);
       off("board.task_moved", handleTaskMoved);
@@ -159,11 +143,11 @@ export default function BoardPageClient() {
   }, []);
 
   const handleTaskEdit = useCallback(async (updatedTask: Task): Promise<void> => {
-    let snapshot: Board | null = null;
+    let snapshot: BoardDetail | null = null;
     setBoard(prev => {
       if (!prev) return prev;
       snapshot = structuredClone(prev);
-      return replaceTask(prev, updatedTask);
+      return replaceTask(prev, updatedTask) as BoardDetail;
     });
 
     try {
@@ -175,7 +159,7 @@ export default function BoardPageClient() {
         assignee_id: updatedTask.assignee_id,
         tags: updatedTask.tags,
       });
-      setBoard(prev => prev ? replaceTask(prev, saved) : prev);
+      setBoard(prev => prev ? replaceTask(prev, saved) as BoardDetail : prev);
       setSelectedTask(null);
     } catch (e) {
       if (snapshot) setBoard(snapshot);
@@ -185,18 +169,18 @@ export default function BoardPageClient() {
   }, []);
 
   const handleTaskDelete = useCallback(async (taskId: string): Promise<void> => {
-    let snapshot: Board | null = null;
+    let snapshot: BoardDetail | null = null;
     setBoard(prev => {
       if (!prev) return prev;
-      snapshot = structuredClone(prev) as Board;
-      return deleteTask(prev, taskId);
+      snapshot = structuredClone(prev) as BoardDetail;
+      return deleteTask(prev, taskId) as BoardDetail;
     });
     setSelectedTask(null);
 
     try {
       await api.delete(`/api/v1/tasks/${taskId}`);
     } catch (e) {
-      const snap = snapshot as Board | null;
+      const snap = snapshot as BoardDetail | null;
       if (snap) {
         setBoard(snap);
         const restoredTask = snap.columns.flatMap(c => c.tasks).find(t => t.id === taskId) ?? null;
@@ -208,11 +192,11 @@ export default function BoardPageClient() {
   }, []);
 
   function handleTaskMove(taskId: string, targetColumnId: string, newPosition: number) {
-    let snapshot: Board | null = null;
+    let snapshot: BoardDetail | null = null;
     setBoard((prev) => {
       if (!prev) return prev;
       snapshot = structuredClone(prev);
-      return moveTaskInBoard(prev, taskId, targetColumnId, newPosition);
+      return moveTaskInBoard(prev, taskId, targetColumnId, newPosition) as BoardDetail;
     });
 
     api
@@ -243,7 +227,7 @@ export default function BoardPageClient() {
       description: data.description ?? "",
     };
 
-    setBoard((prev) => (prev ? addTaskToColumn(prev, tempTask) : prev));
+    setBoard((prev) => (prev ? addTaskToColumn(prev, tempTask) as BoardDetail : prev));
 
     try {
       const { task: created } = await api.post<{ task: Task }>("/api/v1/tasks", {
@@ -258,14 +242,13 @@ export default function BoardPageClient() {
         if (!prev) return prev;
         const withoutTemp = deleteTask(prev, tempTask.id);
         const col = withoutTemp.columns.find((c) => c.id === columnId);
-        // WS-событие могло уже добавить реальную задачу — тогда заменяем, иначе добавляем
         if (col?.tasks.some((t) => t.id === created.id)) {
-          return replaceTask(withoutTemp, created);
+          return replaceTask(withoutTemp, created) as BoardDetail;
         }
-        return addTaskToColumn(withoutTemp, created);
+        return addTaskToColumn(withoutTemp, created) as BoardDetail;
       });
     } catch (e) {
-      setBoard((prev) => (prev ? deleteTask(prev, tempTask.id) : prev));
+      setBoard((prev) => (prev ? deleteTask(prev, tempTask.id) as BoardDetail : prev));
       throw e;
     }
   }
@@ -285,12 +268,38 @@ export default function BoardPageClient() {
 
   return (
     <div className="min-h-full bg-[#050505]">
+      {/* Board header */}
+      <div
+        style={{
+          height: "52px",
+          display: "flex",
+          alignItems: "center",
+          padding: "0 24px",
+          background: "#080808",
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
+        }}
+      >
+        <BoardSwitcher
+          boardId={boardId}
+          boardName={board.name}
+          isFavorite={board.is_favorite}
+          workspaceId={workspaceId ?? ""}
+          onFavoriteChange={(isFav) =>
+            setBoard(prev => prev ? { ...prev, is_favorite: isFav } : prev)
+          }
+        />
+      </div>
+
       <KanbanBoard
         board={board}
         onTaskMove={handleTaskMove}
         onTaskCreate={handleTaskCreate}
         onCardClick={handleCardClick}
       />
+
       {selectedTask && workspaceId && (
         <TaskModal
           task={selectedTask}
@@ -300,6 +309,7 @@ export default function BoardPageClient() {
           onClose={handleCloseModal}
         />
       )}
+
       {toast && (
         <div
           className="fixed bottom-4 left-1/2 -translate-x-1/2 text-sm px-4 py-2 rounded-lg z-50"
@@ -321,4 +331,3 @@ export default function BoardPageClient() {
     </div>
   );
 }
-
