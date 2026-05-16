@@ -90,7 +90,6 @@ export default function BoardPageClient() {
   }, [authLoading, isAuthenticated, workspaceId, loadBoard, router]);
 
   const handleTaskCreated = useCallback((params: Record<string, unknown>) => {
-    // ISSUE-004: fail-fast валидация вместо небезопасного as-cast
     const task = parseBoardTask(params);
     setBoard((prev) => {
       if (!prev) return prev;
@@ -101,17 +100,26 @@ export default function BoardPageClient() {
   }, []);
 
   const handleTaskUpdated = useCallback((params: Record<string, unknown>) => {
-    // ISSUE-004: fail-fast валидация вместо небезопасного as-cast
-    const task = parseBoardTask(params);
-    setBoard((prev) => (prev ? replaceTask(prev, task) : prev));
+    const taskId = params["task_id"];
+    const changes = params["payload"];
+    if (typeof taskId !== "string" || typeof changes !== "object" || changes === null) return;
+    setBoard((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        columns: prev.columns.map((col) => ({
+          ...col,
+          tasks: col.tasks.map((t) => t.id === taskId ? { ...t, ...(changes as Partial<Task>) } : t),
+        })),
+      };
+    });
   }, []);
 
   const handleTaskMoved = useCallback((params: Record<string, unknown>) => {
-    // ISSUE-004: fail-fast валидация вместо небезопасных as-cast
-    const { task, column_id: columnId, position } = parseMoveParams(params);
+    const { taskId, column_id: columnId, position } = parseMoveParams(params);
     setBoard((prev) => {
       if (!prev) return prev;
-      return moveTaskInBoard(prev, task.id, columnId, position);
+      return moveTaskInBoard(prev, taskId, columnId, position);
     });
   }, []);
 
@@ -160,7 +168,7 @@ export default function BoardPageClient() {
     });
 
     try {
-      const saved = await api.patch<Task>(`/api/v1/tasks/${updatedTask.id}`, {
+      const { task: saved } = await api.patch<{ task: Task }>(`/api/v1/tasks/${updatedTask.id}`, {
         title: updatedTask.title,
         description: updatedTask.description,
         priority: updatedTask.priority,
@@ -239,7 +247,7 @@ export default function BoardPageClient() {
     setBoard((prev) => (prev ? addTaskToColumn(prev, tempTask) : prev));
 
     try {
-      const created = await api.post<Task>("/api/v1/tasks", {
+      const { task: created } = await api.post<{ task: Task }>("/api/v1/tasks", {
         title: data.title,
         column_id: columnId,
         workspace_id: workspaceId,

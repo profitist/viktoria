@@ -187,16 +187,16 @@ export function parseEventLogEntry(params: Record<string, unknown>): EventLogEnt
   return { event_id, event_type, status, detail, ts };
 }
 
-// ISSUE-004: Fail-fast парсер board task из WS-payload.
-// Throw если обязательные поля отсутствуют или имеют неверный тип.
+// Fail-fast парсер board.task_created WS-payload.
+// enriched_event: { task_id, payload: { id, title, column_id, ... }, ... }
 export function parseBoardTask(params: Record<string, unknown>): Task {
-  const task = params["task"];
+  const payload = params["payload"];
 
-  if (typeof task !== "object" || task === null) {
+  if (typeof payload !== "object" || payload === null) {
     throw new Error(`Invalid board task payload: ${JSON.stringify(params)}`);
   }
 
-  const t = task as Record<string, unknown>;
+  const t = payload as Record<string, unknown>;
 
   if (
     typeof t["id"] !== "string" ||
@@ -212,27 +212,31 @@ export function parseBoardTask(params: Record<string, unknown>): Task {
     throw new Error(`Invalid board task payload: ${JSON.stringify(params)}`);
   }
 
-  return task as Task;
+  return payload as Task;
 }
 
-// ISSUE-004: Fail-fast парсер board.task_moved payload.
-// Throw если обязательные поля отсутствуют или имеют неверный тип.
+// Fail-fast парсер board.task_moved WS-payload.
+// enriched_event: { task_id, payload: { column_id, position, from_column_id } }
 export function parseMoveParams(
   params: Record<string, unknown>
-): { task: Task; column_id: string; position: number } {
-  const task = parseBoardTask(params);
+): { taskId: string; column_id: string; position: number } {
+  const taskId = params["task_id"];
+  const payload = params["payload"];
 
-  if (
-    typeof params["column_id"] !== "string" ||
-    typeof params["position"] !== "number"
-  ) {
+  if (typeof taskId !== "string" || typeof payload !== "object" || payload === null) {
+    throw new Error(`Invalid board.task_moved payload: ${JSON.stringify(params)}`);
+  }
+
+  const p = payload as Record<string, unknown>;
+
+  if (typeof p["column_id"] !== "string" || typeof p["position"] !== "number") {
     throw new Error(`Invalid board.task_moved payload: ${JSON.stringify(params)}`);
   }
 
   return {
-    task,
-    column_id: params["column_id"] as string,
-    position: params["position"] as number,
+    taskId,
+    column_id: p["column_id"] as string,
+    position: p["position"] as number,
   };
 }
 

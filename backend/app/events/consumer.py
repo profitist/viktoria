@@ -14,10 +14,25 @@ from sqlalchemy import select
 
 from app.events.publisher import EVENTS_EXCHANGE, get_channel
 from app.events.types import EventEnvelope, EventType
+from app.notifications.jsonrpc import (
+    EVENT_LOG_ENTRY,
+    TASK_CREATED,
+    TASK_DELETED,
+    TASK_MOVED,
+    TASK_UPDATED,
+    build,
+)
 
 logger = logging.getLogger(__name__)
 
 TASK_EVENTS_QUEUE = "task_events"
+
+_EVENT_TYPE_TO_METHOD: dict[str, str] = {
+    "task.created": TASK_CREATED,
+    "task.updated": TASK_UPDATED,
+    "task.moved": TASK_MOVED,
+    "task.deleted": TASK_DELETED,
+}
 
 _consumer_app: FastAPI | None = None
 _processed_event_ids: set[UUID] = set()
@@ -107,14 +122,14 @@ async def fanout_event(enriched_event: dict[str, Any]) -> None:
         fanout_calls.append(_maybe_await(automation_engine.process(enriched_event)))
 
     if notification_hub is not None:
-        fanout_calls.append(
-            _maybe_await(
-                notification_hub.broadcast(
-                    enriched_event["workspace_id"],
-                    enriched_event,
-                )
-            )
-        )
+        event_type = enriched_event.get("event_type", "")
+        method = _EVENT_TYPE_TO_METHOD.get(event_type, EVENT_LOG_ENTRY)
+        ws_message = build(method, enriched_event)
+        log_message = build(EVENT_LOG_ENTRY, enriched_event)
+        workspace_id = enriched_event["workspace_id"]
+        fanout_calls.append(_maybe_await(notification_hub.broadcast(workspace_id, ws_message)))
+        if method != EVENT_LOG_ENTRY:
+            fanout_calls.append(_maybe_await(notification_hub.broadcast(workspace_id, log_message)))
 
     if audit_recorder is not None:
         fanout_calls.append(_maybe_await(audit_recorder.record(enriched_event)))
