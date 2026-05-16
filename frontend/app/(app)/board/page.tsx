@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/app/providers";
 import { api, ApiError, boardsApi } from "@/lib/api";
 import BoardSkeleton from "@/components/board/BoardSkeleton";
@@ -9,8 +9,10 @@ import ErrorBanner from "@/components/board/ErrorBanner";
 
 export default function BoardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const requestedWorkspaceId = searchParams.get("workspace_id");
 
   useEffect(() => {
     if (authLoading) return;
@@ -21,6 +23,8 @@ export default function BoardPage() {
     }
 
     async function resolveBoard() {
+      setError(null);
+
       try {
         const workspaces = await api.get<{ id: string }[]>("/api/v1/workspaces/me");
 
@@ -29,7 +33,9 @@ export default function BoardPage() {
           return;
         }
 
-        const workspaceId = workspaces[0].id;
+        const workspaceId =
+          workspaces.find((workspace) => workspace.id === requestedWorkspaceId)?.id ??
+          workspaces[0].id;
         const boards = await boardsApi.list(workspaceId);
 
         if (!boards.length) {
@@ -51,7 +57,7 @@ export default function BoardPage() {
     }
 
     resolveBoard();
-  }, [authLoading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, requestedWorkspaceId, router]);
 
   if (error) return <ErrorBanner message={error} />;
 
