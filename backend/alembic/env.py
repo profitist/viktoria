@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -14,6 +15,12 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
+
+# Подставляем DATABASE_URL из env, заменяя asyncpg-драйвер на psycopg2 для alembic
+_db_url = os.environ.get("DATABASE_URL")
+if _db_url:
+    _db_url = _db_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+    config.set_main_option("sqlalchemy.url", _db_url)
 
 
 def run_migrations_offline() -> None:

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/providers";
-import { ApiError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 
 export default function LoginPage() {
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -29,7 +29,12 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await login(email, password);
-      router.push("/board");
+      const workspaces = await api.get<{ id: string }[]>("/api/v1/workspaces/me");
+      if (workspaces.length > 0) {
+        router.push(`/board?workspace_id=${workspaces[0].id}`);
+      } else {
+        router.push("/board");
+      }
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError("Неверный email или пароль");

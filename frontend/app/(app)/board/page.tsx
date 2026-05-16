@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers";
 import { api, ApiError } from "@/lib/api";
@@ -17,7 +17,7 @@ import KanbanBoard from "@/components/board/KanbanBoard";
 import BoardSkeleton from "@/components/board/BoardSkeleton";
 import ErrorBanner from "@/components/board/ErrorBanner";
 
-export default function BoardPage() {
+function BoardPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -198,5 +198,13 @@ export default function BoardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function BoardPage() {
+  return (
+    <Suspense fallback={<BoardSkeleton />}>
+      <BoardPageContent />
+    </Suspense>
   );
 }

@@ -73,10 +73,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   // ---------------------------------------------------------------------------
   const logout = useCallback(() => {
     // Fire-and-forget: прямой fetch чтобы не триггерить логику refresh в apiFetch
-    fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/auth/logout`,
-      { method: "POST" }
-    ).catch(() => {});
+    fetch("/api/v1/auth/logout", { method: "POST" }).catch(() => {});
 
     setAccessToken(null);
     sessionStorage.removeItem("refresh_token");
@@ -96,14 +93,11 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/auth/refresh`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      }
-    );
+    const res = await fetch("/api/v1/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
 
     if (!res.ok) {
       logout();
