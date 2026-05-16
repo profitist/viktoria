@@ -21,6 +21,7 @@ MODULE_NAMES = (
     "automation",
     "notifications",
     "audit",
+    "project",
 )
 
 

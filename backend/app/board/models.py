@@ -25,6 +25,7 @@ class Project(TimestampMixin, Base):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
 
+    workspace = relationship("Workspace", back_populates="projects")
     boards = relationship("Board", back_populates="project")
 
 
