@@ -20,7 +20,7 @@ import ErrorBanner from "@/components/board/ErrorBanner";
 function BoardPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const workspaceId = searchParams.get("workspace_id");
 
@@ -57,12 +57,34 @@ function BoardPageContent() {
   }, [workspaceId]);
 
   useEffect(() => {
-    if (!workspaceId) {
+    if (authLoading) return;
+
+    if (!isAuthenticated) {
       router.replace("/login");
       return;
     }
-    loadBoard();
-  }, [workspaceId, loadBoard, router]);
+
+    if (workspaceId) {
+      loadBoard();
+      return;
+    }
+
+    // Авторизован, но workspace_id в URL нет — резолвим первый доступный
+    api
+      .get<{ id: string }[]>("/api/v1/workspaces/me")
+      .then((ws) => {
+        if (ws.length > 0) {
+          router.replace(`/board?workspace_id=${ws[0].id}`);
+        } else {
+          setError("Нет доступных рабочих пространств");
+          setIsLoading(false);
+        }
+      })
+      .catch(() => {
+        setError("Не удалось загрузить рабочие пространства");
+        setIsLoading(false);
+      });
+  }, [authLoading, isAuthenticated, workspaceId, loadBoard, router]);
 
   const handleTaskCreated = useCallback((params: Record<string, unknown>) => {
     // ISSUE-004: fail-fast валидация вместо небезопасного as-cast
