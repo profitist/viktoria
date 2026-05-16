@@ -1,3 +1,15 @@
+## FEAT-0009 — Инфраструктура: comment+attachment миграция + MinIO — 2026-05-17
+
+Статус: DONE (CTO approved, без issues)
+
+**Создано 3 файла, изменён 1.**
+
+- Создан `backend/alembic/versions/20260517_000005_comments_attachments.py` — ручная миграция (без autogenerate), revision `20260517_000005`, down_revision `20260517_000004`; таблицы `comment` (id/task_id/author_id/body/mentions jsonb/created_at) и `attachment` (id/task_id/filename/content_type/size/storage_key/uploaded_by/created_at); FK → tasks.id с ON DELETE CASCADE; FK → users.id без cascade; индексы на task_id для обеих таблиц; downgrade: DROP attachment → DROP comment
+- Изменён `docker-compose.yml` — добавлен сервис `minio` (image minio/minio, command server /data --console-address :9001, порты 9000/9001, volume minio_data, healthcheck mc ready local); backend.depends_on добавлен `minio: condition: service_healthy`; backend.environment добавлены S3_ENDPOINT/S3_ACCESS_KEY/S3_SECRET_KEY/S3_BUCKET/ATTACHMENT_MAX_SIZE/ATTACHMENT_URL_TTL с дефолтами; volume minio_data добавлен
+- Создан `.env.example` — полный шаблон ENV без реальных секретов; секция MinIO/S3 с 6 переменными (S3_ENDPOINT=http://minio:9000, S3_ACCESS_KEY=minioadmin, S3_SECRET_KEY=minioadmin, S3_BUCKET=victory-attachments, ATTACHMENT_MAX_SIZE=10485760, ATTACHMENT_URL_TTL=3600)
+
+**Архитектура:** Миграция-first подход: T-046/T-047 (authors ORM-моделей) могут сверять имена колонок. ON DELETE CASCADE на task_id обеспечивает автоочистку данных при удалении задачи. StorageService (T-050) создаёт bucket при инициализации — в этой задаче не реализован.
+
 ## FEAT-0007 — Admin Page (ColumnEditor + AutomationRules) — 2026-05-16
 
 Статус: DONE (`npm run build` — чисто, `/admin` в роутах; `npx tsc --noEmit` — 0 ошибок)

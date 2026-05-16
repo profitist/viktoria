@@ -59,7 +59,64 @@ async def endpoint(user: User = Depends(get_current_user)): ...
 |------------|-----------------|------------|
 | `DATABASE_URL` | `database.py` | `postgresql+asyncpg://user:pass@host/db` |
 | `JWT_SECRET` | `auth/deps.py` | Минимум 32 символа, HS256 |
-| `RABBITMQ_URL` | consumer (не реализован) | `amqp://guest:guest@rabbitmq:5672/` |
+| `RABBITMQ_URL` | consumer | `amqp://guest:guest@rabbitmq:5672/` |
+| `S3_ENDPOINT` | `attachments/storage.py` (T-050) | `http://minio:9000` в compose |
+| `S3_ACCESS_KEY` | `attachments/storage.py` (T-050) | `minioadmin` по умолчанию |
+| `S3_SECRET_KEY` | `attachments/storage.py` (T-050) | `minioadmin` по умолчанию |
+| `S3_BUCKET` | `attachments/storage.py` (T-050) | `victory-attachments` |
+| `ATTACHMENT_MAX_SIZE` | `attachments/router.py` (T-047) | байты, default 10485760 (10MB) |
+| `ATTACHMENT_URL_TTL` | `attachments/storage.py` (T-050) | секунды, default 3600 |
+
+### Миграции Alembic
+
+**Конвенция именования** (строго):
+- `op.f("pk_{table}")` — PK constraint
+- `op.f("fk_{table}_{col}_{ref_table}")` — FK constraint
+- `op.f("ix_{table}_{col}")` — индекс
+- `op.f("uq_{table}_{col1}_{col2}")` — unique constraint
+
+**Цепочка миграций:**
+```
+20260515_000001 (initial_schema)
+  → 20260516_000002 (processed_events)
+  → 20260516_000003 (multiboard)
+  → 20260517_000004 (tags_subtasks)
+  → 20260517_000005 (comments_attachments)  ← текущий HEAD
+```
+
+**Паттерн FK с CASCADE** (для comment/attachment → tasks):
+```python
+sa.ForeignKeyConstraint(["task_id"], ["tasks.id"],
+    name=op.f("fk_{table}_task_id_tasks"), ondelete="CASCADE")
+```
+
+**Паттерн JSONB с default:**
+```python
+sa.Column("mentions", postgresql.JSONB(astext_type=sa.Text()),
+    server_default=sa.text("'[]'::jsonb"), nullable=False)
+```
+
+### Таблицы comment и attachment (FEAT-0009)
+
+```
+comment: id(uuid PK) task_id(uuid FK→tasks CASCADE) author_id(uuid FK→users)
+         body(text NOT NULL) mentions(jsonb default '[]') created_at(timestamptz)
+         INDEX: ix_comment_task_id
+
+attachment: id(uuid PK) task_id(uuid FK→tasks CASCADE) filename(text) content_type(text)
+            size(int) storage_key(text NOT NULL) uploaded_by(uuid FK→users) created_at(timestamptz)
+            INDEX: ix_attachment_task_id
+```
+
+ON DELETE CASCADE: удаление task автоматически чистит comment + attachment.  
+StorageService (T-050): storage_key format = `{task_id}/{uuid}_{filename}`.
+
+### MinIO в docker-compose
+
+Сервис `victory-minio`: порт 9000 (S3 API), 9001 (веб-консоль).  
+Healthcheck: `mc ready local`.  
+`backend` depends_on minio с `condition: service_healthy`.  
+Volume: `minio_data` (персистентный).
 
 ---
 
