@@ -1,6 +1,24 @@
 # Kanban
 
-## Iteration I-02 (active) — Цель: рабочая канбан-доска end-to-end
+## Iteration I-03 (active) — Цель: трекер задач — полное управление задачами
+
+**DoD:**
+- `GET /api/v1/workspaces/{id}/members` → список участников (для выбора assignee)
+- Кнопка «+ Добавить задачу» → форма с title, description, priority, deadline → задача создаётся в колонке
+- Клик на карточку → модальное окно: полные поля, кнопки Edit / Delete
+- Редактирование → PATCH → оптимистичный update; остальные клиенты получают WS board.task_updated
+- Удаление → DELETE → оптимистичное удаление из доски
+- Sidebar: имя workspace, имя пользователя, кнопка Logout
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-015 | Backend: GET /workspaces/{id}/members | workspace | — | todo | #32 | `backend/app/workspace/service.py`, `backend/app/workspace/router.py` |
+| T-016 | TaskModal: просмотр + редактирование + удаление | frontend | — | todo | #33 | `frontend/components/board/TaskModal.tsx` |
+| T-017 | Board: TaskCard click + modal wiring + delete handler | frontend | — | todo | #34 | `frontend/components/board/TaskCard.tsx`, `frontend/app/(app)/board/page.tsx` |
+| T-018 | AddTaskForm: полные поля + обновить create callback | frontend | — | todo | #35 | `frontend/components/board/AddTaskForm.tsx`, `frontend/app/(app)/board/page.tsx` |
+| T-019 | Sidebar: workspace name, user info, logout | frontend | — | todo | #36 | `frontend/components/sidebar/Sidebar.tsx` |
+
+## Iteration I-02 (closed, tag: iter-02-stable) — Цель: рабочая канбан-доска end-to-end
 
 **DoD:**
 - `POST /api/v1/workspaces` → `{workspace: {id, name, slug, role: "owner"}}`
