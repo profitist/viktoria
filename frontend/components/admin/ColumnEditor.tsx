@@ -125,7 +125,7 @@ export default function ColumnEditor({ workspaceId }: ColumnEditorProps) {
         style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}
       >
         <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.45)" }}>
-          Columns
+          Колонки
         </p>
         {[1, 2, 3].map((i) => (
           <div
@@ -162,7 +162,7 @@ export default function ColumnEditor({ workspaceId }: ColumnEditorProps) {
       style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}
     >
       <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.45)" }}>
-        Columns
+        Колонки
       </p>
 
       <div className="space-y-1 mb-4">
@@ -242,7 +242,7 @@ export default function ColumnEditor({ workspaceId }: ColumnEditorProps) {
                 onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.45)"; }}
               >
-                Rename
+                Переименовать
               </button>
               <button
                 onClick={() => { setDeletingId(col.id); setOpError(null); }}
@@ -252,7 +252,7 @@ export default function ColumnEditor({ workspaceId }: ColumnEditorProps) {
                 onMouseEnter={(e) => { e.currentTarget.style.color = "rgb(239,68,68)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(239,68,68,0.8)"; }}
               >
-                Delete
+                Удалить
               </button>
             </div>
           );
