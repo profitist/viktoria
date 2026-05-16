@@ -1,15 +1,67 @@
 from __future__ import annotations
 
+from copy import deepcopy
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.notifications.models import Notification
+from app.workspace.models import WorkspaceMember
 
 
 class NotificationNotFound(Exception):
     """Уведомление не найдено или не принадлежит пользователю."""
+
+
+async def create_notification(
+    session: AsyncSession,
+    user_id: UUID,
+    workspace_id: UUID,
+    message: str,
+    event_type: str,
+    data: dict[str, Any] | None = None,
+) -> Notification:
+    notification_data = deepcopy(data) if data is not None else {}
+    notification = Notification(
+        user_id=user_id,
+        workspace_id=workspace_id,
+        message=message,
+        type=event_type,
+        data=notification_data,
+    )
+    session.add(notification)
+    await session.flush()
+    return notification
+
+
+async def create_notifications_for_workspace(
+    session: AsyncSession,
+    workspace_id: UUID,
+    message: str,
+    event_type: str,
+    data: dict[str, Any] | None = None,
+) -> list[Notification]:
+    result = await session.execute(
+        select(WorkspaceMember.user_id).where(WorkspaceMember.workspace_id == workspace_id)
+    )
+    user_ids = result.scalars().all()
+
+    notifications = [
+        Notification(
+            user_id=user_id,
+            workspace_id=workspace_id,
+            message=message,
+            type=event_type,
+            data=deepcopy(data) if data is not None else {},
+        )
+        for user_id in user_ids
+    ]
+    session.add_all(notifications)
+    if notifications:
+        await session.flush()
+    return notifications
 
 
 async def get_notifications(
