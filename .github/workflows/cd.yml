@@ -22,7 +22,9 @@ jobs:
           username: ${{ secrets.GHCR_USERNAME }}
           password: ${{ secrets.GHCR_PAT }}
           logout: true
-
+      - run: docker info
+      - run: docker system info
+      - run: echo $GHCR_USERNAME
       - name: Build & push frontend
         uses: docker/build-push-action@v7
         with:
