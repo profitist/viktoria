@@ -8,6 +8,10 @@ import { useAuth } from "@/app/providers";
 import { api } from "@/lib/api";
 import type { Workspace } from "@/lib/types";
 
+import { useAuth } from "@/app/providers";
+import { api } from "@/lib/api";
+import type { Workspace } from "@/lib/types";
+
 interface NavItemProps {
   href: string;
   label: string;
@@ -56,9 +60,7 @@ function getInitial(value: string, fallback: string): string {
 }
 
 export default function Sidebar({ workspaceId, workspaceName, userName }: SidebarProps) {
-  const searchParams = useSearchParams();
-  const workspaceIdFromUrl = searchParams.get("workspace_id");
-  const effectiveWorkspaceId = workspaceId ?? workspaceIdFromUrl;
+  const effectiveWorkspaceId = workspaceId;
   const { user, logout } = useAuth();
   const [resolvedWorkspaceName, setResolvedWorkspaceName] = useState<string | null>(null);
 
