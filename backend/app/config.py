@@ -4,7 +4,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import AliasChoices, Field, field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -20,9 +20,9 @@ class Settings(BaseSettings):
 
     app_name: str = "Victory Kanban Backend"
     api_v1_prefix: str = "/api/v1"
-    cors_origins: list[str] = Field(
-        default_factory=lambda: ["http://localhost:3000"],
-        validation_alias=AliasChoices("CORS_ORIGINS", "BACKEND_CORS_ORIGINS"),
+    cors_origins: str = Field(
+        default="http://localhost:3000",
+        alias="CORS_ORIGINS",
     )
 
     database_url: str = Field(alias="DATABASE_URL")
@@ -38,14 +38,18 @@ class Settings(BaseSettings):
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, value: object) -> object:
-        if isinstance(value, str):
-            raw_value = value.strip()
-            if not raw_value:
-                return []
-            if raw_value.startswith("["):
-                return json.loads(raw_value)
-            return [item.strip() for item in raw_value.split(",") if item.strip()]
-        return value
+        if not isinstance(value, str):
+            return value
+        raw = value.strip()
+        if not raw:
+            return "http://localhost:3000"
+        return raw
+
+    def get_cors_origins(self) -> list[str]:
+        raw = self.cors_origins.strip()
+        if raw.startswith("["):
+            return json.loads(raw)
+        return [item.strip() for item in raw.split(",") if item.strip()]
 
     @field_validator("jwt_secret", mode="after")
     @classmethod
