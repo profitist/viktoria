@@ -3,17 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-import { useAuth } from "@/app/providers";
-import { api } from "@/lib/api";
-import type { Workspace } from "@/lib/types";
-import WorkspaceSwitcher from "@/components/workspace/WorkspaceSwitcher";
 import { usePathname, useRouter } from "next/navigation";
 
 import { useAuth } from "@/app/providers";
 import { api, boardsApi } from "@/lib/api";
 import type { BoardMeta, Workspace } from "@/lib/types";
+import WorkspaceSwitcher from "@/components/workspace/WorkspaceSwitcher";
 
 interface BoardCreateResponse {
   board: {
@@ -167,17 +162,17 @@ function NavItem({ href, label }: NavItemProps) {
 
 interface SidebarProps {
   workspaceId?: string;
+  workspaceName?: string;
   userName?: string;
+}
+
+function getActiveBoardId(pathname: string): string | null {
+  const match = pathname.match(/^\/board\/([^/]+)/);
+  return match?.[1] ?? null;
 }
 
 function getInitial(value: string, fallback: string): string {
   return value.trim().charAt(0).toUpperCase() || fallback;
-}
-
-export default function Sidebar({ workspaceId, userName }: SidebarProps) {
-function getActiveBoardId(pathname: string): string | null {
-  const match = pathname.match(/^\/board\/([^/]+)/);
-  return match?.[1] ?? null;
 }
 
 export default function Sidebar({ workspaceId, workspaceName, userName }: SidebarProps) {
@@ -185,16 +180,11 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+
   const [workspaceRole, setWorkspaceRole] = useState<{
     workspaceId: string;
     isOwner: boolean;
   } | null>(null);
-
-  useEffect(() => {
-    if (!effectiveWorkspaceId) {
-      return;
-    }
-
   const [resolvedWorkspaceName, setResolvedWorkspaceName] = useState<string | null>(null);
   const [boards, setBoards] = useState<BoardMeta[]>([]);
   const [boardsLoading, setBoardsLoading] = useState(false);
@@ -208,11 +198,7 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
   useEffect(() => {
     if (!effectiveWorkspaceId) {
       setResolvedWorkspaceName(null);
-      return;
-    }
-
-    if (workspaceName) {
-      setResolvedWorkspaceName(null);
+      setWorkspaceRole(null);
       return;
     }
 
@@ -229,25 +215,23 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
           workspaceId: effectiveWorkspaceId,
           isOwner: currentWorkspace?.role === "owner",
         });
+        if (!workspaceName) {
+          setResolvedWorkspaceName(currentWorkspace?.name ?? null);
+        }
       })
       .catch(() => {
         if (!cancelled) {
-          setWorkspaceRole({
-            workspaceId: effectiveWorkspaceId,
-            isOwner: false,
-          });
-        setResolvedWorkspaceName(currentWorkspace?.name ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setResolvedWorkspaceName(null);
+          setWorkspaceRole({ workspaceId: effectiveWorkspaceId, isOwner: false });
+          if (!workspaceName) {
+            setResolvedWorkspaceName(null);
+          }
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [effectiveWorkspaceId]);
+  }, [effectiveWorkspaceId, workspaceName]);
 
   const fetchBoards = useCallback(async () => {
     if (!effectiveWorkspaceId) {
@@ -436,6 +420,9 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
 
         <SidebarSection title="Tools">
           <NavItem href={`/ai-groom${workspaceQuery}`} label="AI Groom" />
+          {isOwner && (
+            <NavItem href={`/admin${workspaceQuery}`} label="Admin" />
+          )}
         </SidebarSection>
       </nav>
 
