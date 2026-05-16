@@ -54,6 +54,26 @@ class TaskMoveRequest(BaseModel):
     """Позиция среди задач целевой колонки, начиная с 0."""
 
 
+class SubtaskCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=500)
+    order: int = 0
+
+
+class SubtaskOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    title: str
+    is_done: bool
+    order: int
+
+
+class SubtaskUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=500)
+    is_done: bool | None = None
+    order: int | None = None
+
+
 class TaskOut(BaseModel):
     """Полное представление задачи. Возвращается во всех read-операциях и WebSocket-событиях."""
 
@@ -71,6 +91,9 @@ class TaskOut(BaseModel):
     created_at: datetime
     deadline: datetime | None
     deadline_urgency: DeadlineUrgency
+    subtasks: list[SubtaskOut] = Field(default_factory=list)
+    subtasks_total: int = 0
+    subtasks_done: int = 0
     """Вычисляется на backend, не хранится в БД. Используется фронтом для цветовой индикации карточки."""
 
 
