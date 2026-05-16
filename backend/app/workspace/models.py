@@ -44,6 +44,11 @@ class Workspace(TimestampMixin, Base):
         back_populates="workspace",
         cascade="all, delete-orphan",
     )
+    projects = relationship(
+        "Project",
+        back_populates="workspace",
+        cascade="all, delete-orphan",
+    )
     tasks = relationship("Task", back_populates="workspace")
     automation_rules = relationship(
         "AutomationRule",

@@ -24,6 +24,8 @@ class TaskCreate(BaseModel):
     description: str | None = None
     column_id: UUID
     """Колонка, в которую задача попадает при создании."""
+    board_id: UUID | None = None
+    """Доска задачи. В T-030 станет обязательной для дедупликации и фильтрации."""
     priority: TaskPriority = "medium"
     tags: list[str] = []
     """Свободные теги. Используются в условиях правил автоматизации."""
@@ -61,6 +63,7 @@ class TaskOut(BaseModel):
     title: str
     description: str | None
     column_id: UUID
+    board_id: UUID
     workspace_id: UUID
     priority: TaskPriority
     tags: list[str]
