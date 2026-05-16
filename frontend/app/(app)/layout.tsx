@@ -12,9 +12,9 @@ export default function AppLayout({
 }) {
   return (
     <WsProvider>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen overflow-hidden bg-[#050505]">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-[#050505]">
           {children}
         </main>
         <EventLogPanel />

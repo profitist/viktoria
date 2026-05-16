@@ -1,3 +1,30 @@
+## FEAT-0004 — Dark UI Redesign «Agency OS» — 2026-05-16
+
+Статус: APPROVED (CTO review passed, 0 open issues; 2 extra files fixed during CTO review)
+
+**Изменено 15 файлов — только визуальные правки, API и маршрутизация не тронуты.**
+
+- `frontend/app/globals.css` — удалены light theme vars, добавлен `@theme` с design tokens, dark body, кастомный scrollbar, `.dot-texture` utility
+- `frontend/app/layout.tsx` — Space Grotesk via `next/font/google`, тёмный body
+- `frontend/app/(auth)/layout.tsx` — `bg-[#050505]` + radial glow вместо `bg-gray-50`
+- `frontend/app/(auth)/login/page.tsx` — dark glass card (bg #0B0B0B, border rgba(255,255,255,0.08)), uppercase VIKTORIA header, dark inputs с focus border, blue CTA с glow hover
+- `frontend/app/(auth)/register/page.tsx` — аналогично login
+- `frontend/app/(app)/layout.tsx` — `bg-[#050505]` на root и main
+- `frontend/app/(app)/board/page.tsx` — `bg-[#050505]` вместо `bg-gray-100`; toast в dark стиле
+- `frontend/components/sidebar/Sidebar.tsx` — w-[220px], bg #0B0B0B, border rgba(.06), NavItem с active left-border #3B82F6
+- `frontend/components/board/KanbanBoard.tsx` — `gap-6 px-8 py-6 bg-[#050505] dot-texture`
+- `frontend/components/board/Column.tsx` — прозрачный контейнер, uppercase muted header, dark isOver, dotted empty state
+- `frontend/components/board/TaskCard.tsx` — bg #111111, rounded-[18px], urgency left-border accent, CSS hover elevation
+- `frontend/components/board/PriorityBadge.tsx` — dark low-saturation pills (rgba backgrounds)
+- `frontend/components/board/AddTaskForm.tsx` — dark surface rgba(255,255,255,0.04), dark input, blue button
+- `frontend/components/board/BoardSkeleton.tsx` — dark skeleton rgba(255,255,255,0.06), transparent columns
+- `frontend/components/board/ErrorBanner.tsx` — dark error banner rgba(239,68,68,0.08)
+- `frontend/components/board/DeadlineChip.tsx` — urgency colors: amber/rose вместо yellow/red
+- `frontend/components/event-log/EventLogPanel.tsx` — bg #0B0B0B, matching design system
+- `frontend/components/event-log/LogEntry.tsx` — dark inline colors вместо Tailwind gray
+
+**Решения:** Framer Motion не установлен → CSS transitions. Tailwind v4 → `@theme` в CSS. Inline styles для rgba значений вместо Tailwind arbitrary values.
+
 ## FEAT-0004 — Auth Pages (Login + Register) — 2026-05-16
 
 Статус: APPROVED (CTO review passed, 0 issues)

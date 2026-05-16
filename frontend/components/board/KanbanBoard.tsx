@@ -89,7 +89,7 @@ export default function KanbanBoard({ board, onTaskMove, onTaskCreate }: KanbanB
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="flex gap-4 px-6 py-4 overflow-x-auto min-h-screen items-start">
+      <div className="flex gap-6 px-8 py-6 overflow-x-auto min-h-screen items-start bg-[#050505] dot-texture">
         {board.columns.map((column) => (
           <Column
             key={column.id}

@@ -7,11 +7,7 @@ import type { EventLogEntry } from "@/lib/types";
 import LogEntry from "./LogEntry";
 
 const MAX_ENTRIES = 50;
-const SCROLL_THRESHOLD = 40; // px запас для определения "внизу"
-
-// =============================================================================
-// EventLogPanel
-// =============================================================================
+const SCROLL_THRESHOLD = 40;
 
 export default function EventLogPanel() {
   const { on, off } = useWs();
@@ -19,7 +15,7 @@ export default function EventLogPanel() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleEntry = useCallback((params: Record<string, unknown>) => {
-    const entry = parseEventLogEntry(params); // throw при невалидном payload
+    const entry = parseEventLogEntry(params);
     setEntries((prev) => {
       const next = [...prev, entry];
       return next.length > MAX_ENTRIES ? next.slice(next.length - MAX_ENTRIES) : next;
@@ -31,7 +27,6 @@ export default function EventLogPanel() {
     return () => off("event_log.entry", handleEntry);
   }, [on, off, handleEntry]);
 
-  // Автоскролл: только если пользователь уже внизу
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -42,11 +37,34 @@ export default function EventLogPanel() {
   }, [entries]);
 
   return (
-    <aside className="w-[300px] h-full bg-gray-900 border-l border-gray-700 flex flex-col flex-shrink-0 hidden min-[900px]:flex">
-      <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
-        <span className="text-white font-semibold text-sm">Event Log</span>
+    <aside
+      className="w-[300px] h-full flex flex-col flex-shrink-0 hidden min-[900px]:flex"
+      style={{
+        background: "#0B0B0B",
+        borderLeft: "1px solid rgba(255,255,255,0.06)",
+      }}
+    >
+      <div
+        className="px-4 py-3 flex items-center justify-between"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+      >
+        <span
+          className="text-xs font-semibold uppercase tracking-widest"
+          style={{ color: "rgba(255,255,255,0.45)" }}
+        >
+          Event Log
+        </span>
         <button
-          className="text-xs text-gray-500 hover:text-gray-200 px-2 py-1 rounded hover:bg-gray-700 transition-colors"
+          className="text-xs px-2 py-1 rounded transition-colors"
+          style={{ color: "rgba(255,255,255,0.25)" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "rgba(255,255,255,0.72)";
+            e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "rgba(255,255,255,0.25)";
+            e.currentTarget.style.background = "transparent";
+          }}
           onClick={() => setEntries([])}
         >
           Очистить
@@ -55,7 +73,10 @@ export default function EventLogPanel() {
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {entries.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-600 text-xs">
+          <div
+            className="flex items-center justify-center h-full text-xs"
+            style={{ color: "rgba(255,255,255,0.25)" }}
+          >
             Нет событий
           </div>
         ) : (
