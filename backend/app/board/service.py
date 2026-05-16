@@ -16,6 +16,8 @@ from app.board.schemas import (
     ColumnPatch,
     ColumnReorder,
 )
+from app.tasks.schemas import TaskOut
+from app.tasks.service import compute_deadline_urgency
 from app.workspace.models import WorkspaceMember, WorkspaceRole
 
 DEFAULT_COLUMNS = ("To Do", "In Progress", "Done")
@@ -203,7 +205,7 @@ async def _get_board_by_workspace(
 ) -> Board | None:
     return await session.scalar(
         select(Board)
-        .options(selectinload(Board.columns))
+        .options(selectinload(Board.columns).selectinload(Column.tasks))
         .where(Board.workspace_id == workspace_id)
     )
 
@@ -214,7 +216,7 @@ async def _get_board_or_404(
 ) -> Board:
     board = await session.scalar(
         select(Board)
-        .options(selectinload(Board.columns))
+        .options(selectinload(Board.columns).selectinload(Column.tasks))
         .where(Board.id == board_id)
     )
     if board is None:
@@ -254,7 +256,22 @@ def _build_board_out(board: Board) -> BoardOut:
                 name=column.name,
                 position=column.position,
                 color=column.color,
-                tasks=[],
+                tasks=[
+                    TaskOut(
+                        id=task.id,
+                        title=task.title,
+                        description=task.description,
+                        column_id=task.column_id,
+                        workspace_id=task.workspace_id,
+                        priority=task.priority.value,
+                        tags=list(task.tags),
+                        assignee_id=task.assignee_id,
+                        created_at=task.created_at,
+                        deadline=task.deadline,
+                        deadline_urgency=compute_deadline_urgency(task.deadline),
+                    )
+                    for task in sorted(column.tasks, key=lambda t: (t.created_at, t.id))
+                ],
             )
             for column in sorted(board.columns, key=lambda item: item.position)
         ],

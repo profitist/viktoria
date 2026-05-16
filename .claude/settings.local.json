@@ -12,7 +12,8 @@
       "Bash(docker compose build *)",
       "Bash(gh auth *)",
       "Bash(gh repo *)",
-      "Bash(gh issue *)"
+      "Bash(gh issue *)",
+      "Skill(kanban-sync)"
     ]
   }
 }

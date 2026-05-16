@@ -41,7 +41,7 @@ function BoardPageContent() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await api.get<Board>(`/api/v1/workspaces/${workspaceId}/board`);
+      const { board: data } = await api.get<{ board: Board }>(`/api/v1/workspaces/${workspaceId}/board`);
       setBoard(data);
     } catch (e) {
       if (e instanceof ApiError && (e.status === 403 || e.status === 404)) {
