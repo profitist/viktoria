@@ -15,8 +15,11 @@ class StorageService:
         access_key: str,
         secret_key: str,
         bucket: str,
+        public_endpoint: str | None = None,
     ) -> None:
         self._bucket = bucket
+        self._internal_endpoint = endpoint.rstrip("/")
+        self._public_endpoint = (public_endpoint or endpoint).rstrip("/")
         self._client = boto3.client(
             "s3",
             endpoint_url=endpoint,
@@ -40,11 +43,14 @@ class StorageService:
         )
 
     def _signed_url_sync(self, key: str, ttl: int) -> str:
-        return self._client.generate_presigned_url(
+        url: str = self._client.generate_presigned_url(
             "get_object",
             Params={"Bucket": self._bucket, "Key": key},
             ExpiresIn=ttl,
         )
+        if self._public_endpoint != self._internal_endpoint:
+            url = url.replace(self._internal_endpoint, self._public_endpoint, 1)
+        return url
 
     def _delete_sync(self, key: str) -> None:
         self._client.delete_object(Bucket=self._bucket, Key=key)
@@ -67,4 +73,5 @@ storage = StorageService(
     access_key=settings.s3_access_key,
     secret_key=settings.s3_secret_key,
     bucket=settings.s3_bucket,
+    public_endpoint=settings.s3_public_endpoint,
 )

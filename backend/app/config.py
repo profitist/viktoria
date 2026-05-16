@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     ai_model: str | None = Field(default=None, alias="AI_MODEL")
 
     s3_endpoint: str = Field(default="http://minio:9000", alias="S3_ENDPOINT")
+    s3_public_endpoint: str = Field(default="http://localhost:9000", alias="S3_PUBLIC_ENDPOINT")
     s3_access_key: str = Field(default="minioadmin", alias="S3_ACCESS_KEY")
     s3_secret_key: str = Field(default="minioadmin", alias="S3_SECRET_KEY")
     s3_bucket: str = Field(default="victory-attachments", alias="S3_BUCKET")
