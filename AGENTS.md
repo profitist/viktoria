@@ -111,6 +111,27 @@ attachment: id(uuid PK) task_id(uuid FK→tasks CASCADE) filename(text) content_
 ON DELETE CASCADE: удаление task автоматически чистит comment + attachment.  
 StorageService (T-050): storage_key format = `{task_id}/{uuid}_{filename}`.
 
+### ORM-модуль attachments (FEAT-0011)
+
+`backend/app/attachments/` — пакет с `__init__.py`, `models.py`, `schemas.py`.
+
+```python
+from app.attachments.models import Attachment
+# __tablename__ = "attachment"
+# storage_key: Mapped[str]  — Text NOT NULL, в API не отдаётся
+# НЕТ колонки url — вычисляется в T-050
+# uploaded_by: nullable UUID FK→users; uploader = relationship("User")
+
+from app.attachments.schemas import AttachmentResponse, AttachmentUploader
+# AttachmentUploader: id UUID, name str
+# AttachmentResponse: id, task_id, filename|None, content_type|None,
+#                     size|None, url: str, uploaded_by: AttachmentUploader|None, created_at
+# url — обычное поле str; T-050 собирает: model_validate({**obj.__dict__, "url": signed_url})
+# storage_key НЕ в схеме (не утекает в API)
+```
+
+**Паттерн T-050:** `StorageService.presign(storage_key)` → signed URL → `AttachmentResponse`.
+
 ### ORM-модуль comments (FEAT-0010)
 
 `backend/app/comments/` — пакет с `__init__.py`, `models.py`, `schemas.py`.
