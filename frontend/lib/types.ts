@@ -254,6 +254,36 @@ export function parseMoveParams(
   };
 }
 
+export interface CommentAuthor {
+  id: string;
+  name: string;
+}
+
+export interface Comment {
+  id: string;
+  task_id: string;
+  author: CommentAuthor;
+  body: string;
+  mentions: string[];
+  created_at: string;
+}
+
+export interface AttachmentUploader {
+  id: string;
+  name: string;
+}
+
+export interface Attachment {
+  id: string;
+  task_id: string;
+  filename: string | null;
+  content_type: string | null;
+  size: number | null;
+  url: string;
+  uploaded_by: AttachmentUploader | null;
+  created_at: string;
+}
+
 export interface GroomQuestion {
   id: string;
   text: string;

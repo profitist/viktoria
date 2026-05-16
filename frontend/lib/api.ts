@@ -1,4 +1,4 @@
-import type { BoardMeta, BoardDetail, Project, WorkspaceMember, WorkspaceSettings, Tag, Subtask } from "./types";
+import type { BoardMeta, BoardDetail, Project, WorkspaceMember, WorkspaceSettings, Tag, Subtask, Comment, Attachment } from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -297,4 +297,34 @@ export const subtasksApi = {
 
   deleteSubtask: (taskId: string, subtaskId: string): Promise<void> =>
     api.delete(`/api/v1/tasks/${taskId}/subtasks/${subtaskId}`),
+};
+
+export const commentsApi = {
+  getComments: (taskId: string): Promise<Comment[]> =>
+    api.get<Comment[]>(`/api/v1/tasks/${taskId}/comments`),
+
+  createComment: (taskId: string, body: string): Promise<Comment> =>
+    api.post<Comment>(`/api/v1/tasks/${taskId}/comments`, { body }),
+
+  deleteComment: (commentId: string): Promise<void> =>
+    api.delete(`/api/v1/comments/${commentId}`),
+};
+
+export const attachmentsApi = {
+  getAttachments: (taskId: string): Promise<Attachment[]> =>
+    api.get<Attachment[]>(`/api/v1/tasks/${taskId}/attachments`),
+
+  uploadAttachment: async (taskId: string, file: File): Promise<Attachment> => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await apiFetch(`/api/v1/tasks/${taskId}/attachments`, {
+      method: "POST",
+      body: form,
+    });
+    if (!res.ok) return handleError(res);
+    return res.json() as Promise<Attachment>;
+  },
+
+  deleteAttachment: (attachmentId: string): Promise<void> =>
+    api.delete(`/api/v1/attachments/${attachmentId}`),
 };
