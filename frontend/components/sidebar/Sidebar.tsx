@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -8,6 +9,124 @@ import { useAuth } from "@/app/providers";
 import { api } from "@/lib/api";
 import type { Workspace } from "@/lib/types";
 import WorkspaceSwitcher from "@/components/workspace/WorkspaceSwitcher";
+import { usePathname, useRouter } from "next/navigation";
+
+import { useAuth } from "@/app/providers";
+import { api, boardsApi } from "@/lib/api";
+import type { BoardMeta, Workspace } from "@/lib/types";
+
+interface BoardCreateResponse {
+  board: {
+    id: string;
+    name: string;
+    description: string | null;
+    project_id: string | null;
+  };
+}
+
+interface BoardRowProps {
+  board: BoardMeta;
+  isActive: boolean;
+  isFavoriteLoading: boolean;
+  onSelect: (boardId: string) => void;
+  onToggleFavorite: (boardId: string) => void;
+}
+
+function StarIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path
+        d="M7 1L8.763 5.27L13.364 5.618L9.927 8.595L11.09 13.073L7 10.6L2.91 13.073L4.073 8.595L0.636 5.618L5.237 5.27L7 1Z"
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function BoardRow({
+  board,
+  isActive,
+  isFavoriteLoading,
+  onSelect,
+  onToggleFavorite,
+}: BoardRowProps) {
+  return (
+    <div className="flex items-center gap-1 rounded-md">
+      <button
+        type="button"
+        onClick={() => onSelect(board.id)}
+        className="min-w-0 flex-1 flex items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors"
+        style={{
+          background: isActive ? "rgba(59,130,246,0.12)" : "transparent",
+          color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.68)",
+          borderLeft: isActive ? "2px solid #3B82F6" : "2px solid transparent",
+        }}
+        onMouseEnter={(e) => {
+          if (!isActive) {
+            e.currentTarget.style.background = "#161616";
+            e.currentTarget.style.color = "rgba(255,255,255,0.82)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isActive) {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "rgba(255,255,255,0.68)";
+          }
+        }}
+      >
+        <span
+          className="h-1.5 w-1.5 rounded-full flex-shrink-0"
+          style={{ background: isActive ? "#3B82F6" : "rgba(255,255,255,0.22)" }}
+        />
+        <span className="truncate text-sm font-medium">{board.name}</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onToggleFavorite(board.id)}
+        disabled={isFavoriteLoading}
+        title={board.is_favorite ? "Убрать из избранного" : "В избранное"}
+        aria-label={board.is_favorite ? "Убрать из избранного" : "В избранное"}
+        className="h-8 w-8 flex-shrink-0 rounded-md flex items-center justify-center transition-colors disabled:cursor-wait"
+        style={{
+          color: board.is_favorite ? "#F59E0B" : "rgba(255,255,255,0.28)",
+          background: "transparent",
+          opacity: isFavoriteLoading ? 0.5 : 1,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "transparent";
+        }}
+      >
+        <StarIcon filled={board.is_favorite} />
+      </button>
+    </div>
+  );
+}
+
+interface SectionProps {
+  title: string;
+  children: ReactNode;
+}
+
+function SidebarSection({ title, children }: SectionProps) {
+  return (
+    <section className="space-y-2">
+      <div
+        className="px-2 text-[10px] uppercase tracking-[0.18em]"
+        style={{ color: "rgba(255,255,255,0.34)" }}
+      >
+        {title}
+      </div>
+      <div className="space-y-1">{children}</div>
+    </section>
+  );
+}
 
 interface NavItemProps {
   href: string;
@@ -56,7 +175,15 @@ function getInitial(value: string, fallback: string): string {
 }
 
 export default function Sidebar({ workspaceId, userName }: SidebarProps) {
+function getActiveBoardId(pathname: string): string | null {
+  const match = pathname.match(/^\/board\/([^/]+)/);
+  return match?.[1] ?? null;
+}
+
+export default function Sidebar({ workspaceId, workspaceName, userName }: SidebarProps) {
   const effectiveWorkspaceId = workspaceId;
+  const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const [workspaceRole, setWorkspaceRole] = useState<{
     workspaceId: string;
@@ -65,6 +192,27 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
 
   useEffect(() => {
     if (!effectiveWorkspaceId) {
+      return;
+    }
+
+  const [resolvedWorkspaceName, setResolvedWorkspaceName] = useState<string | null>(null);
+  const [boards, setBoards] = useState<BoardMeta[]>([]);
+  const [boardsLoading, setBoardsLoading] = useState(false);
+  const [boardsError, setBoardsError] = useState<string | null>(null);
+  const [favoriteLoadingId, setFavoriteLoadingId] = useState<string | null>(null);
+  const [creatingBoard, setCreatingBoard] = useState(false);
+  const [createBoardError, setCreateBoardError] = useState<string | null>(null);
+
+  const activeBoardId = useMemo(() => getActiveBoardId(pathname), [pathname]);
+
+  useEffect(() => {
+    if (!effectiveWorkspaceId) {
+      setResolvedWorkspaceName(null);
+      return;
+    }
+
+    if (workspaceName) {
+      setResolvedWorkspaceName(null);
       return;
     }
 
@@ -88,6 +236,11 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
             workspaceId: effectiveWorkspaceId,
             isOwner: false,
           });
+        setResolvedWorkspaceName(currentWorkspace?.name ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setResolvedWorkspaceName(null);
         }
       });
 
@@ -96,6 +249,97 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
     };
   }, [effectiveWorkspaceId]);
 
+  const fetchBoards = useCallback(async () => {
+    if (!effectiveWorkspaceId) {
+      setBoards([]);
+      setBoardsError(null);
+      return;
+    }
+
+    setBoardsLoading(true);
+    setBoardsError(null);
+    setCreateBoardError(null);
+    try {
+      const data = await boardsApi.list(effectiveWorkspaceId);
+      setBoards(data);
+    } catch {
+      setBoardsError("Не удалось загрузить доски");
+    } finally {
+      setBoardsLoading(false);
+    }
+  }, [effectiveWorkspaceId]);
+
+  useEffect(() => {
+    fetchBoards();
+  }, [fetchBoards]);
+
+  const handleSelectBoard = useCallback(
+    (boardId: string) => {
+      if (!effectiveWorkspaceId || boardId === activeBoardId) return;
+      router.push(`/board/${boardId}?workspace_id=${encodeURIComponent(effectiveWorkspaceId)}`);
+    },
+    [activeBoardId, effectiveWorkspaceId, router]
+  );
+
+  const handleToggleFavorite = useCallback(
+    async (boardId: string) => {
+      if (favoriteLoadingId !== null) return;
+
+      const board = boards.find((item) => item.id === boardId);
+      if (!board) return;
+
+      const nextIsFavorite = !board.is_favorite;
+      setFavoriteLoadingId(boardId);
+      setBoards((current) =>
+        current.map((item) =>
+          item.id === boardId ? { ...item, is_favorite: nextIsFavorite } : item
+        )
+      );
+
+      try {
+        if (nextIsFavorite) {
+          await boardsApi.setFavorite(boardId);
+        } else {
+          await boardsApi.unsetFavorite(boardId);
+        }
+      } catch {
+        setBoards((current) =>
+          current.map((item) =>
+            item.id === boardId ? { ...item, is_favorite: board.is_favorite } : item
+          )
+        );
+      } finally {
+        setFavoriteLoadingId(null);
+      }
+    },
+    [boards, favoriteLoadingId]
+  );
+
+  const handleCreateFirstBoard = useCallback(async () => {
+    if (!effectiveWorkspaceId || creatingBoard) return;
+
+    setCreatingBoard(true);
+    setCreateBoardError(null);
+
+    try {
+      const { board } = await api.post<BoardCreateResponse>(
+        `/api/v1/workspaces/${effectiveWorkspaceId}/boards`,
+        { name: "Main" }
+      );
+      const createdBoard: BoardMeta = {
+        ...board,
+        is_favorite: false,
+      };
+      setBoards([createdBoard]);
+      router.push(`/board/${board.id}?workspace_id=${encodeURIComponent(effectiveWorkspaceId)}`);
+    } catch {
+      setCreateBoardError("Не удалось создать доску");
+    } finally {
+      setCreatingBoard(false);
+    }
+  }, [creatingBoard, effectiveWorkspaceId, router]);
+
+  const displayWorkspaceName = workspaceName ?? resolvedWorkspaceName ?? "Workspace";
   const displayUserName = userName ?? user?.name ?? "User";
   const workspaceQuery = effectiveWorkspaceId
     ? `?workspace_id=${encodeURIComponent(effectiveWorkspaceId)}`
@@ -105,10 +349,14 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
     workspaceRole.workspaceId === effectiveWorkspaceId &&
     workspaceRole.isOwner;
   const userInitial = useMemo(() => getInitial(displayUserName, "U"), [displayUserName]);
+  const favoriteBoards = useMemo(
+    () => boards.filter((board) => board.is_favorite),
+    [boards]
+  );
 
   return (
     <aside
-      className="w-[220px] h-full flex flex-col flex-shrink-0"
+      className="w-[240px] h-full flex flex-col flex-shrink-0"
       style={{
         background: "#0B0B0B",
         borderRight: "1px solid rgba(255,255,255,0.06)",
@@ -121,12 +369,74 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
         <WorkspaceSwitcher workspaceId={effectiveWorkspaceId} />
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
-        <NavItem href={`/board${workspaceQuery}`} label="Board" />
-        <NavItem href={`/ai-groom${workspaceQuery}`} label="AI Groom" />
-        {isOwner && (
-          <NavItem href={`/admin${workspaceQuery}`} label="Admin" />
-        )}
+      <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
+        <SidebarSection title="Favorites">
+          {favoriteBoards.length > 0 ? (
+            favoriteBoards.map((board) => (
+              <BoardRow
+                key={board.id}
+                board={board}
+                isActive={board.id === activeBoardId}
+                isFavoriteLoading={favoriteLoadingId === board.id}
+                onSelect={handleSelectBoard}
+                onToggleFavorite={handleToggleFavorite}
+              />
+            ))
+          ) : (
+            <div className="px-2 py-2 text-xs" style={{ color: "rgba(255,255,255,0.34)" }}>
+              Нет избранных досок
+            </div>
+          )}
+        </SidebarSection>
+
+        <SidebarSection title="Boards">
+          {boardsLoading && boards.length === 0 ? (
+            <div className="px-2 py-2 text-xs" style={{ color: "rgba(255,255,255,0.34)" }}>
+              Загрузка...
+            </div>
+          ) : boardsError ? (
+            <button
+              type="button"
+              onClick={fetchBoards}
+              className="px-2 py-2 text-left text-xs transition-colors"
+              style={{ color: "rgba(255,255,255,0.52)" }}
+            >
+              {boardsError}
+            </button>
+          ) : boards.length > 0 ? (
+            boards.map((board) => (
+              <BoardRow
+                key={board.id}
+                board={board}
+                isActive={board.id === activeBoardId}
+                isFavoriteLoading={favoriteLoadingId === board.id}
+                onSelect={handleSelectBoard}
+                onToggleFavorite={handleToggleFavorite}
+              />
+            ))
+          ) : (
+            <div className="space-y-1">
+              {createBoardError && (
+                <div className="px-2 text-xs" style={{ color: "#FCA5A5" }}>
+                  {createBoardError}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={handleCreateFirstBoard}
+                disabled={!effectiveWorkspaceId || creatingBoard}
+                className="block w-full px-2 py-2 text-left text-xs rounded-md transition-colors disabled:cursor-wait"
+                style={{ color: "rgba(255,255,255,0.52)" }}
+              >
+                {creatingBoard ? "Создание..." : "Нет досок — создай первую"}
+              </button>
+            </div>
+          )}
+        </SidebarSection>
+
+        <SidebarSection title="Tools">
+          <NavItem href={`/ai-groom${workspaceQuery}`} label="AI Groom" />
+        </SidebarSection>
       </nav>
 
       <div
