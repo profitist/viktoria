@@ -22,8 +22,8 @@ from app.board.schemas import (
     ColumnReorder,
     FavoriteResponse,
 )
-from app.tasks.models import Task
-from app.tasks.schemas import TaskOut
+from app.tasks.models import Subtask, Task
+from app.tasks.schemas import SubtaskProgress, TaskOut
 from app.tasks.service import compute_deadline_urgency
 from app.workspace.models import WorkspaceMember, WorkspaceRole
 
@@ -363,7 +363,11 @@ async def _get_board_by_workspace(
 ) -> Board | None:
     return await session.scalar(
         select(Board)
-        .options(selectinload(Board.columns).selectinload(Column.tasks))
+        .options(
+            selectinload(Board.columns)
+            .selectinload(Column.tasks)
+            .selectinload(Task.subtasks)
+        )
         .where(Board.workspace_id == workspace_id)
         .order_by(Board.created_at.asc(), Board.id.asc())
     )
@@ -388,7 +392,11 @@ async def _get_board_or_404(
 ) -> Board:
     board = await session.scalar(
         select(Board)
-        .options(selectinload(Board.columns).selectinload(Column.tasks))
+        .options(
+            selectinload(Board.columns)
+            .selectinload(Column.tasks)
+            .selectinload(Task.subtasks)
+        )
         .where(Board.id == board_id)
     )
     if board is None:
@@ -524,6 +532,10 @@ def _build_board_out(board: Board) -> BoardOut:
                         created_at=task.created_at,
                         deadline=task.deadline,
                         deadline_urgency=compute_deadline_urgency(task.deadline),
+                        subtask_progress=SubtaskProgress(
+                            done_count=sum(1 for st in task.subtasks if st.is_done),
+                            total_count=len(task.subtasks),
+                        ),
                     )
                     for task in sorted(column.tasks, key=lambda t: (t.created_at, t.id))
                 ],

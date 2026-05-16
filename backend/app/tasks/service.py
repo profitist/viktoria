@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 
 from aio_pika.abc import AbstractChannel
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -16,8 +16,8 @@ from app.board.models import Column
 from app.events.publisher import publish
 from app.events.types import EventEnvelope
 from app.tasks.models import DeadlineUrgency as DeadlineUrgencyModel
-from app.tasks.models import Task, TaskPriority as TaskPriorityModel
-from app.tasks.schemas import TaskCreate, TaskMoveRequest, TaskOut, TaskPatch
+from app.tasks.models import Subtask, Task, TaskPriority as TaskPriorityModel
+from app.tasks.schemas import SubtaskCreate, SubtaskOut, SubtaskUpdate, TaskCreate, TaskMoveRequest, TaskOut, TaskPatch
 from app.workspace.models import WorkspaceMember
 
 
@@ -418,6 +418,94 @@ def _to_task_out(task: Task) -> TaskOut:
         deadline=task.deadline,
         deadline_urgency=compute_deadline_urgency(task.deadline),
     )
+
+
+async def get_subtasks(
+    session: AsyncSession,
+    task_id: UUID,
+    current_user: User,
+) -> list[SubtaskOut]:
+    task = await _get_task_or_404(session, task_id)
+    await _require_workspace_member(session, task.workspace_id, current_user.id)
+    result = await session.execute(
+        select(Subtask)
+        .where(Subtask.task_id == task_id)
+        .order_by(Subtask.order, Subtask.id)
+    )
+    return [SubtaskOut.model_validate(st) for st in result.scalars()]
+
+
+async def create_subtask(
+    session: AsyncSession,
+    task_id: UUID,
+    payload: SubtaskCreate,
+    current_user: User,
+) -> SubtaskOut:
+    task = await _get_task_or_404(session, task_id)
+    await _require_workspace_member(session, task.workspace_id, current_user.id)
+
+    max_order = await session.scalar(
+        select(func.max(Subtask.order)).where(Subtask.task_id == task_id)
+    )
+    order = (max_order if max_order is not None else -1) + 1
+
+    subtask = Subtask(task_id=task_id, title=payload.title, order=order)
+    session.add(subtask)
+    await session.commit()
+    await session.refresh(subtask)
+    return SubtaskOut.model_validate(subtask)
+
+
+async def update_subtask(
+    session: AsyncSession,
+    task_id: UUID,
+    subtask_id: UUID,
+    payload: SubtaskUpdate,
+    current_user: User,
+) -> SubtaskOut:
+    subtask = await _get_subtask_or_404(session, subtask_id, task_id)
+    task = await _get_task_or_404(session, task_id)
+    await _require_workspace_member(session, task.workspace_id, current_user.id)
+
+    if "title" in payload.model_fields_set and payload.title is not None:
+        subtask.title = payload.title
+    if "is_done" in payload.model_fields_set and payload.is_done is not None:
+        subtask.is_done = payload.is_done
+    if "order" in payload.model_fields_set and payload.order is not None:
+        subtask.order = payload.order
+
+    await session.commit()
+    await session.refresh(subtask)
+    return SubtaskOut.model_validate(subtask)
+
+
+async def delete_subtask(
+    session: AsyncSession,
+    task_id: UUID,
+    subtask_id: UUID,
+    current_user: User,
+) -> None:
+    subtask = await _get_subtask_or_404(session, subtask_id, task_id)
+    task = await _get_task_or_404(session, task_id)
+    await _require_workspace_member(session, task.workspace_id, current_user.id)
+    await session.delete(subtask)
+    await session.commit()
+
+
+async def _get_subtask_or_404(
+    session: AsyncSession,
+    subtask_id: UUID,
+    task_id: UUID,
+) -> Subtask:
+    subtask = await session.scalar(
+        select(Subtask).where(Subtask.id == subtask_id, Subtask.task_id == task_id)
+    )
+    if subtask is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="subtask not found",
+        )
+    return subtask
 
 
 def _serialize_value(value: Any) -> Any:
