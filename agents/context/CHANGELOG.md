@@ -1,3 +1,14 @@
+## FEAT-0015 — UI-компоненты CommentFeed и AttachmentList — 2026-05-17
+
+Статус: DONE (CTO approved, без issues)
+
+**Создано 2 файла.**
+
+- Создан `frontend/components/board/CommentFeed.tsx` — `props {taskId}`; useEffect+cancellation грузит `commentsApi.getComments`; optimistic append через tempId (`temp-${Date.now()}`), rollback на ошибке + toast; `renderBody(body)` подсвечивает `@слово` через `<span color="#93C5FD">` (split by regex); `formatRelativeTime(iso)` — «только что / N мин./ч./д. назад»; local toast (4000ms, fixed bottom)
+- Создан `frontend/components/board/AttachmentList.tsx` — `props {taskId}`; useEffect+cancellation грузит `attachmentsApi.getAttachments`; drag-drop зона + `<input type="file" hidden>` ref; `handleUpload`: optimistic с `URL.createObjectURL(file)` (revoke при success+error); классификация ошибок 413/415/прочее через `instanceof ApiError`; `handleDelete`: optimistic remove, rollback на catch; коллапс `COLLAPSE_LIMIT=5`; image/* → `<img 80×80>`, прочие → 📎 иконка + имя + размер; клик → `window.open(url,"_blank")`
+
+**Архитектура:** Оба компонента изолированы (не монтируются в TaskModal — это T-053). renderBody не использует dangerouslySetInnerHTML → XSS safe. Object URL revoke предотвращает memory leak. Rollback при удалении добавляет в конец списка (MVP-допустимо).
+
 ## FEAT-0014 — Frontend TypeScript типы и API-методы (Comment, Attachment) — 2026-05-17
 
 Статус: DONE (CTO approved, без issues)
