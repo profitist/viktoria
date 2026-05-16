@@ -1,3 +1,13 @@
+## FEAT-0004 — Auth Pages (Login + Register) — 2026-05-16
+
+Статус: APPROVED (CTO review passed, 0 issues)
+
+- Создан `frontend/app/(auth)/layout.tsx` — Server Component, центрирует карточку формы (`min-h-screen flex items-center justify-center bg-gray-50`), изолирован от app-layout (нет Sidebar/EventLogPanel/WsProvider)
+- Создан `frontend/app/(auth)/login/page.tsx` — Client Component: форма email+password, `useAuth().login()`, redirect-guard (`useEffect` на `isAuthenticated`), маппинг ApiError(401) → «Неверный email или пароль», кнопка disabled во время запроса
+- Создан `frontend/app/(auth)/register/page.tsx` — Client Component: форма name+email+password, `api.post('/api/v1/auth/register')` → `useAuth().login()` (нет дублирования логики хранения токенов), маппинг ApiError(409) → «Email уже занят»
+- shadcn/ui не установлен — использован чистый Tailwind (как во всём проекте)
+- `npx tsc --noEmit` без ошибок в auth-файлах
+
 ## T-014 — CTO Review Fixes для FEAT-0003 — 2026-05-16
 
 ### 4 issue resolved
