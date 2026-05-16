@@ -31,7 +31,8 @@ export default function RegisterPage() {
     try {
       await api.post("/api/v1/auth/register", { name, email, password });
       await login(email, password);
-      router.push("/board");
+      const ws = await api.post<{ workspace: { id: string } }>("/api/v1/workspaces", { name: `${name}'s workspace` });
+      router.push(`/board?workspace_id=${ws.workspace.id}`);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setError("Email уже занят");
