@@ -21,6 +21,7 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.GHCR_USERNAME }}
           password: ${{ secrets.GHCR_PAT }}
+          logout: true
 
       - name: Build & push frontend
         uses: docker/build-push-action@v7
