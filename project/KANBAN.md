@@ -12,11 +12,11 @@
 
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
-| T-015 | Backend: GET /workspaces/{id}/members | workspace | — | todo | #32 | `backend/app/workspace/service.py`, `backend/app/workspace/router.py` |
-| T-016 | TaskModal: просмотр + редактирование + удаление | frontend | — | todo | #33 | `frontend/components/board/TaskModal.tsx` |
-| T-017 | Board: TaskCard click + modal wiring + delete handler | frontend | — | todo | #34 | `frontend/components/board/TaskCard.tsx`, `frontend/app/(app)/board/page.tsx` |
+| T-015 | Backend: GET /workspaces/{id}/members | workspace | @xionter | done | #32 | `backend/app/workspace/service.py`, `backend/app/workspace/router.py` |
+| T-016 | TaskModal: просмотр + редактирование + удаление | frontend | — | done | #33 | `frontend/components/board/TaskModal.tsx` |
+| T-017 | Board: TaskCard click + modal wiring + delete handler | frontend | @pavilk | in progress | #34 | `frontend/components/board/TaskCard.tsx`, `frontend/app/(app)/board/page.tsx` |
 | T-018 | AddTaskForm: полные поля + обновить create callback | frontend | — | todo | #35 | `frontend/components/board/AddTaskForm.tsx`, `frontend/app/(app)/board/page.tsx` |
-| T-019 | Sidebar: workspace name, user info, logout | frontend | — | todo | #36 | `frontend/components/sidebar/Sidebar.tsx` |
+| T-019 | Sidebar: workspace name, user info, logout | frontend | @frakin-000 | done | #36 | `frontend/components/sidebar/Sidebar.tsx` |
 
 ## Iteration I-02 (closed, tag: iter-02-stable) — Цель: рабочая канбан-доска end-to-end
 
