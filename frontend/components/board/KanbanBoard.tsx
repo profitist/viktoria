@@ -13,11 +13,12 @@ import {
 import type { Board, Task } from "@/lib/types";
 import Column from "./Column";
 import TaskCard from "./TaskCard";
+import type { AddTaskData } from "./AddTaskForm";
 
 interface KanbanBoardProps {
   board: Board;
   onTaskMove: (taskId: string, targetColumnId: string, newPosition: number) => void;
-  onTaskCreate: (columnId: string, title: string) => Promise<void>;
+  onTaskCreate: (columnId: string, data: AddTaskData) => Promise<void>;
   onCardClick: (task: Task) => void;
 }
 

@@ -1,3 +1,16 @@
+## FEAT-0006 — AddTaskForm расширенные поля — 2026-05-16
+
+Статус: DONE (`npx tsc --noEmit` — 0 новых ошибок, pre-existing @dnd-kit типы не изменились)
+
+**Изменено 4 файла.**
+
+- Изменён `frontend/components/board/AddTaskForm.tsx` — экспортирован тип `AddTaskData { title, priority, description?, deadline? }`; prop `onSubmit` изменён с `(title: string)` на `(data: AddTaskData)`; добавлены state `priority` (default medium), `description`, `deadline`, `isExpanded`; кнопка `▾/▴` разворачивает доп. поля (priority select, description textarea, deadline date); Enter работает только в title-инпуте; стиль полей совпадает с TaskModal.
+- Изменён `frontend/components/board/Column.tsx` — импорт `AddTaskData`; сигнатура `onTaskCreate` обновлена с `(columnId, title)` на `(columnId, data: AddTaskData)`; внутренний `handleTaskCreate` прокидывает объект данных.
+- Изменён `frontend/components/board/KanbanBoard.tsx` — импорт `AddTaskData`; сигнатура `onTaskCreate` обновлена аналогично.
+- Изменён `frontend/app/(app)/board/page.tsx` — импорт `AddTaskData`; `handleTaskCreate(columnId, data)` использует `data.priority/description/deadline` в tempTask и в POST `/api/v1/tasks`.
+
+**Архитектура:** `AddTaskData` экспортируется из `AddTaskForm.tsx` и импортируется в Column, KanbanBoard, board/page — единственный источник типа. Быстрый сценарий (Enter с только title) работает без изменений.
+
 ## FEAT-0005 — Task Modal (view / edit / delete) — 2026-05-16
 
 Статус: DONE (`npm run build` без ошибок)

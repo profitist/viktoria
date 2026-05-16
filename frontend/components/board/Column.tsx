@@ -10,11 +10,11 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { Column as ColumnType, Task } from "@/lib/types";
 import TaskCard from "./TaskCard";
-import AddTaskForm from "./AddTaskForm";
+import AddTaskForm, { type AddTaskData } from "./AddTaskForm";
 
 interface ColumnProps {
   column: ColumnType;
-  onTaskCreate: (columnId: string, title: string) => Promise<void>;
+  onTaskCreate: (columnId: string, data: AddTaskData) => Promise<void>;
   onCardClick: (task: Task) => void;
 }
 
@@ -44,8 +44,8 @@ export default function Column({ column, onTaskCreate, onCardClick }: ColumnProp
   const [isAddingTask, setIsAddingTask] = useState(false);
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
-  async function handleTaskCreate(title: string) {
-    await onTaskCreate(column.id, title);
+  async function handleTaskCreate(data: AddTaskData) {
+    await onTaskCreate(column.id, data);
     setIsAddingTask(false);
   }
 
