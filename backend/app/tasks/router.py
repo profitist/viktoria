@@ -112,14 +112,18 @@ async def move_task_route(
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
     channel: Annotated[AbstractChannel, Depends(_get_publish_channel)],
-) -> TaskResponse:
-    task = await move_task(
-        session=session,
-        task_id=task_id,
-        payload=payload,
-        current_user=current_user,
-        channel=channel,
-    )
+) -> TaskResponse | JSONResponse:
+    try:
+        task = await move_task(
+            session=session,
+            task_id=task_id,
+            payload=payload,
+            current_user=current_user,
+            channel=channel,
+        )
+    except DuplicateTaskError as exc:
+        return _duplicate_task_response(exc)
+
     return TaskResponse(task=task)
 
 
@@ -148,6 +152,7 @@ async def list_tasks_route(
     workspace_id: UUID,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
+    board_id: UUID | None = Query(default=None),
     column_id: UUID | None = Query(default=None),
     assignee_id: UUID | None = Query(default=None),
     tag: str | None = Query(default=None),
@@ -156,6 +161,7 @@ async def list_tasks_route(
         session=session,
         workspace_id=workspace_id,
         current_user=current_user,
+        board_id=board_id,
         column_id=column_id,
         assignee_id=assignee_id,
         tag=tag,
