@@ -40,6 +40,13 @@ comment: id uuid PK, task_id FK→tasks CASCADE, author_id FK→users, body text
 attachment: id uuid PK, task_id FK→tasks CASCADE, filename text, content_type text, size int, storage_key text NOT NULL, uploaded_by FK→users, created_at
 Alembic HEAD: 20260517_000005
 
+## ORM-модуль attachments (FEAT-0011)
+backend/app/attachments/__init__.py (пустой), models.py (Attachment), schemas.py
+Attachment.__tablename__ = "attachment"; FK task_id→tasks CASCADE; filename/content_type/size nullable; storage_key Text NOT NULL; uploaded_by UUID nullable FK→users; uploader=relationship("User")
+НЕТ колонки url в модели — вычисляется T-050 через StorageService.presign(storage_key)
+AttachmentUploader{id,name}; AttachmentResponse{id,task_id,filename|None,content_type|None,size|None,url:str,uploaded_by:AttachmentUploader|None,created_at}
+storage_key не попадает в схему (не утекает в API). Разблокирует T-050.
+
 ## ORM-модуль comments (FEAT-0010)
 backend/app/comments/__init__.py (пустой), models.py (Comment), schemas.py
 Comment.__tablename__ = "comment"; FK task_id→tasks CASCADE, author_id→users; mentions JSONB default '[]'::jsonb; relationship author=User

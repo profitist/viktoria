@@ -1,3 +1,15 @@
+## FEAT-0011 — Scaffolding модуля attachments (models + schemas) — 2026-05-17
+
+Статус: DONE (CTO approved, без issues)
+
+**Создано 3 файла.**
+
+- Создан `backend/app/attachments/__init__.py` — пустой маркер пакета
+- Создан `backend/app/attachments/models.py` — SQLAlchemy 2.0 модель `Attachment`; `__tablename__ = "attachment"`; колонки: id (uuid PK), task_id (FK→tasks CASCADE, index), filename/content_type (Text nullable), size (Integer nullable), storage_key (Text NOT NULL), uploaded_by (UUID FK→users nullable, index), created_at (TIMESTAMPTZ now()); relationship `uploader = relationship("User")`; **url отсутствует** как колонка
+- Создан `backend/app/attachments/schemas.py` — `AttachmentUploader{id, name}` (from_attributes), `AttachmentResponse{id, task_id, filename|None, content_type|None, size|None, url: str, uploaded_by: AttachmentUploader|None, created_at}` (from_attributes); `storage_key` не экспонируется в схеме
+
+**Архитектура:** `url` — вычисляемое поле; T-050 вызывает `StorageService.presign(storage_key)` и собирает response вручную через `model_validate({...obj_dict, "url": signed_url})`. `storage_key` не попадает в API-ответ. Разблокирует T-050.
+
 ## FEAT-0010 — Scaffolding модуля comments (models + schemas) — 2026-05-17
 
 Статус: DONE (CTO approved, без issues)
