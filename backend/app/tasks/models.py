@@ -4,7 +4,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Enum, ForeignKey, String, Text, text
+from sqlalchemy import Boolean, Enum, ForeignKey, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import ARRAY, TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -90,3 +90,43 @@ class Task(Base):
     workspace = relationship("Workspace", back_populates="tasks")
     assignee = relationship("User", back_populates="assigned_tasks")
     audit_logs = relationship("AuditLog", back_populates="task")
+    subtasks = relationship(
+        "Subtask",
+        back_populates="task",
+        cascade="all, delete-orphan",
+        order_by="Subtask.order",
+    )
+
+
+class Subtask(Base):
+    __tablename__ = "subtask"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    task_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tasks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_done: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("false"),
+    )
+    order: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("0"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        server_default=text("CURRENT_TIMESTAMP"),
+        nullable=False,
+    )
+
+    task = relationship("Task", back_populates="subtasks")
