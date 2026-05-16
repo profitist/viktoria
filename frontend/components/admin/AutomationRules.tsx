@@ -115,7 +115,7 @@ export default function AutomationRules({ workspaceId }: AutomationRulesProps) {
         style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}
       >
         <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.45)" }}>
-          Automation Rules
+          Правила автоматизации
         </p>
         {[1, 2].map((i) => (
           <div
@@ -152,7 +152,7 @@ export default function AutomationRules({ workspaceId }: AutomationRulesProps) {
       style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}
     >
       <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.45)" }}>
-        Automation Rules
+        Правила автоматизации
       </p>
 
       <div className="space-y-1 mb-4">
