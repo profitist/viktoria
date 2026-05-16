@@ -16,6 +16,20 @@
 - Изменён `frontend/app/(app)/board/BoardPageClient.tsx` — добавлен `handleOpenTask(taskId)` (flat-map по всем колонкам → setSelectedTask); `handleTaskCreate` передаёт `force` в POST; `onOpenTask={handleOpenTask}` передан в `KanbanBoard`
 
 **Архитектура:** fuzzy-поиск выполняется на backend (difflib, in-memory, без DB-индексов, ≤5 кандидатов, threshold=0.6); фронт обрабатывает 409 с body и показывает DuplicateModal; force=true пропускает проверку.
+## FEAT-0008 — AutomationRules: исправление схемы + структурированная форма — 2026-05-16
+
+Статус: DONE (`npm run build` — чисто, `npx tsc --noEmit` — 0 ошибок)
+
+**Изменён 1 файл: `frontend/components/admin/AutomationRules.tsx`**
+
+- Локальный тип `AdminAutomationRule { trigger_event, action_type, action_payload }` → заменён на `AutomationRule` из `frontend/lib/types.ts`
+- POST-тело исправлено: `{ name, trigger, condition: null, action: { type, params } }` — соответствует `AutomationRuleCreate` бэкенда
+- Триггеры: `task.deleted` → `deadline.approaching`; типы из `RuleTrigger`
+- Действия: `notify_all` → `notify_members`; типы из `RuleActionType`; добавлен `move_to_column`
+- Убрана JSON-textarea → структурированные поля: `notify_members` → input «Сообщение»; `add_tag` → input «Тег»; `move_to_column` → select колонок
+- Колонки: lazy-загрузка при выборе `move_to_column`, кэш на время жизни компонента, `cancelled`-флаг от race condition
+- Список правил: `rule.name` + `rule.trigger → rule.action.type` + badge `active`/`inactive`
+- `buildParams()` — чистая функция без side-эффектов
 
 ## FEAT-0007 — Admin Page (ColumnEditor + AutomationRules) — 2026-05-16
 

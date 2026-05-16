@@ -257,6 +257,10 @@ async def _execute_rule_action(
         await _add_task_tag(session, enriched_event, params)
         return
 
+    if action_type == "suggest_assignee_balanced":
+        await _suggest_assignee_balanced(session, rule, enriched_event)
+        return
+
     logger.info("automation action skipped: unsupported action type %r", action_type)
 
 
@@ -285,6 +289,83 @@ async def _add_task_tag(
     tags = list(task.tags or [])
     if tag not in tags:
         task.tags = [*tags, tag]
+
+
+async def _suggest_assignee_balanced(
+    session: AsyncSession,
+    rule: Any,
+    enriched_event: dict[str, Any],
+) -> None:
+    from sqlalchemy import func
+
+    from app.auth.models import User
+    from app.notifications.service import create_notification
+    from app.tasks.models import Task
+    from app.workspace.models import WorkspaceMember, WorkspaceRole
+
+    workspace_id = _as_uuid(enriched_event["workspace_id"])
+    task_id = _as_uuid(enriched_event["task_id"])
+
+    members_result = await session.execute(
+        select(WorkspaceMember.user_id)
+        .where(WorkspaceMember.workspace_id == workspace_id)
+        .order_by(WorkspaceMember.user_id.asc())
+    )
+    member_ids = list(members_result.scalars().all())
+    if not member_ids:
+        return
+
+    counts_result = await session.execute(
+        select(Task.assignee_id, func.count(Task.id))
+        .where(
+            Task.workspace_id == workspace_id,
+            Task.assignee_id.in_(member_ids),
+        )
+        .group_by(Task.assignee_id)
+    )
+    task_counts = {user_id: count for user_id, count in counts_result.all()}
+    suggested_user_id = min(
+        member_ids,
+        key=lambda user_id: (task_counts.get(user_id, 0), str(user_id)),
+    )
+    current_task_count = int(task_counts.get(suggested_user_id, 0))
+
+    suggested_name = await session.scalar(
+        select(User.name).where(User.id == suggested_user_id)
+    )
+    task_title = enriched_event.get("task_title") or task_id
+    display_name = suggested_name or str(suggested_user_id)
+    message = (
+        f"Suggested assignee for task '{task_title}': "
+        f"@{display_name} (lowest workload)"
+    )
+
+    managers_result = await session.execute(
+        select(WorkspaceMember.user_id)
+        .where(
+            WorkspaceMember.workspace_id == workspace_id,
+            WorkspaceMember.role.in_([WorkspaceRole.OWNER, WorkspaceRole.ADMIN]),
+        )
+        .order_by(WorkspaceMember.user_id.asc())
+    )
+    manager_ids = list(managers_result.scalars().all())
+
+    for manager_id in manager_ids:
+        await create_notification(
+            session=session,
+            user_id=manager_id,
+            workspace_id=workspace_id,
+            message=message,
+            event_type="assignee_suggestion",
+            data={
+                **_notification_data(enriched_event),
+                "rule_id": str(rule.id),
+                "rule_name": rule.name,
+                "suggested_user_id": str(suggested_user_id),
+                "task_id": str(task_id),
+                "current_task_count": current_task_count,
+            },
+        )
 
 
 def _condition_matches(
