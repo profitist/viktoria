@@ -232,6 +232,12 @@ export const projectsApi = {
 };
 
 export const workspaceApi = {
+  getSettings: (workspaceId: string): Promise<{ settings: WorkspaceSettings }> =>
+    api.patch<{ settings: WorkspaceSettings }>(
+      `/api/v1/workspaces/${workspaceId}/settings`,
+      {}
+    ),
+
   addMember: (
     workspaceId: string,
     email: string,
