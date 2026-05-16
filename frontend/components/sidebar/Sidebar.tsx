@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/app/providers";
 import { api } from "@/lib/api";
@@ -56,9 +56,7 @@ function getInitial(value: string, fallback: string): string {
 }
 
 export default function Sidebar({ workspaceId, workspaceName, userName }: SidebarProps) {
-  const searchParams = useSearchParams();
-  const workspaceIdFromUrl = searchParams.get("workspace_id");
-  const effectiveWorkspaceId = workspaceId ?? workspaceIdFromUrl;
+  const effectiveWorkspaceId = workspaceId;
   const { user, logout } = useAuth();
   const [resolvedWorkspaceName, setResolvedWorkspaceName] = useState<string | null>(null);
 
