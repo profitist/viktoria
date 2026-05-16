@@ -1,4 +1,4 @@
-import type { BoardMeta, BoardDetail, Project, WorkspaceMember, WorkspaceSettings } from "./types";
+import type { BoardMeta, BoardDetail, Project, WorkspaceMember, WorkspaceSettings, Tag, Subtask } from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -262,4 +262,39 @@ export const workspaceApi = {
       `/api/v1/workspaces/${workspaceId}/settings`,
       settings
     ),
+};
+
+export const tagsApi = {
+  getBoardTags: (boardId: string): Promise<Tag[]> =>
+    api.get<Tag[]>(`/api/v1/boards/${boardId}/tags`),
+
+  createTag: (boardId: string, data: { name: string; color: string }): Promise<Tag> =>
+    api.post<Tag>(`/api/v1/boards/${boardId}/tags`, data),
+
+  deleteTag: (boardId: string, tagId: string): Promise<void> =>
+    api.delete(`/api/v1/boards/${boardId}/tags/${tagId}`),
+
+  addTagToTask: (taskId: string, tagId: string): Promise<void> =>
+    api.post<void>(`/api/v1/tasks/${taskId}/tags/${tagId}`, {}),
+
+  removeTagFromTask: (taskId: string, tagId: string): Promise<void> =>
+    api.delete(`/api/v1/tasks/${taskId}/tags/${tagId}`),
+};
+
+export const subtasksApi = {
+  getSubtasks: (taskId: string): Promise<Subtask[]> =>
+    api.get<Subtask[]>(`/api/v1/tasks/${taskId}/subtasks`),
+
+  createSubtask: (taskId: string, title: string): Promise<Subtask> =>
+    api.post<Subtask>(`/api/v1/tasks/${taskId}/subtasks`, { title }),
+
+  updateSubtask: (
+    taskId: string,
+    subtaskId: string,
+    data: Partial<Pick<Subtask, "title" | "is_done" | "order">>
+  ): Promise<Subtask> =>
+    api.patch<Subtask>(`/api/v1/tasks/${taskId}/subtasks/${subtaskId}`, data),
+
+  deleteSubtask: (taskId: string, subtaskId: string): Promise<void> =>
+    api.delete(`/api/v1/tasks/${taskId}/subtasks/${subtaskId}`),
 };
