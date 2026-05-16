@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers";
-import { api, getAccessToken, ApiError } from "@/lib/api";
-import { WsClient } from "@/lib/ws";
+import { api, ApiError } from "@/lib/api";
+import { useWs } from "@/contexts/WsContext";
 import type { Board, Task } from "@/lib/types";
+import { parseBoardTask, parseMoveParams } from "@/lib/types";
 import {
   moveTaskInBoard,
   addTaskToColumn,
@@ -23,12 +24,12 @@ export default function BoardPage() {
 
   const workspaceId = searchParams.get("workspace_id");
 
+  const { init, on, off } = useWs();
+
   const [board, setBoard] = useState<Board | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-
-  const wsRef = useRef<WsClient | null>(null);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -64,7 +65,8 @@ export default function BoardPage() {
   }, [workspaceId, loadBoard, router]);
 
   const handleTaskCreated = useCallback((params: Record<string, unknown>) => {
-    const task = params["task"] as Task;
+    // ISSUE-004: fail-fast валидация вместо небезопасного as-cast
+    const task = parseBoardTask(params);
     setBoard((prev) => {
       if (!prev) return prev;
       const col = prev.columns.find((c) => c.id === task.column_id);
@@ -74,14 +76,14 @@ export default function BoardPage() {
   }, []);
 
   const handleTaskUpdated = useCallback((params: Record<string, unknown>) => {
-    const task = params["task"] as Task;
+    // ISSUE-004: fail-fast валидация вместо небезопасного as-cast
+    const task = parseBoardTask(params);
     setBoard((prev) => (prev ? replaceTask(prev, task) : prev));
   }, []);
 
   const handleTaskMoved = useCallback((params: Record<string, unknown>) => {
-    const task = params["task"] as Task;
-    const columnId = params["column_id"] as string;
-    const position = params["position"] as number;
+    // ISSUE-004: fail-fast валидация вместо небезопасных as-cast
+    const { task, column_id: columnId, position } = parseMoveParams(params);
     setBoard((prev) => {
       if (!prev) return prev;
       return moveTaskInBoard(prev, task.id, columnId, position);
@@ -90,31 +92,31 @@ export default function BoardPage() {
 
   const handleTaskDeleted = useCallback((params: Record<string, unknown>) => {
     const taskId = params["task_id"] as string;
+    if (typeof taskId !== "string") {
+      throw new Error(`Invalid board.task_deleted payload: ${JSON.stringify(params)}`);
+    }
     setBoard((prev) => (prev ? deleteTask(prev, taskId) : prev));
   }, []);
 
   useEffect(() => {
     if (!workspaceId || !user) return;
 
-    const ws = new WsClient(workspaceId, getAccessToken);
-    wsRef.current = ws;
+    // init идемпотентен: повторный вызов с тем же workspaceId — no-op
+    init(workspaceId);
 
-    ws.on("board.task_created", handleTaskCreated);
-    ws.on("board.task_updated", handleTaskUpdated);
-    ws.on("board.task_moved", handleTaskMoved);
-    ws.on("board.task_deleted", handleTaskDeleted);
-
-    ws.connect();
+    on("board.task_created", handleTaskCreated);
+    on("board.task_updated", handleTaskUpdated);
+    on("board.task_moved", handleTaskMoved);
+    on("board.task_deleted", handleTaskDeleted);
 
     return () => {
-      ws.off("board.task_created", handleTaskCreated);
-      ws.off("board.task_updated", handleTaskUpdated);
-      ws.off("board.task_moved", handleTaskMoved);
-      ws.off("board.task_deleted", handleTaskDeleted);
-      ws.disconnect();
-      wsRef.current = null;
+      // Disconnect — обязанность WsProvider при размонтировании layout
+      off("board.task_created", handleTaskCreated);
+      off("board.task_updated", handleTaskUpdated);
+      off("board.task_moved", handleTaskMoved);
+      off("board.task_deleted", handleTaskDeleted);
     };
-  }, [workspaceId, user, handleTaskCreated, handleTaskUpdated, handleTaskMoved, handleTaskDeleted]);
+  }, [workspaceId, user, init, on, off, handleTaskCreated, handleTaskUpdated, handleTaskMoved, handleTaskDeleted]);
 
   function handleTaskMove(taskId: string, targetColumnId: string, newPosition: number) {
     let snapshot: Board | null = null;
@@ -184,7 +186,7 @@ export default function BoardPage() {
   if (!board) return null;
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <div className="min-h-full bg-gray-100">
       <KanbanBoard
         board={board}
         onTaskMove={handleTaskMove}
@@ -195,6 +197,6 @@ export default function BoardPage() {
           {toast}
         </div>
       )}
-    </main>
+    </div>
   );
 }

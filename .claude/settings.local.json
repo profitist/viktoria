@@ -9,7 +9,10 @@
       "Bash(git rebase *)",
       "Bash(git stash *)",
       "Bash(DATABASE_URL=postgresql+asyncpg://u:p@localhost/db JWT_SECRET=supersecretkey1234567890abcdef12 python *)",
-      "Bash(docker compose build *)"
+      "Bash(docker compose build *)",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)",
+      "Bash(gh issue *)"
     ]
   }
 }

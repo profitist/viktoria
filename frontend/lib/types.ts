@@ -158,6 +158,84 @@ export interface JsonRpcMessage {
   params: Record<string, unknown>;
 }
 
+// Статусы события из pipeline
+export type EventLogStatus = "received" | "deduped" | "enriched" | "broadcast";
+
+// Запись в EventLogPanel — данные приходят по WS-методу event_log.entry
+export interface EventLogEntry {
+  event_id: string;    // уникальный ID события (ключ для React list)
+  event_type: string;  // "task.created" | "task.moved" | ...
+  status: EventLogStatus | string; // string — для forward-совместимости с неизвестными статусами
+  detail: string;      // дополнительная информация (может быть "")
+  ts: string;          // ISO 8601 timestamp
+}
+
+// Fail-fast парсер payload из WS. Throw если структура невалидна.
+export function parseEventLogEntry(params: Record<string, unknown>): EventLogEntry {
+  const { event_id, event_type, status, detail, ts } = params;
+
+  if (
+    typeof event_id !== "string" ||
+    typeof event_type !== "string" ||
+    typeof status !== "string" ||
+    typeof detail !== "string" ||
+    typeof ts !== "string"
+  ) {
+    throw new Error(`Invalid event_log.entry payload: ${JSON.stringify(params)}`);
+  }
+
+  return { event_id, event_type, status, detail, ts };
+}
+
+// ISSUE-004: Fail-fast парсер board task из WS-payload.
+// Throw если обязательные поля отсутствуют или имеют неверный тип.
+export function parseBoardTask(params: Record<string, unknown>): Task {
+  const task = params["task"];
+
+  if (typeof task !== "object" || task === null) {
+    throw new Error(`Invalid board task payload: ${JSON.stringify(params)}`);
+  }
+
+  const t = task as Record<string, unknown>;
+
+  if (
+    typeof t["id"] !== "string" ||
+    typeof t["title"] !== "string" ||
+    typeof t["description"] !== "string" ||
+    typeof t["column_id"] !== "string" ||
+    typeof t["workspace_id"] !== "string" ||
+    typeof t["priority"] !== "string" ||
+    !Array.isArray(t["tags"]) ||
+    typeof t["created_at"] !== "string" ||
+    typeof t["deadline_urgency"] !== "string"
+  ) {
+    throw new Error(`Invalid board task payload: ${JSON.stringify(params)}`);
+  }
+
+  return task as Task;
+}
+
+// ISSUE-004: Fail-fast парсер board.task_moved payload.
+// Throw если обязательные поля отсутствуют или имеют неверный тип.
+export function parseMoveParams(
+  params: Record<string, unknown>
+): { task: Task; column_id: string; position: number } {
+  const task = parseBoardTask(params);
+
+  if (
+    typeof params["column_id"] !== "string" ||
+    typeof params["position"] !== "number"
+  ) {
+    throw new Error(`Invalid board.task_moved payload: ${JSON.stringify(params)}`);
+  }
+
+  return {
+    task,
+    column_id: params["column_id"] as string,
+    position: params["position"] as number,
+  };
+}
+
 // =============================================================================
 // Раздел 9 — AI-груминг
 // =============================================================================
