@@ -2,6 +2,37 @@ import type { Task, DeadlineUrgency } from "@/lib/types";
 import PriorityBadge from "./PriorityBadge";
 import DeadlineChip from "./DeadlineChip";
 
+function SubtaskProgressBar({ done, total }: { done: number; total: number }) {
+  const pct = Math.round((done / total) * 100);
+  const isComplete = done === total;
+  const barColor = isComplete ? "#22C55E" : "rgba(255,255,255,0.25)";
+  const fillColor = isComplete ? "#22C55E" : "#3B82F6";
+
+  return (
+    <div style={{ marginTop: "10px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+        <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.40)" }}>
+          {done}/{total}
+        </span>
+        <span style={{ fontSize: "11px", color: isComplete ? "#22C55E" : "rgba(255,255,255,0.40)" }}>
+          {pct}%
+        </span>
+      </div>
+      <div style={{ height: "3px", borderRadius: "2px", background: barColor, overflow: "hidden" }}>
+        <div
+          style={{
+            height: "100%",
+            width: `${pct}%`,
+            borderRadius: "2px",
+            background: fillColor,
+            transition: "width 0.2s ease",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 interface TaskCardProps {
   task: Task;
   isDragging: boolean;
@@ -66,6 +97,12 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
         </div>
         <PriorityBadge priority={task.priority} />
       </div>
+      {task.subtask_progress && task.subtask_progress.total_count > 0 && (
+        <SubtaskProgressBar
+          done={task.subtask_progress.done_count}
+          total={task.subtask_progress.total_count}
+        />
+      )}
     </div>
   );
 }
