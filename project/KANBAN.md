@@ -1,6 +1,21 @@
 # Kanban
 
-## Iteration I-03 (active) — Цель: трекер задач — полное управление задачами
+## Iteration I-04 (active) — Цель: уведомления + admin-панель
+
+**DoD:**
+- Колокольчик в шапке показывает badge с непрочитанными; клик открывает панель, mark-as-read работает
+- `POST /api/v1/workspaces/{id}/automation` → создаёт правило; `GET` → список правил
+- После события задачи consumer записывает `Notification` в БД для каждого участника workspace
+- `/admin` страница: редактор колонок + список правил автоматизации
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-020 | Notification bell + unread panel | frontend | — | todo | #44 | `frontend/components/notifications/NotificationBell.tsx`, `frontend/app/(app)/AppShell.tsx` |
+| T-021 | Consumer: persist notifications + automation hook | notifications | — | todo | #46 | `backend/app/notifications/service.py`, `backend/app/events/consumer.py` |
+| T-022 | Automation: service + router (CRUD rules) | automation | — | todo | #45 | `backend/app/automation/service.py`, `backend/app/automation/router.py` |
+| T-023 | Admin page: column editor + automation rules UI | frontend | — | todo | #47 | `frontend/app/(app)/admin/page.tsx`, `frontend/components/admin/ColumnEditor.tsx`, `frontend/components/admin/AutomationRules.tsx`, `frontend/components/sidebar/Sidebar.tsx` |
+
+## Iteration I-03 (closed, tag: iter-03-stable) — Цель: трекер задач — полное управление задачами
 
 **DoD:**
 - `GET /api/v1/workspaces/{id}/members` → список участников (для выбора assignee)
@@ -14,8 +29,8 @@
 |----|-------|--------|-------|--------|-------|-------|
 | T-015 | Backend: GET /workspaces/{id}/members | workspace | @xionter | done | #32 | `backend/app/workspace/service.py`, `backend/app/workspace/router.py` |
 | T-016 | TaskModal: просмотр + редактирование + удаление | frontend | — | done | #33 | `frontend/components/board/TaskModal.tsx` |
-| T-017 | Board: TaskCard click + modal wiring + delete handler | frontend | @pavilk | in progress | #34 | `frontend/components/board/TaskCard.tsx`, `frontend/app/(app)/board/page.tsx` |
-| T-018 | AddTaskForm: полные поля + обновить create callback | frontend | — | todo | #35 | `frontend/components/board/AddTaskForm.tsx`, `frontend/app/(app)/board/page.tsx` |
+| T-017 | Board: TaskCard click + modal wiring + delete handler | frontend | @pavilk | done | #34 | `frontend/components/board/TaskCard.tsx`, `frontend/app/(app)/board/page.tsx` |
+| T-018 | AddTaskForm: полные поля + обновить create callback | frontend | — | done | #35 | `frontend/components/board/AddTaskForm.tsx`, `frontend/app/(app)/board/page.tsx` |
 | T-019 | Sidebar: workspace name, user info, logout | frontend | @frakin-000 | done | #36 | `frontend/components/sidebar/Sidebar.tsx` |
 
 ## Iteration I-02 (closed, tag: iter-02-stable) — Цель: рабочая канбан-доска end-to-end
