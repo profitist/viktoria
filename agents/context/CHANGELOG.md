@@ -1,3 +1,17 @@
+## FEAT-0005 — Task Modal (view / edit / delete) — 2026-05-16
+
+Статус: DONE (`npm run build` без ошибок)
+
+**Изменено 5 файлов, создан 1 новый файл.**
+
+- Создан `frontend/components/board/TaskModal.tsx` — модальное окно задачи с тремя режимами: view (просмотр), edit (редактирование), confirm (подтверждение удаления). Overlay rgba(0,0,0,0.65) + blur(2px), контейнер #111111 с urgency-accent линией слева, анимированный spinner, загрузка members при монтировании с cancelled-флагом. Все null-состояния (описание, дедлайн, исполнитель, теги) обработаны согласно дизайну.
+- Изменён `frontend/components/board/TaskCard.tsx` — добавлен prop `onClick?: () => void`, вызывается при `!isDragging`.
+- Изменён `frontend/components/board/KanbanBoard.tsx` — добавлен prop `onCardClick: (task: Task) => void`, пробрасывается в Column.
+- Изменён `frontend/components/board/Column.tsx` — добавлен prop `onCardClick: (task: Task) => void`, пробрасывается в SortableTaskCard → TaskCard.
+- Изменён `frontend/app/(app)/board/page.tsx` — добавлены `selectedTask` state, `handleCardClick`, `handleCloseModal`, `handleTaskEdit` (optimistic PATCH + rollback), `handleTaskDelete` (optimistic DELETE + rollback); TaskModal рендерится при `selectedTask !== null && workspaceId`.
+
+**Архитектура:** Modal только вызывает колбэки, не трогает board state напрямую. Все API-операции через board/page.tsx с оптимистичными обновлениями, snapshot-rollback и toast при ошибке. Fail-fast: исключения пробрасываются в Modal для разблокировки кнопок.
+
 ## FEAT-0005 — Workspace Members List Endpoint — 2026-05-16
 
 - Добавлен `list_members()` в `backend/app/workspace/service.py`: любой участник workspace может получить список участников; не-участник получает `403`.

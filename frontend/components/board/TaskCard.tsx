@@ -5,6 +5,7 @@ import DeadlineChip from "./DeadlineChip";
 interface TaskCardProps {
   task: Task;
   isDragging: boolean;
+  onClick?: () => void;
 }
 
 const URGENCY_BORDER: Record<DeadlineUrgency, string> = {
@@ -19,10 +20,11 @@ const URGENCY_SHADOW: Record<DeadlineUrgency, string> = {
   critical: "0 2px 12px rgba(0,0,0,0.4), 0 0 12px rgba(239,68,68,0.15)",
 };
 
-export default function TaskCard({ task, isDragging }: TaskCardProps) {
+export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
   return (
     <div
       className="w-full p-3 cursor-grab select-none group transition-all duration-150"
+      onClick={() => { if (!isDragging) onClick?.(); }}
       style={{
         background: "#111111",
         border: "1px solid rgba(255,255,255,0.08)",
@@ -51,13 +53,13 @@ export default function TaskCard({ task, isDragging }: TaskCardProps) {
         <div className="flex items-center gap-1.5">
           {task.assignee_id !== null && (
             <div
-              className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium"
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                color: "rgba(255,255,255,0.72)",
-              }}
+              className="w-5 h-5 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(255,255,255,0.08)" }}
             >
-              {task.assignee_id.charAt(0).toUpperCase()}
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <circle cx="6" cy="4.5" r="2" fill="rgba(255,255,255,0.45)" />
+                <path d="M2 10c0-2.2 1.8-4 4-4s4 1.8 4 4" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
             </div>
           )}
           <DeadlineChip deadline={task.deadline} urgency={task.deadline_urgency} />
