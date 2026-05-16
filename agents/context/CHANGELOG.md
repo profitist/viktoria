@@ -1,3 +1,18 @@
+## FEAT-0003 — Kanban Board UI — 2026-05-16
+
+- Установлены `@dnd-kit/core ^6.3.1` и `@dnd-kit/sortable ^10.0.0`
+- Создан `frontend/lib/boardUtils.ts` — чистые функции мутации state: `moveTaskInBoard`, `addTaskToColumn`, `replaceTask`, `deleteTask`
+- Создан `frontend/components/board/PriorityBadge.tsx` — цветной бейдж TaskPriority (low/medium/high/critical)
+- Создан `frontend/components/board/DeadlineChip.tsx` — форматирование дедлайна через `Intl.DateTimeFormat("ru-RU")` + цвет по DeadlineUrgency
+- Создан `frontend/components/board/BoardSkeleton.tsx` — скелетон загрузки (3 колонки, animate-pulse)
+- Создан `frontend/components/board/ErrorBanner.tsx` — полоса ошибки с опциональной кнопкой "Повторить"
+- Создан `frontend/components/board/TaskCard.tsx` — display-компонент карточки: urgency-цвета (border-l-4), PriorityBadge, DeadlineChip, аватар assignee
+- Создан `frontend/components/board/AddTaskForm.tsx` — инлайн-форма создания задачи: autofocus, Enter/Escape, submit спиннер, локальный error state
+- Создан `frontend/components/board/Column.tsx` — useDroppable, SortableContext, внутренний SortableTaskCard-враппер (useSortable + CSS.Transform), drag-over стили, isAddingTask state
+- Создан `frontend/components/board/KanbanBoard.tsx` — DndContext с PointerSensor (distance:8), DragOverlay, handleDragStart/End/Cancel, вычисление targetColumnId и newPosition
+- Создан `frontend/app/board/page.tsx` — владелец Board state: loadBoard(), WS-подписки (handleTaskCreated/Updated/Moved/Deleted через useCallback), оптимистичный move с snapshot/rollback, оптимистичное создание с tempTask/rollback, toast
+- `npx tsc --noEmit` проходит без ошибок
+
 ## FEAT-0002 — WebSocket Hub + JSON-RPC + Notifications REST
 Дата: 2026-05-16
 Статус: APPROVED (CTO review passed, 6 issues resolved)

@@ -1,0 +1,200 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useAuth } from "@/app/providers";
+import { api, getAccessToken, ApiError } from "@/lib/api";
+import { WsClient } from "@/lib/ws";
+import type { Board, Task } from "@/lib/types";
+import {
+  moveTaskInBoard,
+  addTaskToColumn,
+  replaceTask,
+  deleteTask,
+} from "@/lib/boardUtils";
+import KanbanBoard from "@/components/board/KanbanBoard";
+import BoardSkeleton from "@/components/board/BoardSkeleton";
+import ErrorBanner from "@/components/board/ErrorBanner";
+
+export default function BoardPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { user } = useAuth();
+
+  const workspaceId = searchParams.get("workspace_id");
+
+  const [board, setBoard] = useState<Board | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const wsRef = useRef<WsClient | null>(null);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 4000);
+  }
+
+  const loadBoard = useCallback(async () => {
+    if (!workspaceId) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await api.get<Board>(`/api/v1/workspaces/${workspaceId}/board`);
+      setBoard(data);
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 403 || e.status === 404)) {
+        setError("Доска недоступна");
+      } else if ((e as Error).message.toLowerCase().includes("failed to fetch")) {
+        setError("Нет соединения с сервером");
+      } else {
+        setError("Не удалось загрузить доску");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [workspaceId]);
+
+  useEffect(() => {
+    if (!workspaceId) {
+      router.replace("/login");
+      return;
+    }
+    loadBoard();
+  }, [workspaceId, loadBoard, router]);
+
+  const handleTaskCreated = useCallback((params: Record<string, unknown>) => {
+    const task = params["task"] as Task;
+    setBoard((prev) => {
+      if (!prev) return prev;
+      const col = prev.columns.find((c) => c.id === task.column_id);
+      if (col?.tasks.some((t) => t.id === task.id)) return prev;
+      return addTaskToColumn(prev, task);
+    });
+  }, []);
+
+  const handleTaskUpdated = useCallback((params: Record<string, unknown>) => {
+    const task = params["task"] as Task;
+    setBoard((prev) => (prev ? replaceTask(prev, task) : prev));
+  }, []);
+
+  const handleTaskMoved = useCallback((params: Record<string, unknown>) => {
+    const task = params["task"] as Task;
+    const columnId = params["column_id"] as string;
+    const position = params["position"] as number;
+    setBoard((prev) => {
+      if (!prev) return prev;
+      return moveTaskInBoard(prev, task.id, columnId, position);
+    });
+  }, []);
+
+  const handleTaskDeleted = useCallback((params: Record<string, unknown>) => {
+    const taskId = params["task_id"] as string;
+    setBoard((prev) => (prev ? deleteTask(prev, taskId) : prev));
+  }, []);
+
+  useEffect(() => {
+    if (!workspaceId || !user) return;
+
+    const ws = new WsClient(workspaceId, getAccessToken);
+    wsRef.current = ws;
+
+    ws.on("board.task_created", handleTaskCreated);
+    ws.on("board.task_updated", handleTaskUpdated);
+    ws.on("board.task_moved", handleTaskMoved);
+    ws.on("board.task_deleted", handleTaskDeleted);
+
+    ws.connect();
+
+    return () => {
+      ws.off("board.task_created", handleTaskCreated);
+      ws.off("board.task_updated", handleTaskUpdated);
+      ws.off("board.task_moved", handleTaskMoved);
+      ws.off("board.task_deleted", handleTaskDeleted);
+      ws.disconnect();
+      wsRef.current = null;
+    };
+  }, [workspaceId, user, handleTaskCreated, handleTaskUpdated, handleTaskMoved, handleTaskDeleted]);
+
+  function handleTaskMove(taskId: string, targetColumnId: string, newPosition: number) {
+    let snapshot: Board | null = null;
+    setBoard((prev) => {
+      if (!prev) return prev;
+      snapshot = structuredClone(prev);
+      return moveTaskInBoard(prev, taskId, targetColumnId, newPosition);
+    });
+
+    api
+      .put(`/api/v1/tasks/${taskId}/move`, {
+        column_id: targetColumnId,
+        position: newPosition,
+      })
+      .catch(() => {
+        if (snapshot) setBoard(snapshot);
+        showToast("Не удалось переместить задачу");
+      });
+  }
+
+  async function handleTaskCreate(columnId: string, title: string): Promise<void> {
+    if (!workspaceId) return;
+
+    const tempTask: Task = {
+      id: `temp-${Date.now()}`,
+      title,
+      column_id: columnId,
+      workspace_id: workspaceId,
+      priority: "medium",
+      tags: [],
+      assignee_id: null,
+      created_at: new Date().toISOString(),
+      deadline: null,
+      deadline_urgency: "none",
+      description: "",
+    };
+
+    setBoard((prev) => (prev ? addTaskToColumn(prev, tempTask) : prev));
+
+    try {
+      const created = await api.post<Task>("/api/v1/tasks", {
+        title,
+        column_id: columnId,
+        workspace_id: workspaceId,
+      });
+      setBoard((prev) => {
+        if (!prev) return prev;
+        return replaceTask(deleteTask(prev, tempTask.id), created);
+      });
+    } catch (e) {
+      setBoard((prev) => (prev ? deleteTask(prev, tempTask.id) : prev));
+      throw e;
+    }
+  }
+
+  if (isLoading) return <BoardSkeleton />;
+
+  if (error) {
+    return (
+      <ErrorBanner
+        message={error}
+        onRetry={error !== "Доска недоступна" ? loadBoard : undefined}
+      />
+    );
+  }
+
+  if (!board) return null;
+
+  return (
+    <main className="min-h-screen bg-gray-100">
+      <KanbanBoard
+        board={board}
+        onTaskMove={handleTaskMove}
+        onTaskCreate={handleTaskCreate}
+      />
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50">
+          {toast}
+        </div>
+      )}
+    </main>
+  );
+}
