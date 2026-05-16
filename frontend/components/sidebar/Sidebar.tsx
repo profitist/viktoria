@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+
+import { useAuth } from "@/app/providers";
+import { api } from "@/lib/api";
+import type { Workspace } from "@/lib/types";
 
 import { useAuth } from "@/app/providers";
 import { api } from "@/lib/api";
