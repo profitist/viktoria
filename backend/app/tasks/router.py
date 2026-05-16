@@ -13,14 +13,18 @@ from app.auth.deps import get_current_user
 from app.auth.models import User
 from app.database import get_session
 from app.events.publisher import get_channel
-from app.tasks.schemas import TaskCreate, TaskMoveRequest, TaskOut, TaskPatch
+from app.tasks.schemas import SubtaskCreate, SubtaskOut, SubtaskUpdate, TaskCreate, TaskMoveRequest, TaskOut, TaskPatch
 from app.tasks.service import (
     DuplicateTaskError,
+    create_subtask,
     create_task,
+    delete_subtask,
     delete_task,
+    get_subtasks,
     get_task,
     list_tasks,
     move_task,
+    update_subtask,
     update_task,
 )
 
@@ -139,6 +143,82 @@ async def delete_task_route(
         task_id=task_id,
         current_user=current_user,
         channel=channel,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
+    "/tasks/{task_id}/subtasks",
+    response_model=list[SubtaskOut],
+    status_code=status.HTTP_200_OK,
+)
+async def get_subtasks_route(
+    task_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[SubtaskOut]:
+    return await get_subtasks(
+        session=session,
+        task_id=task_id,
+        current_user=current_user,
+    )
+
+
+@router.post(
+    "/tasks/{task_id}/subtasks",
+    response_model=SubtaskOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_subtask_route(
+    task_id: UUID,
+    payload: SubtaskCreate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> SubtaskOut:
+    return await create_subtask(
+        session=session,
+        task_id=task_id,
+        payload=payload,
+        current_user=current_user,
+    )
+
+
+@router.patch(
+    "/tasks/{task_id}/subtasks/{subtask_id}",
+    response_model=SubtaskOut,
+    status_code=status.HTTP_200_OK,
+)
+async def update_subtask_route(
+    task_id: UUID,
+    subtask_id: UUID,
+    payload: SubtaskUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> SubtaskOut:
+    return await update_subtask(
+        session=session,
+        task_id=task_id,
+        subtask_id=subtask_id,
+        payload=payload,
+        current_user=current_user,
+    )
+
+
+@router.delete(
+    "/tasks/{task_id}/subtasks/{subtask_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_subtask_route(
+    task_id: UUID,
+    subtask_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> Response:
+    await delete_subtask(
+        session=session,
+        task_id=task_id,
+        subtask_id=subtask_id,
+        current_user=current_user,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
