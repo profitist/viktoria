@@ -14,6 +14,7 @@ import {
   deleteTask,
 } from "@/lib/boardUtils";
 import KanbanBoard from "@/components/board/KanbanBoard";
+import TaskModal from "@/components/board/TaskModal";
 import BoardSkeleton from "@/components/board/BoardSkeleton";
 import ErrorBanner from "@/components/board/ErrorBanner";
 
@@ -29,10 +30,11 @@ function BoardPageContent() {
   const [board, setBoard] = useState<Board | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: "error" | "info" } | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  function showToast(msg: string) {
-    setToast(msg);
+  function showToast(msg: string, type: "error" | "info" = "error") {
+    setToast({ msg, type });
     setTimeout(() => setToast(null), 4000);
   }
 
@@ -140,6 +142,63 @@ function BoardPageContent() {
     };
   }, [workspaceId, user, init, on, off, handleTaskCreated, handleTaskUpdated, handleTaskMoved, handleTaskDeleted]);
 
+  const handleCardClick = useCallback((task: Task) => {
+    setSelectedTask(task);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setSelectedTask(null);
+  }, []);
+
+  const handleTaskEdit = useCallback(async (updatedTask: Task): Promise<void> => {
+    let snapshot: Board | null = null;
+    setBoard(prev => {
+      if (!prev) return prev;
+      snapshot = structuredClone(prev);
+      return replaceTask(prev, updatedTask);
+    });
+
+    try {
+      const saved = await api.patch<Task>(`/api/v1/tasks/${updatedTask.id}`, {
+        title: updatedTask.title,
+        description: updatedTask.description,
+        priority: updatedTask.priority,
+        deadline: updatedTask.deadline,
+        assignee_id: updatedTask.assignee_id,
+        tags: updatedTask.tags,
+      });
+      setBoard(prev => prev ? replaceTask(prev, saved) : prev);
+      setSelectedTask(null);
+    } catch (e) {
+      if (snapshot) setBoard(snapshot);
+      showToast("Не удалось сохранить задачу");
+      throw e;
+    }
+  }, []);
+
+  const handleTaskDelete = useCallback(async (taskId: string): Promise<void> => {
+    let snapshot: Board | null = null;
+    setBoard(prev => {
+      if (!prev) return prev;
+      snapshot = structuredClone(prev) as Board;
+      return deleteTask(prev, taskId);
+    });
+    setSelectedTask(null);
+
+    try {
+      await api.delete(`/api/v1/tasks/${taskId}`);
+    } catch (e) {
+      const snap = snapshot as Board | null;
+      if (snap) {
+        setBoard(snap);
+        const restoredTask = snap.columns.flatMap(c => c.tasks).find(t => t.id === taskId) ?? null;
+        setSelectedTask(restoredTask);
+      }
+      showToast("Не удалось удалить задачу");
+      throw e;
+    }
+  }, []);
+
   function handleTaskMove(taskId: string, targetColumnId: string, newPosition: number) {
     let snapshot: Board | null = null;
     setBoard((prev) => {
@@ -219,18 +278,33 @@ function BoardPageContent() {
         board={board}
         onTaskMove={handleTaskMove}
         onTaskCreate={handleTaskCreate}
+        onCardClick={handleCardClick}
       />
+      {selectedTask && workspaceId && (
+        <TaskModal
+          task={selectedTask}
+          workspaceId={workspaceId}
+          onSave={handleTaskEdit}
+          onDelete={handleTaskDelete}
+          onClose={handleCloseModal}
+        />
+      )}
       {toast && (
         <div
           className="fixed bottom-4 left-1/2 -translate-x-1/2 text-sm px-4 py-2 rounded-lg z-50"
-          style={{
+          style={toast.type === "error" ? {
+            background: "rgba(239,68,68,0.15)",
+            border: "1px solid rgba(239,68,68,0.3)",
+            color: "#FCA5A5",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.6)",
+          } : {
             background: "#111111",
             border: "1px solid rgba(255,255,255,0.08)",
             color: "rgba(255,255,255,0.72)",
             boxShadow: "0 4px 20px rgba(0,0,0,0.6)",
           }}
         >
-          {toast}
+          {toast.msg}
         </div>
       )}
     </div>

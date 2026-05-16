@@ -15,9 +15,10 @@ import AddTaskForm from "./AddTaskForm";
 interface ColumnProps {
   column: ColumnType;
   onTaskCreate: (columnId: string, title: string) => Promise<void>;
+  onCardClick: (task: Task) => void;
 }
 
-function SortableTaskCard({ task }: { task: Task }) {
+function SortableTaskCard({ task, onCardClick }: { task: Task; onCardClick: (task: Task) => void }) {
   const {
     attributes,
     listeners,
@@ -34,12 +35,12 @@ function SortableTaskCard({ task }: { task: Task }) {
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TaskCard task={task} isDragging={isDragging} />
+      <TaskCard task={task} isDragging={isDragging} onClick={() => onCardClick(task)} />
     </div>
   );
 }
 
-export default function Column({ column, onTaskCreate }: ColumnProps) {
+export default function Column({ column, onTaskCreate, onCardClick }: ColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
@@ -99,7 +100,7 @@ export default function Column({ column, onTaskCreate }: ColumnProps) {
           strategy={verticalListSortingStrategy}
         >
           {column.tasks.map((task) => (
-            <SortableTaskCard key={task.id} task={task} />
+            <SortableTaskCard key={task.id} task={task} onCardClick={onCardClick} />
           ))}
         </SortableContext>
 

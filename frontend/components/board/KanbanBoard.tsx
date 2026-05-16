@@ -18,9 +18,10 @@ interface KanbanBoardProps {
   board: Board;
   onTaskMove: (taskId: string, targetColumnId: string, newPosition: number) => void;
   onTaskCreate: (columnId: string, title: string) => Promise<void>;
+  onCardClick: (task: Task) => void;
 }
 
-export default function KanbanBoard({ board, onTaskMove, onTaskCreate }: KanbanBoardProps) {
+export default function KanbanBoard({ board, onTaskMove, onTaskCreate, onCardClick }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
@@ -95,6 +96,7 @@ export default function KanbanBoard({ board, onTaskMove, onTaskCreate }: KanbanB
             key={column.id}
             column={column}
             onTaskCreate={onTaskCreate}
+            onCardClick={onCardClick}
           />
         ))}
       </div>

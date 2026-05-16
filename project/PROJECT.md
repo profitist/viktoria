@@ -428,6 +428,16 @@ app/(app)/board/page.tsx     — единственный владелец Board
 
 `@dnd-kit/core` + `@dnd-kit/sortable` — совместимы с React 19 (не используют deprecated ReactDOM API). `PointerSensor` с `activationConstraint: { distance: 8 }` покрывает mouse и touch без конфликта со скроллом. `DragOverlay` рендерит клон карточки поверх layout.
 
+### TaskModal — модальное окно задачи (FEAT-0005)
+
+`components/board/TaskModal.tsx` — просмотр, редактирование и удаление задачи. Открывается из `board/page.tsx` по клику на карточку.
+
+- **Optimistic close только после успеха:** `setSelectedTask(null)` вызывается только после успешного PATCH/DELETE. При ошибке модал остаётся открытым — `throw e` прилетает в `TaskModal.handleSave`, который в `finally` делает `setIsSaving(false)`.
+- **Типизированный toast:** `{ msg: string; type: "error" | "info" }` — ошибки красные (`rgba(239,68,68,0.15)`), нейтральные события серые. `showToast(msg, type = "error")`.
+- **TaskCard не знает имён:** assignee — нейтральный SVG-аватар. Имя показывает только TaskModal через `GET /workspaces/{id}/members`.
+- **Загрузка members:** `useEffect` с `cancelled`-флагом. При ошибке — тихая деградация (пустой select).
+- **Prop drilling onCardClick:** `board/page.tsx → KanbanBoard → Column → TaskCard`. `TaskCard.onClick` вызывается при `!isDragging`.
+
 ## Соглашения
 
 - Ветки: `T-XXX-slug`
