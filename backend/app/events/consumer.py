@@ -63,7 +63,7 @@ async def process_message(message: AbstractIncomingMessage) -> None:
     except Exception:
         await _forget_processed(event.event_id)
         await message.nack(requeue=True)
-        raise
+        logger.exception("Failed to process event %s, requeueing", event.event_id)
 
     await message.ack()
 
