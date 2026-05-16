@@ -5,10 +5,10 @@ interface DeadlineChipProps {
   urgency: DeadlineUrgency;
 }
 
-const URGENCY_TEXT_CLASSES: Record<DeadlineUrgency, string> = {
-  none: "text-gray-400",
-  soon: "text-yellow-600",
-  critical: "text-red-600 font-medium",
+const URGENCY_COLORS: Record<DeadlineUrgency, string> = {
+  none: "rgba(255,255,255,0.25)",
+  soon: "#FCD34D",
+  critical: "#FCA5A5",
 };
 
 const formatter = new Intl.DateTimeFormat("ru-RU", {
@@ -23,7 +23,13 @@ export default function DeadlineChip({ deadline, urgency }: DeadlineChipProps) {
   const formatted = formatter.format(new Date(deadline));
 
   return (
-    <span className={`text-xs ${URGENCY_TEXT_CLASSES[urgency]}`}>
+    <span
+      className="text-xs"
+      style={{
+        color: URGENCY_COLORS[urgency],
+        fontWeight: urgency === "critical" ? 500 : undefined,
+      }}
+    >
       {formatted}
     </span>
   );
