@@ -186,7 +186,13 @@ function BoardPageContent() {
       });
       setBoard((prev) => {
         if (!prev) return prev;
-        return replaceTask(deleteTask(prev, tempTask.id), created);
+        const withoutTemp = deleteTask(prev, tempTask.id);
+        const col = withoutTemp.columns.find((c) => c.id === columnId);
+        // WS-событие могло уже добавить реальную задачу — тогда заменяем, иначе добавляем
+        if (col?.tasks.some((t) => t.id === created.id)) {
+          return replaceTask(withoutTemp, created);
+        }
+        return addTaskToColumn(withoutTemp, created);
       });
     } catch (e) {
       setBoard((prev) => (prev ? deleteTask(prev, tempTask.id) : prev));
