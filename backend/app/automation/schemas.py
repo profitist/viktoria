@@ -20,12 +20,13 @@ RuleOperator = Literal["eq", "contains", "gt", "lt"]
   gt / lt  — больше/меньше (для числовых полей и дат)
 """
 
-RuleActionType = Literal["move_to_column", "add_tag", "notify_members"]
+RuleActionType = Literal["move_to_column", "add_tag", "notify_members", "notify_all"]
 """
 Действие при срабатывании правила:
   move_to_column  — переместить задачу в указанную колонку
   add_tag         — добавить тег к задаче
   notify_members  — отправить уведомление участникам workspace
+  notify_all      — alias notify_members для событийного consumer-а
 """
 
 
@@ -54,6 +55,7 @@ class RuleAction(BaseModel):
       move_to_column:  {"column_id": "<uuid>"}
       add_tag:         {"tag": "overdue"}
       notify_members:  {"message": "Задача стала критической"}
+      notify_all:      {"message": "Задача стала критической"}
     """
 
     type: RuleActionType
