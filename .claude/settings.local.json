@@ -14,7 +14,18 @@
       "Bash(gh repo *)",
       "Bash(gh issue *)",
       "Skill(kanban-sync)",
-      "Bash(gh label *)"
+      "Bash(gh label *)",
+      "Bash(sed -i \"s/## Iteration I-05 \\(active\\)/## Iteration I-05 \\(closed, tag: iter-05-stable\\)/g\" project/KANBAN.md)",
+      "Bash(sed -i \"s/## Iteration I-04 \\(active\\)/## Iteration I-04 \\(closed, tag: iter-04-stable\\)/g\" project/KANBAN.md)",
+      "Bash(git -C D:/viktoria status)",
+      "Bash(git -C D:/viktoria log --oneline -5)",
+      "Bash(git -C D:/viktoria diff project/KANBAN.md)",
+      "Bash(git -C D:/viktoria add project/KANBAN.md project/PROJECT.md project/ROADMAP.md project/UI_FUNCTIONAL_PROMPT.md)",
+      "Bash(git -C D:/viktoria status --short)",
+      "Bash(git -C D:/viktoria add project/ROADMAP.md project/UI_FUNCTIONAL_PROMPT.md)",
+      "Bash(git -C D:/viktoria status project/ --short)",
+      "Bash(git -C D:/viktoria commit -m \"kanban: sync I-04/I-05 done, add I-06 planning \\(member mgmt + board nav\\)\")",
+      "Bash(git -C D:/viktoria push)"
     ]
   }
 }
