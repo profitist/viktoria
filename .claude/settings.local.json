@@ -25,7 +25,9 @@
       "Bash(git -C D:/viktoria add project/ROADMAP.md project/UI_FUNCTIONAL_PROMPT.md)",
       "Bash(git -C D:/viktoria status project/ --short)",
       "Bash(git -C D:/viktoria commit -m \"kanban: sync I-04/I-05 done, add I-06 planning \\(member mgmt + board nav\\)\")",
-      "Bash(git -C D:/viktoria push)"
+      "Bash(git -C D:/viktoria push)",
+      "Bash(git -C D:/viktoria log --oneline -5 project/KANBAN.md)",
+      "Bash(git -C D:/viktoria branch)"
     ]
   }
 }

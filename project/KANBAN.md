@@ -1,6 +1,47 @@
 # Kanban
 
-## Iteration I-05 (active) — Цель: многодосочность — N досок в workspace + проекты + избранное
+## Iteration I-07 (active) — Цель: богатые задачи — теги + подзадачи
+
+**DoD:**
+- `GET /api/v1/boards/{id}/tags` → список тегов доски; `POST` создаёт тег; `DELETE` удаляет
+- `POST/DELETE /api/v1/tasks/{id}/tags/{tag_id}` — привязка тега к задаче
+- `GET/POST/PATCH/DELETE /api/v1/tasks/{id}/subtasks` — CRUD подзадач
+- `GET /api/v1/boards/{id}` — каждая задача содержит `tags:[{id,name,color}]` + `subtask_progress:{done_count,total_count}`
+- `alembic upgrade head` на непустой БД проходит; существующие теги-строки мигрируют в Tag
+- Карточка задачи показывает прогресс-бар подзадач (done/total)
+- TaskModal: секция «Подзадачи» (чеклист + добавление) + секция «Теги» (пилюли + dropdown)
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-038 | Tags: модели + схемы (новый модуль) | tags | — | todo | #88 | `backend/app/tags/models.py`, `backend/app/tags/schemas.py`, `backend/app/tags/__init__.py` |
+| T-039 | Subtask: модель + схема (в tasks модуле) | tasks | — | todo | #89 | `backend/app/tasks/models.py`, `backend/app/tasks/schemas.py` |
+| T-040 | Alembic: миграция tags + subtasks | infra | — | todo | #90 | `backend/alembic/versions/20260517_000004_tags_subtasks.py` |
+| T-041 | Tags: service + router + регистрация в main | tags | — | todo | #91 | `backend/app/tags/service.py`, `backend/app/tags/router.py`, `backend/app/main.py` |
+| T-042 | Tasks: subtask CRUD (service + router) | tasks | — | todo | #92 | `backend/app/tasks/service.py`, `backend/app/tasks/router.py` |
+| T-043 | Frontend: типы Subtask + Tag + api-методы | frontend | — | todo | #93 | `frontend/lib/types.ts`, `frontend/lib/api.ts` |
+| T-044 | Frontend: SubtaskList + прогресс-бар на TaskCard | frontend | — | todo | #94 | `frontend/components/board/SubtaskList.tsx`, `frontend/components/board/TaskCard.tsx` |
+| T-045 | Frontend: TaskModal — секция подзадач + теги | frontend | — | todo | #95 | `frontend/components/board/TaskModal.tsx` |
+
+## Iteration I-06 (closed) — Цель: управление участниками + навигация воркспейсов/досок
+
+**DoD:**
+- `POST /api/v1/workspaces/{id}/members` (`{email, role}`) → добавляет участника; 404 если email не найден, 409 если уже участник
+- `DELETE /api/v1/workspaces/{id}/members/{user_id}` → 204
+- `PATCH /api/v1/workspaces/{id}/settings` (`{automation_enabled}`) → обновляет настройки
+- Admin-страница показывает список участников с формой приглашения и кнопками удаления
+- Тоггл `automation_enabled` в admin-панели работает
+- Dropdown смены воркспейса в AppShell; Sidebar показывает секции Boards + Favorites
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-032 | api.ts + types.ts — addMember, removeMember, updateSettings | frontend | — | done | #76 | `frontend/lib/api.ts`, `frontend/lib/types.ts` |
+| T-033 | MemberManager — список участников + приглашение + удаление | frontend | — | done | #77 | `frontend/components/admin/MemberManager.tsx` |
+| T-034 | WorkspaceSettings — тоггл automation_enabled | frontend | — | done | #78 | `frontend/components/admin/WorkspaceSettings.tsx` |
+| T-035 | AdminPageClient — wire-up MemberManager + WorkspaceSettings | frontend | — | done | #79 | `frontend/app/(app)/admin/AdminPageClient.tsx` |
+| T-036 | Sidebar — секции Boards + Favorites (деферировано из I-05) | frontend | — | done | #80 | `frontend/components/sidebar/Sidebar.tsx` |
+| T-037 | WorkspaceSwitcher — dropdown смены воркспейса в AppShell | frontend | — | done | #81 | `frontend/components/workspace/WorkspaceSwitcher.tsx`, `frontend/app/(app)/AppShell.tsx` |
+
+## Iteration I-05 (closed) — Цель: многодосочность — N досок в workspace + проекты + избранное
 
 **DoD:**
 - `alembic upgrade head` на непустой БД проходит; старые задачи видны на доске «Main»
@@ -12,16 +53,28 @@
 
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
-| T-024 | Project: модели + схемы | project | — | todo | #61 | `backend/app/project/models.py`, `backend/app/project/schemas.py`, `backend/app/project/__init__.py` |
-| T-025 | Board: модели (project_id, description) + BoardFavorite + схемы | board | — | todo | #62 | `backend/app/board/models.py`, `backend/app/board/schemas.py` |
-| T-026 | Tasks: board_id в модель + схему | tasks | — | todo | #63 | `backend/app/tasks/models.py`, `backend/app/tasks/schemas.py` |
-| T-027 | Alembic: миграция multiboard + backfill «Main» | infra | — | todo | #64 | `backend/alembic/versions/20260516_000003_multiboard.py` |
-| T-028 | Board: service + router (boards CRUD + favorite) | board | — | todo | #65 | `backend/app/board/service.py`, `backend/app/board/router.py` |
-| T-029 | Project: service + router + регистрация в main | project | — | todo | #66 | `backend/app/project/service.py`, `backend/app/project/router.py`, `backend/app/main.py` |
-| T-030 | Tasks: board_id, дедуп (board,column,title), фильтр ?board_id | tasks | — | todo | #67 | `backend/app/tasks/service.py`, `backend/app/tasks/router.py` |
-| T-031 | Frontend: переключатель досок + роут `/board/[boardId]` | frontend | — | todo | #68 | `frontend/app/(app)/board/[boardId]/page.tsx`, `frontend/app/(app)/board/page.tsx`, `frontend/app/(app)/board/BoardPageClient.tsx`, `frontend/components/board/BoardSwitcher.tsx`, `frontend/lib/api.ts`, `frontend/lib/types.ts` |
+| T-024 | Project: модели + схемы | project | — | done | #61 | `backend/app/project/models.py`, `backend/app/project/schemas.py`, `backend/app/project/__init__.py` |
+| T-025 | Board: модели (project_id, description) + BoardFavorite + схемы | board | — | done | #62 | `backend/app/board/models.py`, `backend/app/board/schemas.py` |
+| T-026 | Tasks: board_id в модель + схему | tasks | — | done | #63 | `backend/app/tasks/models.py`, `backend/app/tasks/schemas.py` |
+| T-027 | Alembic: миграция multiboard + backfill «Main» | infra | — | done | #64 | `backend/alembic/versions/20260516_000003_multiboard.py` |
+| T-028 | Board: service + router (boards CRUD + favorite) | board | — | done | #65 | `backend/app/board/service.py`, `backend/app/board/router.py` |
+| T-029 | Project: service + router + регистрация в main | project | — | done | #66 | `backend/app/project/service.py`, `backend/app/project/router.py`, `backend/app/main.py` |
+| T-030 | Tasks: board_id, дедуп (board,column,title), фильтр ?board_id | tasks | — | done | #67 | `backend/app/tasks/service.py`, `backend/app/tasks/router.py` |
+| T-031 | Frontend: переключатель досок + роут `/board/[boardId]` | frontend | — | done | #68 | `frontend/app/(app)/board/[boardId]/page.tsx`, `frontend/app/(app)/board/page.tsx`, `frontend/app/(app)/board/BoardPageClient.tsx`, `frontend/components/board/BoardSwitcher.tsx`, `frontend/lib/api.ts`, `frontend/lib/types.ts` |
 
-## Iteration I-04 (active) — Цель: уведомления + admin-панель
+## Iteration I-04.5 (closed) — Цель: дополнительные фичи (параллельная сессия)
+
+> Задачи созданы в параллельной сессии /new-iter, не пересекаются с I-05 по файлам.
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-024* | Workspace onboarding: create page + root redirect | workspace | — | done | #52 | — |
+| T-025* | Fix automation admin UI (schema + structured form) | automation | — | done | #53 | — |
+| T-026* | Auto load-balancing: action type + consumer | events | — | done | #54 | — |
+| T-027* | Duplicate detection: backend 409 + candidates | tasks | — | done | #55 | — |
+| T-028* | Duplicate detection: frontend modal | frontend | — | done | #56 | — |
+
+## Iteration I-04 (closed) — Цель: уведомления + admin-панель
 
 **DoD:**
 - Колокольчик в шапке показывает badge с непрочитанными; клик открывает панель, mark-as-read работает
@@ -31,10 +84,10 @@
 
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
-| T-020 | Notification bell + unread panel | frontend | — | todo | #44 | `frontend/components/notifications/NotificationBell.tsx`, `frontend/app/(app)/AppShell.tsx` |
-| T-021 | Consumer: persist notifications + automation hook | notifications | — | todo | #46 | `backend/app/notifications/service.py`, `backend/app/events/consumer.py` |
-| T-022 | Automation: service + router (CRUD rules) | automation | — | todo | #45 | `backend/app/automation/service.py`, `backend/app/automation/router.py` |
-| T-023 | Admin page: column editor + automation rules UI | frontend | — | todo | #47 | `frontend/app/(app)/admin/page.tsx`, `frontend/components/admin/ColumnEditor.tsx`, `frontend/components/admin/AutomationRules.tsx`, `frontend/components/sidebar/Sidebar.tsx` |
+| T-020 | Notification bell + unread panel | frontend | — | done | #44 | `frontend/components/notifications/NotificationBell.tsx`, `frontend/app/(app)/AppShell.tsx` |
+| T-021 | Consumer: persist notifications + automation hook | notifications | — | done | #46 | `backend/app/notifications/service.py`, `backend/app/events/consumer.py` |
+| T-022 | Automation: service + router (CRUD rules) | automation | — | done | #45 | `backend/app/automation/service.py`, `backend/app/automation/router.py` |
+| T-023 | Admin page: column editor + automation rules UI | frontend | — | done | #47 | `frontend/app/(app)/admin/page.tsx`, `frontend/components/admin/ColumnEditor.tsx`, `frontend/components/admin/AutomationRules.tsx`, `frontend/components/sidebar/Sidebar.tsx` |
 
 ## Iteration I-03 (closed, tag: iter-03-stable) — Цель: трекер задач — полное управление задачами
 
