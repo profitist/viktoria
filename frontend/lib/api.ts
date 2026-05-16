@@ -238,6 +238,9 @@ export const workspaceApi = {
       {}
     ),
 
+  getMembers: (workspaceId: string): Promise<WorkspaceMember[]> =>
+    api.get<WorkspaceMember[]>(`/api/v1/workspaces/${workspaceId}/members`),
+
   addMember: (
     workspaceId: string,
     email: string,

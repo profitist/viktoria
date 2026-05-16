@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import ColumnEditor from "@/components/admin/ColumnEditor";
 import AutomationRules from "@/components/admin/AutomationRules";
 import WorkspaceSettingsPanel from "@/components/admin/WorkspaceSettings";
+import MemberManager from "@/components/admin/MemberManager";
 
 export default function AdminPageClient() {
   const searchParams = useSearchParams();
@@ -22,6 +23,7 @@ export default function AdminPageClient() {
   return (
     <div className="px-8 py-8 max-w-2xl">
       <h1 className="text-xl font-semibold text-white mb-8">Admin Panel</h1>
+      <MemberManager workspaceId={workspaceId} />
       <WorkspaceSettingsPanel workspaceId={workspaceId} />
       <ColumnEditor workspaceId={workspaceId} />
       <AutomationRules workspaceId={workspaceId} />
