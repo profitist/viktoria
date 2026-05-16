@@ -1,3 +1,15 @@
+## FEAT-0010 — Scaffolding модуля comments (models + schemas) — 2026-05-17
+
+Статус: DONE (CTO approved, без issues)
+
+**Создано 3 файла.**
+
+- Создан `backend/app/comments/__init__.py` — пустой маркер пакета
+- Создан `backend/app/comments/models.py` — SQLAlchemy 2.0 модель `Comment`; `__tablename__ = "comment"`; колонки: id (uuid PK gen_random_uuid()), task_id (FK→tasks CASCADE, index), author_id (FK→users, index), body (Text NOT NULL), mentions (JSONB NOT NULL server_default '[]'::jsonb), created_at (TIMESTAMPTZ now()); relationship `author = relationship("User")` для JOIN в T-049
+- Создан `backend/app/comments/schemas.py` — три Pydantic-схемы: `CommentCreate{body: str}` (input, без from_attributes), `CommentAuthor{id, name}` (from_attributes=True), `CommentResponse{id, task_id, author: CommentAuthor, body, mentions: list[UUID], created_at}` (from_attributes=True)
+
+**Архитектура:** `mentions` хранится как JSONB-массив строк UUID в БД; Pydantic автоматически коерсирует строки → UUID при сериализации CommentResponse. `author` relationship без back_populates — T-049 управляет загрузкой (selectin/joined). Нет бизнес-логики — только декларации.
+
 ## FEAT-0009 — Инфраструктура: comment+attachment миграция + MinIO — 2026-05-17
 
 Статус: DONE (CTO approved, без issues)

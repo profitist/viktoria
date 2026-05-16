@@ -40,6 +40,13 @@ comment: id uuid PK, task_id FK→tasks CASCADE, author_id FK→users, body text
 attachment: id uuid PK, task_id FK→tasks CASCADE, filename text, content_type text, size int, storage_key text NOT NULL, uploaded_by FK→users, created_at
 Alembic HEAD: 20260517_000005
 
+## ORM-модуль comments (FEAT-0010)
+backend/app/comments/__init__.py (пустой), models.py (Comment), schemas.py
+Comment.__tablename__ = "comment"; FK task_id→tasks CASCADE, author_id→users; mentions JSONB default '[]'::jsonb; relationship author=User
+CommentCreate{body: str}; CommentAuthor{id,name}; CommentResponse{id,task_id,author:CommentAuthor,body,mentions:list[UUID],created_at}
+Все Response-схемы: from_attributes=True. mentions JSONB→list[str] в БД, Pydantic коерсирует в list[UUID].
+Разблокирует T-049 (service+router comments).
+
 ## MinIO (docker-compose)
 Сервис victory-minio: 9000 (S3 API), 9001 (консоль). Healthcheck: mc ready local.
 backend depends_on minio service_healthy. Volume minio_data персистентный.

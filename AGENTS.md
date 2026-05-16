@@ -111,6 +111,26 @@ attachment: id(uuid PK) task_id(uuid FK→tasks CASCADE) filename(text) content_
 ON DELETE CASCADE: удаление task автоматически чистит comment + attachment.  
 StorageService (T-050): storage_key format = `{task_id}/{uuid}_{filename}`.
 
+### ORM-модуль comments (FEAT-0010)
+
+`backend/app/comments/` — пакет с `__init__.py`, `models.py`, `schemas.py`.
+
+```python
+# models.py — Comment ORM
+from app.comments.models import Comment
+# __tablename__ = "comment" (не "comments")
+# author = relationship("User")  — для JOIN в service (T-049)
+# mentions: Mapped[list] = mapped_column(JSONB, server_default="'[]'::jsonb")
+
+# schemas.py
+from app.comments.schemas import CommentCreate, CommentAuthor, CommentResponse
+# CommentCreate: body str (input, без from_attributes)
+# CommentAuthor: id UUID, name str (from_attributes=True)
+# CommentResponse: id, task_id, author: CommentAuthor, body, mentions: list[UUID], created_at
+```
+
+**Важно для T-049:** `mentions` в JSONB хранится как список строк; Pydantic `list[UUID]` коерсирует их автоматически. Relationship `author` без `lazy` — сервис сам настраивает стратегию загрузки.
+
 ### MinIO в docker-compose
 
 Сервис `victory-minio`: порт 9000 (S3 API), 9001 (веб-консоль).  
