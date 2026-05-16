@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import json
+import logging
 from json import JSONDecodeError
 from typing import Any, get_args
 from uuid import UUID
@@ -13,6 +14,8 @@ from sqlalchemy import select
 
 from app.events.publisher import EVENTS_EXCHANGE, get_channel
 from app.events.types import EventEnvelope, EventType
+
+logger = logging.getLogger(__name__)
 
 TASK_EVENTS_QUEUE = "task_events"
 
@@ -36,7 +39,9 @@ async def start_consumer(app: FastAPI) -> None:
     for routing_key in get_args(EventType):
         await queue.bind(exchange, routing_key=routing_key)
 
-    app.state.rabbitmq_consumer_tag = await queue.consume(process_message)
+    consumer_tag = await queue.consume(process_message)
+    app.state.rabbitmq_consumer_tag = consumer_tag
+    logger.info("RabbitMQ consumer started")
 
 
 async def process_message(message: AbstractIncomingMessage) -> None:
@@ -48,6 +53,7 @@ async def process_message(message: AbstractIncomingMessage) -> None:
         return
 
     if await _is_duplicate(event.event_id):
+        logger.info("duplicate event skipped: %s", event.event_id)
         await message.ack()
         return
 

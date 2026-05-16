@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import engine
 from app.notifications.router import ws_router as _notifications_ws_router
+from app.events.consumer import start_consumer
 
 MODULE_NAMES = (
     "auth",
@@ -36,16 +37,16 @@ def _load_router(module_name: str) -> APIRouter:
 
 
 async def _start_rabbitmq_consumer(app: FastAPI) -> None:
-    app.state.rabbitmq_consumer = None
+    await start_consumer(app)
 
 
 async def _stop_rabbitmq_consumer(app: FastAPI) -> None:
-    consumer = getattr(app.state, "rabbitmq_consumer", None)
-    if consumer is None:
+    consumer_tag = getattr(app.state, "rabbitmq_consumer_tag", None)
+    if consumer_tag is None:
         return
-    close_method = getattr(consumer, "close", None)
-    if callable(close_method):
-        result = close_method()
+    cancel_method = getattr(consumer_tag, "cancel", None)
+    if callable(cancel_method):
+        result = cancel_method()
         if hasattr(result, "__await__"):
             await result
 
