@@ -94,6 +94,33 @@ async def list_user_workspaces(
     ]
 
 
+async def list_members(
+    session: AsyncSession,
+    workspace_id: UUID,
+    current_user: User,
+) -> list[MemberOut]:
+    await _require_member(session, workspace_id, current_user.id)
+
+    result = await session.execute(
+        select(WorkspaceMember)
+        .options(selectinload(WorkspaceMember.user))
+        .where(WorkspaceMember.workspace_id == workspace_id)
+        .order_by(WorkspaceMember.joined_at.asc(), WorkspaceMember.user_id.asc())
+    )
+    memberships = result.scalars().all()
+
+    return [
+        MemberOut(
+            user_id=membership.user_id,
+            email=membership.user.email,
+            name=membership.user.name,
+            role=membership.role.value,
+            joined_at=membership.joined_at,
+        )
+        for membership in memberships
+    ]
+
+
 async def add_member(
     session: AsyncSession,
     workspace_id: UUID,
@@ -210,6 +237,25 @@ async def _get_membership(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="workspace not found",
+        )
+    return membership
+
+
+async def _require_member(
+    session: AsyncSession,
+    workspace_id: UUID,
+    user_id: UUID,
+) -> WorkspaceMember:
+    membership = await session.scalar(
+        select(WorkspaceMember).where(
+            WorkspaceMember.workspace_id == workspace_id,
+            WorkspaceMember.user_id == user_id,
+        )
+    )
+    if membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="workspace access required",
         )
     return membership
 
