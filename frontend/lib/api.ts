@@ -1,3 +1,5 @@
+import type { BoardMeta, BoardDetail, Project } from "./types";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 // =============================================================================
@@ -204,4 +206,27 @@ export const api = {
     const res = await apiFetch(path, { method: "DELETE" });
     if (!res.ok) return handleError(res);
   },
+};
+
+// =============================================================================
+// Хелперы для многодосочности
+// =============================================================================
+
+export const boardsApi = {
+  list: (workspaceId: string): Promise<BoardMeta[]> =>
+    api.get<BoardMeta[]>(`/api/v1/workspaces/${workspaceId}/boards`),
+
+  getDetail: (boardId: string): Promise<{ board: BoardDetail }> =>
+    api.get<{ board: BoardDetail }>(`/api/v1/boards/${boardId}`),
+
+  setFavorite: (boardId: string): Promise<{ is_favorite: boolean }> =>
+    api.post<{ is_favorite: boolean }>(`/api/v1/boards/${boardId}/favorite`, {}),
+
+  unsetFavorite: (boardId: string): Promise<void> =>
+    api.delete(`/api/v1/boards/${boardId}/favorite`),
+};
+
+export const projectsApi = {
+  list: (workspaceId: string): Promise<Project[]> =>
+    api.get<Project[]>(`/api/v1/workspaces/${workspaceId}/projects`),
 };
