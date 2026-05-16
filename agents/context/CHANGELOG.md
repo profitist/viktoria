@@ -1,3 +1,14 @@
+## FEAT-0012 — Comments service + router (бизнес-логика + @mentions) — 2026-05-17
+
+Статус: DONE (CTO approved, без issues)
+
+**Создано 2 файла.**
+
+- Создан `backend/app/comments/service.py` — три функции: `list_comments(session, task_id)` (SELECT+selectinload author ORDER BY created_at ASC); `create_comment(session, task_id, author_id, body)` (404 если task не найдена, regex `@(\w+)` → set() для дедупликации, JOIN User+WorkspaceMember с `func.lower().in_()` для case-insensitive resolve, mentions хранятся как `list[str]` в JSONB, Notification для каждого mention кроме self, commit, re-query с selectinload); `delete_comment(session, comment_id, actor)` (404 если не найден, 403 если не автор и не ADMIN/OWNER)
+- Создан `backend/app/comments/router.py` — `APIRouter(tags=["comments"])`, три эндпоинта: GET /tasks/{task_id}/comments (200), POST /tasks/{task_id}/comments (201), DELETE /comments/{comment_id} (204); все с Depends(get_current_user)+Depends(get_session); main.py не изменён
+
+**Архитектура:** mentions дедуплицируются через set comprehension перед query. `create_notification` из notifications.service вызывается напрямую без изменения файлов notifications/. Роутер подключается в T-050. `CommentResponse.model_validate(comment)` работает через from_attributes + автоматическую коерсию вложенного User → CommentAuthor.
+
 ## FEAT-0011 — Scaffolding модуля attachments (models + schemas) — 2026-05-17
 
 Статус: DONE (CTO approved, без issues)

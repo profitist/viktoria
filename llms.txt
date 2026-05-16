@@ -47,6 +47,13 @@ Attachment.__tablename__ = "attachment"; FK task_id→tasks CASCADE; filename/co
 AttachmentUploader{id,name}; AttachmentResponse{id,task_id,filename|None,content_type|None,size|None,url:str,uploaded_by:AttachmentUploader|None,created_at}
 storage_key не попадает в схему (не утекает в API). Разблокирует T-050.
 
+## Comments service+router (FEAT-0012)
+service.py: list_comments(session,task_id)→list[Comment] (selectinload author, ORDER BY created_at ASC)
+create_comment(session,task_id,author_id,body)→Comment: 404 если task нет; regex @(\w+)+set() дедупликация; JOIN User+WorkspaceMember func.lower().in_(); mentions=[str(uid)]; create_notification для mention≠author; commit; re-query selectinload
+delete_comment(session,comment_id,actor)→None: 404/403 (не автор и не ADMIN/OWNER)
+router.py: APIRouter(tags=["comments"]); GET /tasks/{id}/comments 200; POST /tasks/{id}/comments 201; DELETE /comments/{id} 204; все с Depends(get_current_user); main.py НЕ трогается (подключит T-050)
+CommentResponse.model_validate(comment): from_attributes коерсирует User→CommentAuthor и list[str]→list[UUID]
+
 ## ORM-модуль comments (FEAT-0010)
 backend/app/comments/__init__.py (пустой), models.py (Comment), schemas.py
 Comment.__tablename__ = "comment"; FK task_id→tasks CASCADE, author_id→users; mentions JSONB default '[]'::jsonb; relationship author=User

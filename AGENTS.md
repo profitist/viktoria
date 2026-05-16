@@ -132,6 +132,41 @@ from app.attachments.schemas import AttachmentResponse, AttachmentUploader
 
 **Паттерн T-050:** `StorageService.presign(storage_key)` → signed URL → `AttachmentResponse`.
 
+### Comments service + router (FEAT-0012)
+
+`backend/app/comments/service.py`:
+
+```python
+from app.comments.service import list_comments, create_comment, delete_comment
+
+# list_comments(session, task_id) → list[Comment]
+# — selectinload(Comment.author), ORDER BY created_at ASC
+
+# create_comment(session, task_id, author_id, body) → Comment
+# — 404 если task не найдена
+# — regex @(\w+), set() дедупликация
+# — JOIN User+WorkspaceMember, func.lower().in_() для case-insensitive
+# — mentions = [str(uid) for uid in mention_ids]  # JSONB как list[str]
+# — create_notification() для каждого mention кроме author_id (self)
+# — commit → re-query с selectinload(author)
+
+# delete_comment(session, comment_id, actor: User) → None
+# — 404 если не найден; 403 если не автор и не ADMIN/OWNER
+```
+
+`backend/app/comments/router.py`:
+
+```python
+from app.comments.router import router  # подключить в main.py как /api/v1
+
+# GET  /tasks/{task_id}/comments → list[CommentResponse] 200
+# POST /tasks/{task_id}/comments {body} → CommentResponse 201
+# DELETE /comments/{comment_id} → Response 204
+# Все эндпоинты: Depends(get_current_user) + Depends(get_session)
+```
+
+**Паттерн сериализации:** `CommentResponse.model_validate(comment)` — работает т.к. `CommentAuthor` (from_attributes=True) автоматически валидируется из loaded User relationship. `mentions: list[UUID]` ← Pydantic коерсирует JSONB list[str].
+
 ### ORM-модуль comments (FEAT-0010)
 
 `backend/app/comments/` — пакет с `__init__.py`, `models.py`, `schemas.py`.
