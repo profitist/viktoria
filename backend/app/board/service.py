@@ -516,6 +516,7 @@ def _build_board_out(board: Board) -> BoardOut:
                         title=task.title,
                         description=task.description,
                         column_id=task.column_id,
+                        board_id=task.board_id,
                         workspace_id=task.workspace_id,
                         priority=task.priority.value,
                         tags=list(task.tags),
