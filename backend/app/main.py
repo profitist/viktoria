@@ -6,6 +6,7 @@ from importlib import import_module
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import app.models  # noqa: F401 — registers all ORM mappers before any query runs
 from app.config import get_settings
 from app.database import engine
 from app.events.consumer import start_consumer
