@@ -35,6 +35,13 @@ class Settings(BaseSettings):
     ai_api_key: str | None = Field(default=None, alias="AI_API_KEY")
     ai_model: str | None = Field(default=None, alias="AI_MODEL")
 
+    s3_endpoint: str = Field(default="http://minio:9000", alias="S3_ENDPOINT")
+    s3_access_key: str = Field(default="minioadmin", alias="S3_ACCESS_KEY")
+    s3_secret_key: str = Field(default="minioadmin", alias="S3_SECRET_KEY")
+    s3_bucket: str = Field(default="victory-attachments", alias="S3_BUCKET")
+    attachment_max_size: int = Field(default=10_485_760, alias="ATTACHMENT_MAX_SIZE")
+    attachment_url_ttl: int = Field(default=3600, alias="ATTACHMENT_URL_TTL")
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, value: object) -> object:

@@ -111,6 +111,52 @@ attachment: id(uuid PK) task_id(uuid FK→tasks CASCADE) filename(text) content_
 ON DELETE CASCADE: удаление task автоматически чистит comment + attachment.  
 StorageService (T-050): storage_key format = `{task_id}/{uuid}_{filename}`.
 
+### Attachments StorageService + service + router (FEAT-0013)
+
+`backend/app/attachments/storage.py`:
+
+```python
+from app.attachments.storage import storage  # синглтон StorageService
+
+# boto3 S3/MinIO клиент; все методы async через asyncio.to_thread:
+# await storage.ensure_bucket()           — head→create, idempotent
+# await storage.put(key, data, ct)        — put_object
+# url = await storage.signed_url(key, ttl) — generate_presigned_url
+# await storage.delete(key)               — delete_object (idempotent)
+```
+
+`backend/app/attachments/service.py`:
+
+```python
+from app.attachments.service import list_attachments, upload_attachment, delete_attachment
+
+# ALLOWED_CONTENT_TYPES: set {pdf, txt, docx, xlsx, zip} + image/* prefix
+# upload_attachment: 413 если len(data)>max_size; 415 если не в whitelist
+#   order: storage.put → DB flush → commit → re-query → signed_url
+# delete_attachment: 404/403; storage.delete (idempotent) → DB delete
+# list_attachments: selectinload(Attachment.uploader), map→signed_url
+```
+
+`backend/app/attachments/router.py`:
+
+```python
+from app.attachments.router import router  # tags=["attachments"]
+
+# GET  /tasks/{task_id}/attachments → list[AttachmentResponse] 200
+# POST /tasks/{task_id}/attachments (file: UploadFile=File(...)) → 201
+# DELETE /attachments/{id} → Response 204
+# _get_storage() Depends возвращает module-level storage singleton
+```
+
+**config.py** — 6 новых полей: `s3_endpoint`, `s3_access_key`, `s3_secret_key`, `s3_bucket`, `attachment_max_size` (10MB), `attachment_url_ttl` (3600s).
+
+**main.py** изменён:
+- `MODULE_NAMES` расширен: добавлены `"comments"`, `"attachments"`
+- lifespan: `await _storage.ensure_bucket()` перед RabbitMQ consumer
+- `app/models.py`: добавлены `Comment`, `Attachment` для mapper registration
+
+**Ограничение:** signed URL содержит `S3_ENDPOINT` (docker-internal `http://minio:9000`); браузер не резолвит `minio`. Для production нужен публичный endpoint (пост-MVP).
+
 ### ORM-модуль attachments (FEAT-0011)
 
 `backend/app/attachments/` — пакет с `__init__.py`, `models.py`, `schemas.py`.

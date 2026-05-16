@@ -40,6 +40,15 @@ comment: id uuid PK, task_id FK→tasks CASCADE, author_id FK→users, body text
 attachment: id uuid PK, task_id FK→tasks CASCADE, filename text, content_type text, size int, storage_key text NOT NULL, uploaded_by FK→users, created_at
 Alembic HEAD: 20260517_000005
 
+## Attachments StorageService+service+router (FEAT-0013) — завершает I-08
+storage.py: StorageService(boto3 S3/MinIO); async методы через asyncio.to_thread: ensure_bucket/put/signed_url/delete; синглтон storage=StorageService(settings.s3_*)
+service.py: ALLOWED_CONTENT_TYPES={pdf,txt,docx,xlsx,zip}+image/*; upload: 413/415→put→DB→signed_url; list: selectinload+map signed_url; delete: 404/403→storage.delete(idempotent)→DB
+router.py: tags=["attachments"]; GET /tasks/{id}/attachments 200; POST multipart UploadFile 201; DELETE /attachments/{id} 204; _get_storage() Depends синглтон
+config.py: s3_endpoint/s3_access_key/s3_secret_key/s3_bucket/attachment_max_size(10MB)/attachment_url_ttl(3600)
+main.py: MODULE_NAMES +="comments","attachments"; lifespan: ensure_bucket() перед RabbitMQ; models.py: +Comment,Attachment
+Ограничение: signed URL содержит S3_ENDPOINT (docker-internal); для браузера нужен публичный endpoint (пост-MVP)
+requirements.txt: boto3>=1.34.0
+
 ## ORM-модуль attachments (FEAT-0011)
 backend/app/attachments/__init__.py (пустой), models.py (Attachment), schemas.py
 Attachment.__tablename__ = "attachment"; FK task_id→tasks CASCADE; filename/content_type/size nullable; storage_key Text NOT NULL; uploaded_by UUID nullable FK→users; uploader=relationship("User")
