@@ -59,11 +59,17 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
   const effectiveWorkspaceId = workspaceId;
   const { user, logout } = useAuth();
   const [resolvedWorkspaceName, setResolvedWorkspaceName] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
-    if (workspaceName || !effectiveWorkspaceId) {
+    if (!effectiveWorkspaceId) {
       setResolvedWorkspaceName(null);
+      setIsOwner(false);
       return;
+    }
+
+    if (workspaceName) {
+      setResolvedWorkspaceName(null);
     }
 
     let cancelled = false;
@@ -75,11 +81,15 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
         const currentWorkspace = workspaces.find(
           (workspace) => workspace.id === effectiveWorkspaceId
         );
-        setResolvedWorkspaceName(currentWorkspace?.name ?? null);
+        if (!workspaceName) {
+          setResolvedWorkspaceName(currentWorkspace?.name ?? null);
+        }
+        setIsOwner(currentWorkspace?.role === "owner");
       })
       .catch(() => {
         if (!cancelled) {
           setResolvedWorkspaceName(null);
+          setIsOwner(false);
         }
       });
 
@@ -134,6 +144,9 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         <NavItem href={`/board${workspaceQuery}`} label="Board" />
         <NavItem href={`/ai-groom${workspaceQuery}`} label="AI Groom" />
+        {isOwner && (
+          <NavItem href={`/admin${workspaceQuery}`} label="Admin" />
+        )}
       </nav>
 
       <div

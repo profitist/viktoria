@@ -1,3 +1,18 @@
+## FEAT-0007 — Admin Page (ColumnEditor + AutomationRules) — 2026-05-16
+
+Статус: DONE (`npm run build` — чисто, `/admin` в роутах; `npx tsc --noEmit` — 0 ошибок)
+
+**Создано 3 файла, изменён 1.**
+
+- Создан `frontend/app/(app)/admin/page.tsx` — `"use client"`, читает `workspace_id` из `useSearchParams()`, guard-redirect на `/board` при отсутствии, рендерит `<ColumnEditor>` и `<AutomationRules>` в контейнере `px-8 py-8 max-w-2xl`
+- Создан `frontend/components/admin/ColumnEditor.tsx` — загрузка доски (`GET /api/v1/workspaces/{id}/board`), список колонок с inline Rename (Enter/Escape/blur) и inline Delete (confirm), форма «+ Добавить колонку» (POST); рефетч после каждой мутации; skeleton при загрузке; inline error при CRUD-ошибках
+- Создан `frontend/components/admin/AutomationRules.tsx` — загрузка правил (`GET /api/v1/workspaces/{id}/automation`), список с inline Delete confirm, форма создания (select trigger_event/action_type + textarea JSON payload с live валидацией); локальный тип `AdminAutomationRule` (до реализации T-022)
+- Изменён `frontend/components/sidebar/Sidebar.tsx` — добавлен `isOwner: boolean` state; `GET /api/v1/workspaces/me` теперь также читает `role` из найденного workspace; Admin NavItem рендерится только если `role === "owner"`
+
+**CTO issue (major → solved):** Double-submit при Enter + blur в rename-инпуте — исправлено через `renameSubmittingRef = useRef(false)` (see FEAT-0007-ISSUE-001_solved.md)
+
+**Архитектура:** Automation API использует поля `trigger_event`/`action_type`/`action_payload` (spec T-022), которые отличаются от существующего `AutomationRule` в types.ts (`trigger`/`action.type`/`action.params`). После реализации T-022 нужно унифицировать типы.
+
 ## FEAT-0006 — AddTaskForm расширенные поля — 2026-05-16
 
 Статус: DONE (`npx tsc --noEmit` — 0 новых ошибок, pre-existing @dnd-kit типы не изменились)
