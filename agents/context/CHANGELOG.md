@@ -1,3 +1,19 @@
+## FEAT-0013 — Attachments StorageService + service + router + composition root — 2026-05-17
+
+Статус: DONE (CTO approved, без issues). **Завершает I-08.**
+
+**Создано 3 файла, изменено 4.**
+
+- Создан `backend/app/attachments/storage.py` — `StorageService` (boto3 S3/MinIO); async методы через `asyncio.to_thread`: `ensure_bucket` (head→create idempotent), `put(key,data,ct)`, `signed_url(key,ttl)→str`, `delete(key)`; модульный синглтон `storage = StorageService(settings.s3_*)` 
+- Создан `backend/app/attachments/service.py` — `ALLOWED_CONTENT_TYPES` (set + image/* prefix check); `list_attachments(session,task_id,storage)` (selectinload uploader, signed_url); `upload_attachment(session,task_id,uploader,filename,ct,data,storage)` (413/415 validation, storage.put → DB → commit → re-query → signed_url); `delete_attachment` (404/403, storage.delete → DB delete)
+- Создан `backend/app/attachments/router.py` — `APIRouter(tags=["attachments"])`; GET/POST/DELETE; `file: UploadFile = File(...)`; `_get_storage()` Depends-синглтон; `file.content_type or "application/octet-stream"` fallback
+- Изменён `backend/requirements.txt` — добавлен `boto3>=1.34.0`
+- Изменён `backend/app/config.py` — 6 новых полей Settings: s3_endpoint, s3_access_key, s3_secret_key, s3_bucket, attachment_max_size (10MB), attachment_url_ttl (3600)
+- Изменён `backend/app/models.py` — добавлены импорты Attachment, Comment для ORM mapper registration
+- Изменён `backend/app/main.py` — MODULE_NAMES расширен ("comments", "attachments"); lifespan: `await _storage.ensure_bucket()` перед RabbitMQ consumer
+
+**Архитектура:** signed URL использует S3_ENDPOINT (docker-internal); для внешнего доступа нужен публичный endpoint (пост-MVP). Order: put→DB (не DB→put) предотвращает orphan DB records без файлов. boto3.delete_object idempotent для несуществующих ключей.
+
 ## FEAT-0012 — Comments service + router (бизнес-логика + @mentions) — 2026-05-17
 
 Статус: DONE (CTO approved, без issues)
