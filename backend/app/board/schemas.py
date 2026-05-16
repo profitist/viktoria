@@ -23,6 +23,7 @@ class ColumnPatch(BaseModel):
     position: int | None = None
     color: str | None = None
 
+
 class ColumnReorderItem(BaseModel):
     """Новая позиция конкретной колонки."""
 
@@ -61,6 +62,41 @@ class BoardOut(BaseModel):
     id: UUID
     columns: list[ColumnOut]
     """Колонки отсортированы по полю position по возрастанию."""
+
+
+class BoardCreate(BaseModel):
+    """Тело запроса создания новой доски workspace. Только для admin/owner."""
+
+    name: str
+    description: str | None = None
+    project_id: UUID | None = None
+
+
+class BoardListItem(BaseModel):
+    """Краткое описание доски для переключателя досок и секции избранного."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    description: str | None
+    project_id: UUID | None
+    is_favorite: bool
+
+
+class BoardDetail(BaseModel):
+    """Полное состояние одной доски по контракту multi-board API."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    description: str | None
+    project_id: UUID | None
+    is_favorite: bool
+    columns: list[ColumnOut]
+    """Колонки отсортированы по полю position по возрастанию."""
+
 
 class BoardResponse(BaseModel):
     board: BoardOut

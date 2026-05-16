@@ -3,7 +3,7 @@
 from app.audit.models import AuditLog
 from app.auth.models import User
 from app.automation.models import AutomationRule
-from app.board.models import Board, Column
+from app.board.models import Board, BoardFavorite, Column, Project
 from app.events.models import ProcessedEvent
 from app.notifications.models import Notification
 from app.project.models import Project
@@ -14,6 +14,7 @@ __all__ = [
     "AuditLog",
     "AutomationRule",
     "Board",
+    "BoardFavorite",
     "Column",
     "DeadlineUrgency",
     "Notification",
