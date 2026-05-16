@@ -6,6 +6,7 @@ from app.automation.models import AutomationRule
 from app.board.models import Board, BoardFavorite, Column, Project
 from app.events.models import ProcessedEvent
 from app.notifications.models import Notification
+from app.tags.models import Tag, TaskTag
 from app.tasks.models import DeadlineUrgency, Task, TaskPriority
 from app.workspace.models import Workspace, WorkspaceMember, WorkspaceRole, WorkspaceSettings
 
@@ -19,7 +20,9 @@ __all__ = [
     "Notification",
     "ProcessedEvent",
     "Project",
+    "Tag",
     "Task",
+    "TaskTag",
     "TaskPriority",
     "User",
     "Workspace",
