@@ -23,8 +23,15 @@ class Board(TimestampMixin, Base):
         ForeignKey("workspaces.id", ondelete="CASCADE"),
         nullable=False,
     )
+    project_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("projects.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     workspace = relationship("Workspace", back_populates="board")
+    project = relationship("Project", back_populates="boards")
     columns = relationship(
         "Column",
         back_populates="board",

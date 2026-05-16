@@ -1,5 +1,26 @@
 # Kanban
 
+## Iteration I-05 (active) — Цель: многодосочность — N досок в workspace + проекты + избранное
+
+**DoD:**
+- `alembic upgrade head` на непустой БД проходит; старые задачи видны на доске «Main»
+- `GET /workspaces/{id}/boards` → список с `is_favorite`; `POST` создаёт вторую доску
+- `GET /boards/{id}` → доска с колонками+задачами; `POST/DELETE /boards/{id}/favorite` меняет флаг
+- `GET/POST /workspaces/{id}/projects` → CRUD; `board.project_id` привязывается
+- `POST /tasks` дедупит по `(board_id, column_id, title)`
+- `/board` редиректит на избранную/первую доску; переключатель в шапке меняет boardId
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-024 | Project: модели + схемы | project | — | todo | #61 | `backend/app/project/models.py`, `backend/app/project/schemas.py`, `backend/app/project/__init__.py` |
+| T-025 | Board: модели (project_id, description) + BoardFavorite + схемы | board | — | todo | #62 | `backend/app/board/models.py`, `backend/app/board/schemas.py` |
+| T-026 | Tasks: board_id в модель + схему | tasks | — | todo | #63 | `backend/app/tasks/models.py`, `backend/app/tasks/schemas.py` |
+| T-027 | Alembic: миграция multiboard + backfill «Main» | infra | — | todo | #64 | `backend/alembic/versions/20260516_000003_multiboard.py` |
+| T-028 | Board: service + router (boards CRUD + favorite) | board | — | todo | #65 | `backend/app/board/service.py`, `backend/app/board/router.py` |
+| T-029 | Project: service + router + регистрация в main | project | — | todo | #66 | `backend/app/project/service.py`, `backend/app/project/router.py`, `backend/app/main.py` |
+| T-030 | Tasks: board_id, дедуп (board,column,title), фильтр ?board_id | tasks | — | todo | #67 | `backend/app/tasks/service.py`, `backend/app/tasks/router.py` |
+| T-031 | Frontend: переключатель досок + роут `/board/[boardId]` | frontend | — | todo | #68 | `frontend/app/(app)/board/[boardId]/page.tsx`, `frontend/app/(app)/board/page.tsx`, `frontend/app/(app)/board/BoardPageClient.tsx`, `frontend/components/board/BoardSwitcher.tsx`, `frontend/lib/api.ts`, `frontend/lib/types.ts` |
+
 ## Iteration I-04 (active) — Цель: уведомления + admin-панель
 
 **DoD:**
