@@ -1,6 +1,27 @@
 # Kanban
 
-## Iteration I-07 (active) — Цель: богатые задачи — теги + подзадачи
+## Iteration I-08 (active) — Цель: завершение Фазы 2 — комментарии + вложения
+
+**DoD:**
+- `POST /api/v1/tasks/{id}/comments` создаёт комментарий; `@имя` в теле → `Notification` упомянутому
+- `GET /api/v1/tasks/{id}/comments` → лента с автором и timestamp; `DELETE /api/v1/comments/{id}` → 204
+- `POST /api/v1/tasks/{id}/attachments` (multipart) → файл в MinIO + signed URL; лимит 10MB + whitelist типов (413/415)
+- `GET /api/v1/tasks/{id}/attachments` → список; `DELETE /api/v1/attachments/{id}` → 204
+- `alembic upgrade head` на непустой БД проходит; `docker compose up` поднимает MinIO
+- TaskModal: секция «Комментарии» (лента + ввод + @mention) + секция «Вложения» (drag-drop, превью, «+N»)
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-046 | Comment: модели + схемы (новый модуль) | comments | — | todo | #105 | `backend/app/comments/models.py`, `backend/app/comments/schemas.py`, `backend/app/comments/__init__.py` |
+| T-047 | Attachment: модели + схемы (новый модуль) | attachments | — | todo | #106 | `backend/app/attachments/models.py`, `backend/app/attachments/schemas.py`, `backend/app/attachments/__init__.py` |
+| T-048 | Alembic: миграция comment+attachment + MinIO в compose | infra | — | todo | #107 | `backend/alembic/versions/20260517_000005_comments_attachments.py`, `docker-compose.yml`, `.env.example` |
+| T-049 | Comments: service + router + @mentions→Notification | comments | — | todo | #108 | `backend/app/comments/service.py`, `backend/app/comments/router.py` |
+| T-050 | Attachments: service + StorageService + router + main.py | attachments | — | todo | #109 | `backend/app/attachments/service.py`, `backend/app/attachments/storage.py`, `backend/app/attachments/router.py`, `backend/app/main.py` |
+| T-051 | Frontend: типы + api (Comment, Attachment, multipart) | frontend | — | todo | #110 | `frontend/lib/types.ts`, `frontend/lib/api.ts` |
+| T-052 | Frontend: CommentFeed + AttachmentList компоненты | frontend | — | todo | #111 | `frontend/components/board/CommentFeed.tsx`, `frontend/components/board/AttachmentList.tsx` |
+| T-053 | Frontend: TaskModal — секции комментариев + вложений | frontend | — | todo | #112 | `frontend/components/board/TaskModal.tsx` |
+
+## Iteration I-07 (closed) — Цель: богатые задачи — теги + подзадачи
 
 **DoD:**
 - `GET /api/v1/boards/{id}/tags` → список тегов доски; `POST` создаёт тег; `DELETE` удаляет
@@ -13,14 +34,14 @@
 
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
-| T-038 | Tags: модели + схемы (новый модуль) | tags | — | todo | #88 | `backend/app/tags/models.py`, `backend/app/tags/schemas.py`, `backend/app/tags/__init__.py` |
-| T-039 | Subtask: модель + схема (в tasks модуле) | tasks | — | todo | #89 | `backend/app/tasks/models.py`, `backend/app/tasks/schemas.py` |
-| T-040 | Alembic: миграция tags + subtasks | infra | — | todo | #90 | `backend/alembic/versions/20260517_000004_tags_subtasks.py` |
-| T-041 | Tags: service + router + регистрация в main | tags | — | todo | #91 | `backend/app/tags/service.py`, `backend/app/tags/router.py`, `backend/app/main.py` |
-| T-042 | Tasks: subtask CRUD (service + router) | tasks | — | todo | #92 | `backend/app/tasks/service.py`, `backend/app/tasks/router.py` |
-| T-043 | Frontend: типы Subtask + Tag + api-методы | frontend | — | todo | #93 | `frontend/lib/types.ts`, `frontend/lib/api.ts` |
-| T-044 | Frontend: SubtaskList + прогресс-бар на TaskCard | frontend | — | todo | #94 | `frontend/components/board/SubtaskList.tsx`, `frontend/components/board/TaskCard.tsx` |
-| T-045 | Frontend: TaskModal — секция подзадач + теги | frontend | — | todo | #95 | `frontend/components/board/TaskModal.tsx` |
+| T-038 | Tags: модели + схемы (новый модуль) | tags | — | done | #88 | `backend/app/tags/models.py`, `backend/app/tags/schemas.py`, `backend/app/tags/__init__.py` |
+| T-039 | Subtask: модель + схема (в tasks модуле) | tasks | — | done | #89 | `backend/app/tasks/models.py`, `backend/app/tasks/schemas.py` |
+| T-040 | Alembic: миграция tags + subtasks | infra | — | done | #90 | `backend/alembic/versions/20260517_000004_tags_subtasks.py` |
+| T-041 | Tags: service + router + регистрация в main | tags | — | done | #91 | `backend/app/tags/service.py`, `backend/app/tags/router.py`, `backend/app/main.py` |
+| T-042 | Tasks: subtask CRUD (service + router) | tasks | — | done | #92 | `backend/app/tasks/service.py`, `backend/app/tasks/router.py` |
+| T-043 | Frontend: типы Subtask + Tag + api-методы | frontend | — | done | #93 | `frontend/lib/types.ts`, `frontend/lib/api.ts` |
+| T-044 | Frontend: SubtaskList + прогресс-бар на TaskCard | frontend | — | done | #94 | `frontend/components/board/SubtaskList.tsx`, `frontend/components/board/TaskCard.tsx` |
+| T-045 | Frontend: TaskModal — секция подзадач + теги | frontend | — | done | #95 | `frontend/components/board/TaskModal.tsx` |
 
 ## Iteration I-06 (closed) — Цель: управление участниками + навигация воркспейсов/досок
 

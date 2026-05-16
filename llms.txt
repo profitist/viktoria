@@ -29,6 +29,20 @@ get_current_user — FastAPI Depends; парсит Bearer, ищет User в БД
 DATABASE_URL — postgresql+asyncpg://...
 JWT_SECRET — минимум 32 символа (HS256)
 RABBITMQ_URL — amqp://... (опционально, consumer не реализован)
+S3_ENDPOINT — http://minio:9000 (в compose), внешний S3 для prod
+S3_ACCESS_KEY / S3_SECRET_KEY — MinIO/S3 credentials
+S3_BUCKET — victory-attachments (bucket создаётся StorageService при старте)
+ATTACHMENT_MAX_SIZE — байты, default 10485760 (10MB)
+ATTACHMENT_URL_TTL — секунды signed URL, default 3600
+
+## Таблицы БД (comment + attachment, FEAT-0009)
+comment: id uuid PK, task_id FK→tasks CASCADE, author_id FK→users, body text NOT NULL, mentions jsonb default '[]', created_at
+attachment: id uuid PK, task_id FK→tasks CASCADE, filename text, content_type text, size int, storage_key text NOT NULL, uploaded_by FK→users, created_at
+Alembic HEAD: 20260517_000005
+
+## MinIO (docker-compose)
+Сервис victory-minio: 9000 (S3 API), 9001 (консоль). Healthcheck: mc ready local.
+backend depends_on minio service_healthy. Volume minio_data персистентный.
 
 # Victory Kanban — Frontend Infrastructure
 
