@@ -104,7 +104,7 @@ await api.put<AutomationRule>(`/api/v1/rules/${id}`, rulePayload);
 await api.delete(`/api/v1/tasks/${id}`);
 ```
 
-Хелперы устанавливают `Content-Type: application/json` автоматически. При HTTP-ошибках (4xx, 5xx кроме 401) бросают `Error` с текстом из поля `detail` ответа или `"HTTP <status>"`.
+Хелперы устанавливают `Content-Type: application/json` автоматически. При HTTP-ошибках (4xx, 5xx кроме 401) бросают `ApiError` с полями `message` (из поля `detail` ответа или `"HTTP <status>"`) и `status: number` (HTTP-код).
 
 **Поведение при 401:**
 
@@ -173,7 +173,7 @@ ws.disconnect();
 |-------|-----------------|
 | `board.task_created` | `{ task: Task }` |
 | `board.task_updated` | `{ task: Task }` |
-| `board.task_moved` | `{ task_id: string, from_column_id: string, to_column_id: string }` |
+| `board.task_moved` | `{ task: Task, column_id: string, position: number }` |
 | `board.task_deleted` | `{ task_id: string }` |
 | `notification.created` | `{ id, type, message, created_at }` |
 | `event_log.entry` | `{ event_id, event_type, status, detail, ts }` |
@@ -455,3 +455,102 @@ backend/app/
 - `hub.py` используется: consumer (`app.events.consumer`) вызывает `manager.broadcast(...)`.
 - `router.py` зависит от: `hub.py`, `jsonrpc.py`, `service.py`, `schemas.py`, `auth/deps.py`.
 - `models.py` (`Notification`) создаётся consumer-ом при обработке событий из RabbitMQ.
+
+---
+
+## Frontend: Kanban Board (FEAT-0003)
+
+Главный экран продукта — канбан-доска с drag-drop, оптимистичными обновлениями и real-time синхронизацией через WebSocket.
+
+### ApiError
+
+`lib/api.ts` экспортирует `ApiError extends Error` с полем `readonly status: number`. Все хелперы `api.*` бросают `ApiError` при HTTP-ошибках.
+
+```ts
+import { api, ApiError } from "@/lib/api";
+
+try {
+  await api.post("/api/v1/tasks", payload);
+} catch (e) {
+  if (e instanceof ApiError && e.status === 409) {
+    // специфичная ошибка
+  }
+}
+```
+
+Никогда не детектировать HTTP-статус через `message.includes("409")` — только через `instanceof ApiError` и `.status`.
+
+### boardUtils.ts — иммутабельные мутаторы Board state
+
+```ts
+import { moveTaskInBoard, addTaskToColumn, replaceTask, deleteTask } from "@/lib/boardUtils";
+```
+
+Все функции принимают `board: Board` и возвращают новый `Board`. Без side-effects. Единственное место для логики изменения board state. При добавлении новых операций над Board — расширять этот модуль, не дублировать инлайново.
+
+### Оптимистичный update + rollback
+
+```ts
+// 1. Snapshot захватывается внутри functional updater
+let snapshot: Board | null = null;
+setBoard((prev) => {
+  if (!prev) return prev;
+  snapshot = structuredClone(prev);
+  return moveTaskInBoard(prev, taskId, targetColumnId, newPosition);
+});
+
+// 2. API-запрос в фоне
+api.put(...).catch(() => {
+  if (snapshot) setBoard(snapshot);
+  showToast("Не удалось переместить задачу");
+});
+```
+
+Snapshot обязательно внутри updater-функции — защита от stale closure при параллельных WS-событиях.
+
+### WS-обработчики в page.tsx
+
+```ts
+// Стабильные ссылки — обязательны для корректного ws.off() в cleanup
+const handleTaskCreated = useCallback((params: Record<string, unknown>) => {
+  const task = params["task"] as Task;
+  setBoard((prev) => {        // functional updater — не stale closure
+    if (!prev) return prev;
+    if (prev.columns.find(c => c.id === task.column_id)?.tasks.some(t => t.id === task.id)) return prev; // идемпотентность
+    return addTaskToColumn(prev, task);
+  });
+}, []); // пустой dep-массив = стабильная ссылка
+```
+
+Cleanup в `useEffect`:
+
+```ts
+return () => {
+  ws.off("board.task_created", handleTaskCreated);
+  ws.disconnect();
+};
+```
+
+### Компонентная структура
+
+```
+app/(app)/board/page.tsx       — владелец Board state, WS-подписки, onTaskMove/onTaskCreate
+  KanbanBoard.tsx              — DndContext, DragOverlay, горизонтальный layout колонок
+    Column.tsx                 — useDroppable, SortableContext, AddTaskForm, isAddingTask state
+      TaskCard.tsx             — display-only (title, priority, deadline, assignee)
+      AddTaskForm.tsx          — контролируемый input title, локальный submitting/error state
+  BoardSkeleton.tsx            — статичный animate-pulse, нет props
+  ErrorBanner.tsx              — message + опциональный onRetry
+  PriorityBadge.tsx            — TaskPriority → цветной бейдж
+  DeadlineChip.tsx             — deadline + DeadlineUrgency → форматированная дата с цветом
+```
+
+`page.tsx` — единственный источник правды для `board: Board | null`. Все мутации — только через колбэки, передаваемые вниз как props.
+
+### DnD (@dnd-kit/core + @dnd-kit/sortable)
+
+- `DndContext` в `KanbanBoard`, `PointerSensor` с `activationConstraint: { distance: 8 }` — предотвращает случайный drag при клике, работает для mouse и touch
+- `useDroppable({ id: column.id })` в `Column` — droppable-зона
+- `useSortable({ id: task.id })` во внутреннем `SortableTaskCard`-враппере в `Column`
+- `DragOverlay` рендерит клон карточки (передаёт `isDragging={false}` чтобы клон не был полупрозрачным)
+- В `onDragEnd`: если `over.id` — это `task.id`, ищем колонку задачи; если `column.id` — вставляем в конец

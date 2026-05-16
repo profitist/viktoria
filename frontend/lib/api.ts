@@ -131,6 +131,20 @@ export async function apiFetch(
 }
 
 // =============================================================================
+// Типизированная ошибка с HTTP-статусом
+// =============================================================================
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+// =============================================================================
 // Хелпер для обработки HTTP-ошибок (4xx, 5xx кроме 401)
 // =============================================================================
 
@@ -142,7 +156,7 @@ async function handleError(res: Response): Promise<never> {
   } catch {
     // Тело не распарсилось — используем статус-код
   }
-  throw new Error(detail ?? `HTTP ${res.status}`);
+  throw new ApiError(detail ?? `HTTP ${res.status}`, res.status);
 }
 
 // =============================================================================
