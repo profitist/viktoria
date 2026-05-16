@@ -8,10 +8,6 @@ import { useAuth } from "@/app/providers";
 import { api } from "@/lib/api";
 import type { Workspace } from "@/lib/types";
 
-import { useAuth } from "@/app/providers";
-import { api } from "@/lib/api";
-import type { Workspace } from "@/lib/types";
-
 interface NavItemProps {
   href: string;
   label: string;
