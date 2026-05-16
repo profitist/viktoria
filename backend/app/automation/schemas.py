@@ -1,7 +1,7 @@
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 RuleTrigger = Literal["task.created", "task.moved", "task.updated", "deadline.approaching"]
 """
@@ -20,13 +20,20 @@ RuleOperator = Literal["eq", "contains", "gt", "lt"]
   gt / lt  — больше/меньше (для числовых полей и дат)
 """
 
-RuleActionType = Literal["move_to_column", "add_tag", "notify_members", "notify_all"]
+RuleActionType = Literal[
+    "move_to_column",
+    "add_tag",
+    "notify_members",
+    "notify_all",
+    "suggest_assignee_balanced",
+]
 """
 Действие при срабатывании правила:
   move_to_column  — переместить задачу в указанную колонку
   add_tag         — добавить тег к задаче
   notify_members  — отправить уведомление участникам workspace
   notify_all      — alias notify_members для событийного consumer-а
+  suggest_assignee_balanced — предложить менеджерам исполнителя с минимальной нагрузкой
 """
 
 
@@ -56,10 +63,11 @@ class RuleAction(BaseModel):
       add_tag:         {"tag": "overdue"}
       notify_members:  {"message": "Задача стала критической"}
       notify_all:      {"message": "Задача стала критической"}
+      suggest_assignee_balanced: {}
     """
 
     type: RuleActionType
-    params: dict[str, Any]
+    params: dict[str, Any] = Field(default_factory=dict)
 
 
 class AutomationRuleCreate(BaseModel):
