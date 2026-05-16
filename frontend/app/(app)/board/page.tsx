@@ -58,7 +58,16 @@ function BoardPageContent() {
 
   useEffect(() => {
     if (!workspaceId) {
-      router.replace("/login");
+      // Нет workspace_id — пробуем получить первый воркспейс пользователя
+      api.get<{ id: string }[]>("/api/v1/workspaces/me")
+        .then((list) => {
+          if (list.length > 0) {
+            router.replace(`/board?workspace_id=${list[0].id}`);
+          } else {
+            router.replace("/login");
+          }
+        })
+        .catch(() => router.replace("/login"));
       return;
     }
     loadBoard();
