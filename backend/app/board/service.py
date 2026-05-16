@@ -3,19 +3,26 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.auth.models import User
-from app.board.models import Board, Column
+from app.board.models import Board, BoardFavorite, Column, Project
 from app.board.schemas import (
+    BoardCreatedOut,
+    BoardCreate,
+    BoardDetail,
     BoardOut,
+    BoardListItem,
+    BoardPatch,
     ColumnCreate,
     ColumnOut,
     ColumnPatch,
     ColumnReorder,
+    FavoriteResponse,
 )
+from app.tasks.models import Task
 from app.tasks.schemas import TaskOut
 from app.tasks.service import compute_deadline_urgency
 from app.workspace.models import WorkspaceMember, WorkspaceRole
@@ -30,7 +37,7 @@ async def get_or_create_board(
     created_or_changed = False
     board = await _get_board_by_workspace(session, workspace_id)
     if board is None:
-        board = Board(workspace_id=workspace_id)
+        board = Board(workspace_id=workspace_id, name="Main")
         session.add(board)
         await session.flush()
         created_or_changed = True
@@ -62,6 +69,157 @@ async def get_board_with_columns(
     await _require_workspace_member(session, workspace_id, current_user.id)
     board = await get_or_create_board(session, workspace_id)
     return _build_board_out(board)
+
+
+async def list_boards(
+    session: AsyncSession,
+    workspace_id: UUID,
+    current_user: User,
+) -> list[BoardListItem]:
+    await _require_workspace_member(session, workspace_id, current_user.id)
+
+    result = await session.execute(
+        select(Board)
+        .where(Board.workspace_id == workspace_id)
+        .order_by(Board.created_at.asc(), Board.id.asc())
+    )
+    boards = result.scalars().all()
+    favorite_ids = await _get_favorite_board_ids(session, current_user.id, workspace_id)
+    return [_build_board_list_item(board, favorite_ids) for board in boards]
+
+
+async def create_board(
+    session: AsyncSession,
+    workspace_id: UUID,
+    payload: BoardCreate,
+    current_user: User,
+) -> BoardCreatedOut:
+    await _require_workspace_admin(session, workspace_id, current_user.id)
+    await _validate_project(session, workspace_id, payload.project_id)
+
+    board = Board(
+        workspace_id=workspace_id,
+        name=payload.name,
+        description=payload.description,
+        project_id=payload.project_id,
+    )
+    session.add(board)
+    await session.flush()
+
+    for position, name in enumerate(DEFAULT_COLUMNS):
+        session.add(Column(board_id=board.id, name=name, position=position))
+
+    await session.commit()
+    await session.refresh(board)
+    return _build_board_created_out(board)
+
+
+async def get_board(
+    session: AsyncSession,
+    board_id: UUID,
+    current_user: User,
+) -> BoardDetail:
+    board = await _get_board_or_404(session, board_id)
+    await _require_workspace_member(session, board.workspace_id, current_user.id)
+    is_favorite = await _is_favorite(session, current_user.id, board.id)
+    return _build_board_detail(board, is_favorite)
+
+
+async def patch_board(
+    session: AsyncSession,
+    board_id: UUID,
+    payload: BoardPatch,
+    current_user: User,
+) -> BoardDetail:
+    board = await _get_board_basic_or_404(session, board_id)
+    await _require_workspace_admin(session, board.workspace_id, current_user.id)
+
+    if "name" in payload.model_fields_set:
+        if payload.name is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="name cannot be null",
+            )
+        board.name = payload.name
+
+    if "description" in payload.model_fields_set:
+        board.description = payload.description
+
+    if "project_id" in payload.model_fields_set:
+        await _validate_project(session, board.workspace_id, payload.project_id)
+        board.project_id = payload.project_id
+
+    await session.commit()
+
+    reloaded_board = await _get_board_or_404(session, board.id)
+    is_favorite = await _is_favorite(session, current_user.id, board.id)
+    return _build_board_detail(reloaded_board, is_favorite)
+
+
+async def delete_board(
+    session: AsyncSession,
+    board_id: UUID,
+    current_user: User,
+) -> None:
+    board = await _get_board_basic_or_404(session, board_id)
+    await _require_workspace_admin(session, board.workspace_id, current_user.id)
+
+    board_count = await session.scalar(
+        select(func.count(Board.id)).where(Board.workspace_id == board.workspace_id)
+    )
+    if board_count is None or board_count <= 1:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="cannot delete last board",
+        )
+
+    column_ids = await session.scalars(select(Column.id).where(Column.board_id == board.id))
+    ids = list(column_ids)
+    if ids:
+        await session.execute(delete(Task).where(Task.column_id.in_(ids)))
+
+    await session.delete(board)
+    await session.commit()
+
+
+async def set_favorite(
+    session: AsyncSession,
+    board_id: UUID,
+    current_user: User,
+) -> FavoriteResponse:
+    board = await _get_board_basic_or_404(session, board_id)
+    await _require_workspace_member(session, board.workspace_id, current_user.id)
+
+    existing = await session.scalar(
+        select(BoardFavorite).where(
+            BoardFavorite.user_id == current_user.id,
+            BoardFavorite.board_id == board.id,
+        )
+    )
+    if existing is None:
+        session.add(BoardFavorite(user_id=current_user.id, board_id=board.id))
+        await session.commit()
+
+    return FavoriteResponse(is_favorite=True)
+
+
+async def unset_favorite(
+    session: AsyncSession,
+    board_id: UUID,
+    current_user: User,
+) -> None:
+    board = await _get_board_basic_or_404(session, board_id)
+    await _require_workspace_member(session, board.workspace_id, current_user.id)
+
+    favorite = await session.scalar(
+        select(BoardFavorite).where(
+            BoardFavorite.user_id == current_user.id,
+            BoardFavorite.board_id == board.id,
+        )
+    )
+    if favorite is not None:
+        await session.delete(favorite)
+        await session.commit()
 
 
 async def create_column(
@@ -207,7 +365,21 @@ async def _get_board_by_workspace(
         select(Board)
         .options(selectinload(Board.columns).selectinload(Column.tasks))
         .where(Board.workspace_id == workspace_id)
+        .order_by(Board.created_at.asc(), Board.id.asc())
     )
+
+
+async def _get_board_basic_or_404(
+    session: AsyncSession,
+    board_id: UUID,
+) -> Board:
+    board = await session.scalar(select(Board).where(Board.id == board_id))
+    if board is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="board not found",
+        )
+    return board
 
 
 async def _get_board_or_404(
@@ -245,6 +417,88 @@ async def _get_column(
             detail="column not found",
         )
     return column
+
+
+async def _validate_project(
+    session: AsyncSession,
+    workspace_id: UUID,
+    project_id: UUID | None,
+) -> None:
+    if project_id is None:
+        return
+
+    project = await session.scalar(
+        select(Project.id).where(
+            Project.id == project_id,
+            Project.workspace_id == workspace_id,
+        )
+    )
+    if project is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="project not found",
+        )
+
+
+async def _get_favorite_board_ids(
+    session: AsyncSession,
+    user_id: UUID,
+    workspace_id: UUID,
+) -> set[UUID]:
+    result = await session.execute(
+        select(BoardFavorite.board_id)
+        .join(Board, Board.id == BoardFavorite.board_id)
+        .where(
+            BoardFavorite.user_id == user_id,
+            Board.workspace_id == workspace_id,
+        )
+    )
+    return set(result.scalars().all())
+
+
+async def _is_favorite(
+    session: AsyncSession,
+    user_id: UUID,
+    board_id: UUID,
+) -> bool:
+    favorite = await session.scalar(
+        select(BoardFavorite.board_id).where(
+            BoardFavorite.user_id == user_id,
+            BoardFavorite.board_id == board_id,
+        )
+    )
+    return favorite is not None
+
+
+def _build_board_created_out(board: Board) -> BoardCreatedOut:
+    return BoardCreatedOut(
+        id=board.id,
+        name=board.name,
+        description=board.description,
+        project_id=board.project_id,
+    )
+
+
+def _build_board_list_item(board: Board, favorite_ids: set[UUID]) -> BoardListItem:
+    return BoardListItem(
+        id=board.id,
+        name=board.name,
+        description=board.description,
+        project_id=board.project_id,
+        is_favorite=board.id in favorite_ids,
+    )
+
+
+def _build_board_detail(board: Board, is_favorite: bool) -> BoardDetail:
+    board_out = _build_board_out(board)
+    return BoardDetail(
+        id=board.id,
+        name=board.name,
+        description=board.description,
+        project_id=board.project_id,
+        is_favorite=is_favorite,
+        columns=board_out.columns,
+    )
 
 
 def _build_board_out(board: Board) -> BoardOut:

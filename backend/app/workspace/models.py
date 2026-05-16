@@ -39,11 +39,10 @@ class Workspace(TimestampMixin, Base):
         cascade="all, delete-orphan",
         uselist=False,
     )
-    board = relationship(
+    boards = relationship(
         "Board",
         back_populates="workspace",
         cascade="all, delete-orphan",
-        uselist=False,
     )
     projects = relationship(
         "Project",

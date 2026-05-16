@@ -67,9 +67,28 @@ class BoardOut(BaseModel):
 class BoardCreate(BaseModel):
     """Тело запроса создания новой доски workspace. Только для admin/owner."""
 
-    name: str
+    name: str = Field(min_length=1, max_length=255)
     description: str | None = None
     project_id: UUID | None = None
+
+
+class BoardPatch(BaseModel):
+    """Частичное обновление доски. Только переданные поля будут изменены."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = None
+    project_id: UUID | None = None
+
+
+class BoardCreatedOut(BaseModel):
+    """Краткое представление доски после создания."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    description: str | None
+    project_id: UUID | None
 
 
 class BoardListItem(BaseModel):
@@ -98,8 +117,20 @@ class BoardDetail(BaseModel):
     """Колонки отсортированы по полю position по возрастанию."""
 
 
+class FavoriteResponse(BaseModel):
+    is_favorite: bool
+
+
 class BoardResponse(BaseModel):
     board: BoardOut
+
+
+class BoardCreatedResponse(BaseModel):
+    board: BoardCreatedOut
+
+
+class BoardDetailResponse(BaseModel):
+    board: BoardDetail
 
 
 class ColumnResponse(BaseModel):

@@ -49,7 +49,7 @@ class Board(TimestampMixin, Base):
         nullable=True,
     )
 
-    workspace = relationship("Workspace", back_populates="board")
+    workspace = relationship("Workspace", back_populates="boards")
     project = relationship("Project", back_populates="boards")
     columns = relationship(
         "Column",
