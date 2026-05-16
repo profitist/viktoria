@@ -93,7 +93,7 @@ export default function TaskModal({ task, workspaceId, onSave, onDelete, onClose
     priority: task.priority,
     deadline: task.deadline ?? "",
     assignee_id: task.assignee_id ?? "",
-    tags: task.tags.join(", "),
+    tags: task.tags.map(t => t.name).join(", "),
   });
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -156,7 +156,7 @@ export default function TaskModal({ task, workspaceId, onSave, onDelete, onClose
       priority: task.priority,
       deadline: task.deadline ?? "",
       assignee_id: task.assignee_id ?? "",
-      tags: task.tags.join(", "),
+      tags: task.tags.map(t => t.name).join(", "),
     });
     setTitleError(null);
     setMode("view");
@@ -178,7 +178,7 @@ export default function TaskModal({ task, workspaceId, onSave, onDelete, onClose
       return;
     }
 
-    const parsedTags = formData.tags
+    const parsedTagNames = formData.tags
       .split(",")
       .map(t => t.trim())
       .filter(t => t.length > 0);
@@ -190,7 +190,8 @@ export default function TaskModal({ task, workspaceId, onSave, onDelete, onClose
       priority: formData.priority,
       deadline: formData.deadline || null,
       assignee_id: formData.assignee_id || null,
-      tags: parsedTags,
+      // Legacy string tags mapped to Tag shape; will be replaced by tagsApi
+      tags: parsedTagNames.map(name => ({ id: name, board_id: "", name, color: "" })),
     };
 
     setIsSaving(true);
@@ -415,7 +416,7 @@ function ViewBody({ task, members }: { task: Task; members: WorkspaceMember[] })
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
             {task.tags.map(tag => (
               <span
-                key={tag}
+                key={tag.id}
                 style={{
                   background: "rgba(59,130,246,0.1)",
                   border: "1px solid rgba(59,130,246,0.25)",
@@ -426,7 +427,7 @@ function ViewBody({ task, members }: { task: Task; members: WorkspaceMember[] })
                   borderRadius: "999px",
                 }}
               >
-                {tag}
+                {tag.name}
               </span>
             ))}
           </div>

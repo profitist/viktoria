@@ -1,16 +1,8 @@
-// =============================================================================
-// Раздел 1 — Пользователи и аутентификация
-// =============================================================================
-
 export interface User {
   id: string;
   email: string;
   name: string;
 }
-
-// =============================================================================
-// Раздел 2 — Воркспейсы
-// =============================================================================
 
 export type WorkspaceRole = "owner" | "admin" | "member";
 
@@ -39,13 +31,29 @@ export interface WorkspaceMember {
   joined_at: string;
 }
 
-// =============================================================================
-// Раздел 3 — Задачи
-// =============================================================================
-
 export type TaskPriority = "low" | "medium" | "high" | "critical";
 
 export type DeadlineUrgency = "none" | "soon" | "critical";
+
+export interface Tag {
+  id: string;
+  board_id: string;
+  name: string;
+  color: string;
+}
+
+export interface SubtaskProgress {
+  done_count: number;
+  total_count: number;
+}
+
+export interface Subtask {
+  id: string;
+  task_id: string;
+  title: string;
+  is_done: boolean;
+  order: number;
+}
 
 export interface Task {
   id: string;
@@ -54,16 +62,13 @@ export interface Task {
   column_id: string;
   workspace_id: string;
   priority: TaskPriority;
-  tags: string[];
+  tags: Tag[];
+  subtask_progress?: SubtaskProgress;
   assignee_id: string | null;
   created_at: string;
   deadline: string | null;
   deadline_urgency: DeadlineUrgency;
 }
-
-// =============================================================================
-// Раздел 4 — Доска
-// =============================================================================
 
 export interface Column {
   id: string;
@@ -98,10 +103,6 @@ export interface Project {
   name: string;
   board_count: number;
 }
-
-// =============================================================================
-// Раздел 5 — Автоматизация
-// =============================================================================
 
 export interface RuleCondition {
   field: string;
@@ -138,10 +139,6 @@ export interface AutomationRule {
   action: RuleAction;
 }
 
-// =============================================================================
-// Раздел 6 — Уведомления
-// =============================================================================
-
 export interface Notification {
   id: string;
   type: string;
@@ -149,10 +146,6 @@ export interface Notification {
   read: boolean;
   created_at: string;
 }
-
-// =============================================================================
-// Раздел 7 — Аудит
-// =============================================================================
 
 export interface AuditChange {
   field: string;
@@ -175,20 +168,14 @@ export interface AuditLogEntry {
   created_at: string;
 }
 
-// =============================================================================
-// Раздел 8 — WebSocket / JSON-RPC
-// =============================================================================
-
 export interface JsonRpcMessage {
   jsonrpc: "2.0";
   method: string;
   params: Record<string, unknown>;
 }
 
-// Статусы события из pipeline
 export type EventLogStatus = "received" | "deduped" | "enriched" | "broadcast";
 
-// Запись в EventLogPanel — данные приходят по WS-методу event_log.entry
 export interface EventLogEntry {
   event_id: string;    // уникальный ID события (ключ для React list)
   event_type: string;  // "task.created" | "task.moved" | ...
@@ -266,10 +253,6 @@ export function parseMoveParams(
     position: p["position"] as number,
   };
 }
-
-// =============================================================================
-// Раздел 9 — AI-груминг
-// =============================================================================
 
 export interface GroomQuestion {
   id: string;
