@@ -15,6 +15,7 @@ import {
 } from "@/lib/boardUtils";
 import KanbanBoard from "@/components/board/KanbanBoard";
 import TaskModal from "@/components/board/TaskModal";
+import type { AddTaskData } from "@/components/board/AddTaskForm";
 import BoardSkeleton from "@/components/board/BoardSkeleton";
 import ErrorBanner from "@/components/board/ErrorBanner";
 
@@ -218,30 +219,33 @@ export default function BoardPageClient() {
       });
   }
 
-  async function handleTaskCreate(columnId: string, title: string): Promise<void> {
+  async function handleTaskCreate(columnId: string, data: AddTaskData): Promise<void> {
     if (!workspaceId) return;
 
     const tempTask: Task = {
       id: `temp-${Date.now()}`,
-      title,
+      title: data.title,
       column_id: columnId,
       workspace_id: workspaceId,
-      priority: "medium",
+      priority: data.priority,
       tags: [],
       assignee_id: null,
       created_at: new Date().toISOString(),
-      deadline: null,
+      deadline: data.deadline ?? null,
       deadline_urgency: "none",
-      description: "",
+      description: data.description ?? "",
     };
 
     setBoard((prev) => (prev ? addTaskToColumn(prev, tempTask) : prev));
 
     try {
       const created = await api.post<Task>("/api/v1/tasks", {
-        title,
+        title: data.title,
         column_id: columnId,
         workspace_id: workspaceId,
+        priority: data.priority,
+        description: data.description,
+        deadline: data.deadline,
       });
       setBoard((prev) => {
         if (!prev) return prev;
