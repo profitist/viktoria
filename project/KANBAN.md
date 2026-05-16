@@ -1,6 +1,6 @@
 # Kanban
 
-## Iteration I-04 (active) — Цель: уведомления + admin-панель
+## Iteration I-04 (closed, tag: iter-04-stable) — Цель: уведомления + admin-панель
 
 **DoD:**
 - Колокольчик в шапке показывает badge с непрочитанными; клик открывает панель, mark-as-read работает
@@ -10,10 +10,10 @@
 
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
-| T-020 | Notification bell + unread panel | frontend | — | todo | #44 | `frontend/components/notifications/NotificationBell.tsx`, `frontend/app/(app)/AppShell.tsx` |
-| T-021 | Consumer: persist notifications + automation hook | notifications | — | todo | #46 | `backend/app/notifications/service.py`, `backend/app/events/consumer.py` |
-| T-022 | Automation: service + router (CRUD rules) | automation | — | todo | #45 | `backend/app/automation/service.py`, `backend/app/automation/router.py` |
-| T-023 | Admin page: column editor + automation rules UI | frontend | — | todo | #47 | `frontend/app/(app)/admin/page.tsx`, `frontend/components/admin/ColumnEditor.tsx`, `frontend/components/admin/AutomationRules.tsx`, `frontend/components/sidebar/Sidebar.tsx` |
+| T-020 | Notification bell + unread panel | frontend | @frakin-000 | done | #44 | `frontend/components/notifications/NotificationBell.tsx`, `frontend/app/(app)/AppShell.tsx` |
+| T-021 | Consumer: persist notifications + automation hook | notifications | @xionter | done | #46 | `backend/app/notifications/service.py`, `backend/app/events/consumer.py` |
+| T-022 | Automation: service + router (CRUD rules) | automation | @xionter | done | #45 | `backend/app/automation/service.py`, `backend/app/automation/router.py` |
+| T-023 | Admin page: column editor + automation rules UI | frontend | @pavilk | done | #47 | `frontend/app/(app)/admin/page.tsx`, `frontend/components/admin/ColumnEditor.tsx`, `frontend/components/admin/AutomationRules.tsx`, `frontend/components/sidebar/Sidebar.tsx` |
 
 ## Iteration I-03 (closed, tag: iter-03-stable) — Цель: трекер задач — полное управление задачами
 
