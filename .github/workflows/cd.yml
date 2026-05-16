@@ -56,13 +56,13 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Deploy application from deploy branch
-        if: github.ref == 'refs/heads/deploy'
+      - name: Deploy application from master branch
+        if: github.ref == 'refs/heads/master'
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
             "cd /home/snap/viktoria/viktoria && \
-             git fetch origin deploy && \
-             git reset --hard origin/deploy && \
+             git fetch origin master && \
+             git reset --hard origin/master && \
              sudo docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} -p ${{ secrets.GHCR_PAT }} && \
              export FRONTEND_IMAGE=ghcr.io/${{ github.repository }}-frontend:${{ github.sha }} && \
              export BACKEND_IMAGE=ghcr.io/${{ github.repository }}-backend:${{ github.sha }} && \
