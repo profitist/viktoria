@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+"use client";
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -318,7 +318,7 @@ function BoardPageContent() {
 export default function BoardPage() {
   return (
     <Suspense fallback={<BoardSkeleton />}>
-      <BoardPageClient />
+      <BoardPageContent />
     </Suspense>
   );
 }
