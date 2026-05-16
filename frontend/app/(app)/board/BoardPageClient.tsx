@@ -303,6 +303,7 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
       {selectedTask && workspaceId && (
         <TaskModal
           task={selectedTask}
+          boardId={boardId}
           workspaceId={workspaceId}
           onSave={handleTaskEdit}
           onDelete={handleTaskDelete}

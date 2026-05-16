@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { api } from "@/lib/api";
-import type { DeadlineUrgency, Task, TaskPriority, WorkspaceMember } from "@/lib/types";
+import { api, subtasksApi, tagsApi } from "@/lib/api";
+import type { DeadlineUrgency, Subtask, Tag, Task, TaskPriority, WorkspaceMember } from "@/lib/types";
+import SubtaskList from "./SubtaskList";
 
 interface TaskFormData {
   title: string;
@@ -10,11 +11,11 @@ interface TaskFormData {
   priority: TaskPriority;
   deadline: string;
   assignee_id: string;
-  tags: string;
 }
 
 interface TaskModalProps {
   task: Task;
+  boardId: string;
   workspaceId: string;
   onSave: (updatedTask: Task) => Promise<void>;
   onDelete: (taskId: string) => Promise<void>;
@@ -85,7 +86,7 @@ const inputStyle: React.CSSProperties = {
   transition: "border-color 150ms ease",
 };
 
-export default function TaskModal({ task, workspaceId, onSave, onDelete, onClose }: TaskModalProps) {
+export default function TaskModal({ task, boardId, workspaceId, onSave, onDelete, onClose }: TaskModalProps) {
   const [mode, setMode] = useState<"view" | "edit" | "confirm">("view");
   const [formData, setFormData] = useState<TaskFormData>({
     title: task.title,
@@ -93,13 +94,17 @@ export default function TaskModal({ task, workspaceId, onSave, onDelete, onClose
     priority: task.priority,
     deadline: task.deadline ?? "",
     assignee_id: task.assignee_id ?? "",
-    tags: task.tags.map(t => t.name).join(", "),
   });
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [titleError, setTitleError] = useState<string | null>(null);
+
+  const [taskTags, setTaskTags] = useState<Tag[]>(task.tags);
+  const [boardTags, setBoardTags] = useState<Tag[]>([]);
+  const [subtasks, setSubtasks] = useState<Subtask[] | undefined>(undefined);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
 
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
@@ -136,6 +141,24 @@ export default function TaskModal({ task, workspaceId, onSave, onDelete, onClose
     return () => { cancelled = true; };
   }, [workspaceId]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchData() {
+      const [tagsResult, subtasksResult] = await Promise.allSettled([
+        tagsApi.getBoardTags(boardId),
+        subtasksApi.getSubtasks(task.id),
+      ]);
+      if (cancelled) return;
+      if (tagsResult.status === "fulfilled") setBoardTags(tagsResult.value);
+      if (subtasksResult.status === "fulfilled") setSubtasks(subtasksResult.value);
+      else setSubtasks([]);
+    }
+
+    fetchData();
+    return () => { cancelled = true; };
+  }, [boardId, task.id]);
+
   const trimmedTitle = formData.title.trim();
   const isTitleValid = trimmedTitle.length > 0 && trimmedTitle.length <= 500;
   const isSaveDisabled = !isTitleValid || isSaving;
@@ -156,7 +179,6 @@ export default function TaskModal({ task, workspaceId, onSave, onDelete, onClose
       priority: task.priority,
       deadline: task.deadline ?? "",
       assignee_id: task.assignee_id ?? "",
-      tags: task.tags.map(t => t.name).join(", "),
     });
     setTitleError(null);
     setMode("view");
@@ -178,11 +200,6 @@ export default function TaskModal({ task, workspaceId, onSave, onDelete, onClose
       return;
     }
 
-    const parsedTagNames = formData.tags
-      .split(",")
-      .map(t => t.trim())
-      .filter(t => t.length > 0);
-
     const updatedTask: Task = {
       ...task,
       title: trimmedTitle,
@@ -190,8 +207,7 @@ export default function TaskModal({ task, workspaceId, onSave, onDelete, onClose
       priority: formData.priority,
       deadline: formData.deadline || null,
       assignee_id: formData.assignee_id || null,
-      // Legacy string tags mapped to Tag shape; will be replaced by tagsApi
-      tags: parsedTagNames.map(name => ({ id: name, board_id: "", name, color: "" })),
+      tags: taskTags,
     };
 
     setIsSaving(true);
@@ -201,6 +217,26 @@ export default function TaskModal({ task, workspaceId, onSave, onDelete, onClose
       // toast already shown by parent
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleAddTag(tag: Tag): Promise<void> {
+    setTaskTags(prev => [...prev, tag]);
+    setShowTagDropdown(false);
+    try {
+      await tagsApi.addTagToTask(task.id, tag.id);
+    } catch {
+      setTaskTags(prev => prev.filter(t => t.id !== tag.id));
+    }
+  }
+
+  async function handleRemoveTag(tagId: string): Promise<void> {
+    setTaskTags(prev => prev.filter(t => t.id !== tagId));
+    try {
+      await tagsApi.removeTagFromTask(task.id, tagId);
+    } catch {
+      const removed = boardTags.find(t => t.id === tagId);
+      if (removed) setTaskTags(prev => [...prev, removed]);
     }
   }
 
@@ -307,32 +343,188 @@ export default function TaskModal({ task, workspaceId, onSave, onDelete, onClose
             onConfirm={handleConfirmDelete}
             onCancel={handleCancelConfirm}
           />
-        ) : mode === "view" ? (
-          <>
-            <ViewBody task={task} members={members} />
-            <ViewFooter
-              onEdit={handleSwitchToEdit}
-              onDelete={handleDelete}
-              onClose={onClose}
-            />
-          </>
         ) : (
           <>
-            <EditBody
-              formData={formData}
-              members={members}
-              loadingMembers={loadingMembers}
-              titleError={titleError}
-              titleLength={formData.title.length}
-              onChange={handleFieldChange}
-            />
-            <EditFooter
-              isSaving={isSaving}
-              isSaveDisabled={isSaveDisabled}
-              onDelete={handleDelete}
-              onCancel={handleCancelEdit}
-              onSave={handleSave}
-            />
+            {mode === "view" ? (
+              <ViewBody task={task} members={members} />
+            ) : (
+              <EditBody
+                formData={formData}
+                members={members}
+                loadingMembers={loadingMembers}
+                titleError={titleError}
+                titleLength={formData.title.length}
+                onChange={handleFieldChange}
+              />
+            )}
+
+            {/* Теги — интерактивная секция, всегда видима */}
+            <div style={{ marginTop: "20px" }}>
+              <SectionLabel text="Теги" />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center", position: "relative" }}>
+                {taskTags.map(tag => (
+                  <span
+                    key={tag.id}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      background: tag.color ? `${tag.color}22` : "rgba(59,130,246,0.12)",
+                      border: `1px solid ${tag.color ? `${tag.color}55` : "rgba(59,130,246,0.25)"}`,
+                      color: tag.color ?? "#93C5FD",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      padding: "3px 8px 3px 10px",
+                      borderRadius: "999px",
+                    }}
+                  >
+                    {tag.name}
+                    <button
+                      onClick={() => handleRemoveTag(tag.id)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "inherit",
+                        cursor: "pointer",
+                        padding: "0 1px",
+                        lineHeight: 1,
+                        fontSize: "14px",
+                        opacity: 0.6,
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.opacity = "1"; }}
+                      onMouseLeave={e => { e.currentTarget.style.opacity = "0.6"; }}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+
+                {boardTags.some(bt => !taskTags.find(tt => tt.id === bt.id)) && (
+                  <div style={{ position: "relative" }}>
+                    <button
+                      onClick={() => setShowTagDropdown(v => !v)}
+                      style={{
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px dashed rgba(255,255,255,0.2)",
+                        color: "rgba(255,255,255,0.45)",
+                        borderRadius: "999px",
+                        padding: "3px 10px",
+                        fontSize: "12px",
+                        cursor: "pointer",
+                        transition: "all 150ms ease",
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = "rgba(255,255,255,0.09)";
+                        e.currentTarget.style.color = "rgba(255,255,255,0.72)";
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                        e.currentTarget.style.color = "rgba(255,255,255,0.45)";
+                      }}
+                    >
+                      + Добавить
+                    </button>
+                    {showTagDropdown && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "calc(100% + 6px)",
+                          left: 0,
+                          background: "#1a1a1a",
+                          border: "1px solid rgba(255,255,255,0.1)",
+                          borderRadius: "12px",
+                          padding: "6px",
+                          zIndex: 10,
+                          minWidth: "160px",
+                          boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "2px",
+                        }}
+                      >
+                        {boardTags
+                          .filter(bt => !taskTags.find(tt => tt.id === bt.id))
+                          .map(tag => (
+                            <button
+                              key={tag.id}
+                              onClick={() => handleAddTag(tag)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: tag.color ?? "rgba(255,255,255,0.72)",
+                                fontSize: "13px",
+                                textAlign: "left",
+                                padding: "6px 10px",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "background 100ms",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
+                            >
+                              <span
+                                style={{
+                                  width: "8px",
+                                  height: "8px",
+                                  borderRadius: "50%",
+                                  background: tag.color ?? "#3B82F6",
+                                  flexShrink: 0,
+                                }}
+                              />
+                              {tag.name}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {taskTags.length === 0 && boardTags.length === 0 && (
+                  <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)" }}>Нет тегов</p>
+                )}
+              </div>
+            </div>
+
+            {/* Подзадачи — всегда видимы; subtasks=undefined пока идёт загрузка → SubtaskList покажет skeleton */}
+            <div style={{ marginTop: "20px" }}>
+              <SectionLabel text="Подзадачи" />
+              {subtasks !== undefined ? (
+                <SubtaskList taskId={task.id} subtasks={subtasks} />
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {[1, 2].map(i => (
+                    <div
+                      key={i}
+                      style={{
+                        height: "22px",
+                        borderRadius: "6px",
+                        background: "rgba(255,255,255,0.06)",
+                        animation: "pulse 1.5s ease-in-out infinite",
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {mode === "view" ? (
+              <ViewFooter
+                onEdit={handleSwitchToEdit}
+                onDelete={handleDelete}
+                onClose={onClose}
+              />
+            ) : (
+              <EditFooter
+                isSaving={isSaving}
+                isSaveDisabled={isSaveDisabled}
+                onDelete={handleDelete}
+                onCancel={handleCancelEdit}
+                onSave={handleSave}
+              />
+            )}
           </>
         )}
       </div>
@@ -411,28 +603,6 @@ function ViewBody({ task, members }: { task: Task; members: WorkspaceMember[] })
         )}
       </FieldWrapper>
 
-      {task.tags.length > 0 && (
-        <FieldWrapper label="Теги">
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-            {task.tags.map(tag => (
-              <span
-                key={tag.id}
-                style={{
-                  background: "rgba(59,130,246,0.1)",
-                  border: "1px solid rgba(59,130,246,0.25)",
-                  color: "#93C5FD",
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  padding: "3px 10px",
-                  borderRadius: "999px",
-                }}
-              >
-                {tag.name}
-              </span>
-            ))}
-          </div>
-        </FieldWrapper>
-      )}
     </div>
   );
 }
@@ -632,18 +802,6 @@ function EditBody({ formData, members, loadingMembers, titleError, titleLength, 
         </div>
       </FieldWrapper>
 
-      <FieldWrapper label="Теги">
-        <input
-          type="text"
-          value={formData.tags}
-          onChange={e => onChange("tags", e.target.value)}
-          placeholder="тег1, тег2, тег3"
-          style={inputStyle}
-          onFocus={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)"; }}
-          onBlur={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
-        />
-        <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", marginTop: "4px" }}>Через запятую</p>
-      </FieldWrapper>
     </div>
   );
 }
