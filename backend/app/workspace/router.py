@@ -21,6 +21,7 @@ from app.workspace.schemas import (
 from app.workspace.service import (
     add_member,
     create_workspace,
+    list_members,
     list_user_workspaces,
     remove_member,
     update_settings,
@@ -61,6 +62,23 @@ async def list_my_workspaces_route(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[WorkspaceOut]:
     return await list_user_workspaces(session=session, current_user=current_user)
+
+
+@router.get(
+    "/{workspace_id}/members",
+    response_model=list[MemberOut],
+    status_code=status.HTTP_200_OK,
+)
+async def list_members_route(
+    workspace_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[MemberOut]:
+    return await list_members(
+        session=session,
+        workspace_id=workspace_id,
+        current_user=current_user,
+    )
 
 
 @router.post(

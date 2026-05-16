@@ -12,6 +12,11 @@
 
 **Архитектура:** Modal только вызывает колбэки, не трогает board state напрямую. Все API-операции через board/page.tsx с оптимистичными обновлениями, snapshot-rollback и toast при ошибке. Fail-fast: исключения пробрасываются в Modal для разблокировки кнопок.
 
+## FEAT-0005 — Workspace Members List Endpoint — 2026-05-16
+
+- Добавлен `list_members()` в `backend/app/workspace/service.py`: любой участник workspace может получить список участников; не-участник получает `403`.
+- Добавлен `GET /api/v1/workspaces/{workspace_id}/members` в `backend/app/workspace/router.py`, response model `list[MemberOut]`.
+- Проверено: `py_compile`, `compileall backend/app/workspace`, импорт router через backend `.venv` с dummy env — маршрут зарегистрирован.
 ## FEAT-0004 — Dark UI Redesign «Agency OS» — 2026-05-16
 
 Статус: APPROVED (CTO review passed, 0 open issues; 2 extra files fixed during CTO review)
