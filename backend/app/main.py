@@ -8,8 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import engine
-from app.notifications.router import ws_router as _notifications_ws_router
 from app.events.consumer import start_consumer
+from app.notifications.hub import manager as _notification_hub
+from app.notifications.router import ws_router as _notifications_ws_router
 
 MODULE_NAMES = (
     "auth",
@@ -53,6 +54,7 @@ async def _stop_rabbitmq_consumer(app: FastAPI) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.notification_hub = _notification_hub
     await _start_rabbitmq_consumer(app)
     try:
         yield
