@@ -18,14 +18,26 @@ class StorageService:
         public_endpoint: str | None = None,
     ) -> None:
         self._bucket = bucket
-        self._internal_endpoint = endpoint.rstrip("/")
-        self._public_endpoint = (public_endpoint or endpoint).rstrip("/")
         self._client = boto3.client(
             "s3",
             endpoint_url=endpoint,
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
             region_name="us-east-1",
+        )
+        # Отдельный клиент для presigned URL — подписывает с публичным хостом,
+        # чтобы браузер мог открыть URL напрямую (Signature V4 включает host).
+        url_endpoint = public_endpoint or endpoint
+        self._url_client = (
+            boto3.client(
+                "s3",
+                endpoint_url=url_endpoint,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+                region_name="us-east-1",
+            )
+            if url_endpoint != endpoint
+            else self._client
         )
 
     def _ensure_bucket_sync(self) -> None:
@@ -43,14 +55,11 @@ class StorageService:
         )
 
     def _signed_url_sync(self, key: str, ttl: int) -> str:
-        url: str = self._client.generate_presigned_url(
+        return self._url_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": self._bucket, "Key": key},
             ExpiresIn=ttl,
         )
-        if self._public_endpoint != self._internal_endpoint:
-            url = url.replace(self._internal_endpoint, self._public_endpoint, 1)
-        return url
 
     def _delete_sync(self, key: str) -> None:
         self._client.delete_object(Bucket=self._bucket, Key=key)
