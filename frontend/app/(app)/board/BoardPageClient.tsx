@@ -79,8 +79,7 @@ export default function BoardPageClient() {
         if (ws.length > 0) {
           router.replace(`/board?workspace_id=${ws[0].id}`);
         } else {
-          setError("Нет доступных рабочих пространств");
-          setIsLoading(false);
+          router.replace("/workspace/create");
         }
       })
       .catch(() => {
