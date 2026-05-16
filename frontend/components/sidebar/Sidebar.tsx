@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/app/providers";
 import { api } from "@/lib/api";
 import type { Workspace } from "@/lib/types";
+import WorkspaceSwitcher from "@/components/workspace/WorkspaceSwitcher";
 
 interface NavItemProps {
   href: string;
@@ -47,7 +48,6 @@ function NavItem({ href, label }: NavItemProps) {
 
 interface SidebarProps {
   workspaceId?: string;
-  workspaceName?: string;
   userName?: string;
 }
 
@@ -55,21 +55,17 @@ function getInitial(value: string, fallback: string): string {
   return value.trim().charAt(0).toUpperCase() || fallback;
 }
 
-export default function Sidebar({ workspaceId, workspaceName, userName }: SidebarProps) {
+export default function Sidebar({ workspaceId, userName }: SidebarProps) {
   const effectiveWorkspaceId = workspaceId;
   const { user, logout } = useAuth();
-  const [resolvedWorkspaceName, setResolvedWorkspaceName] = useState<string | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
+  const [workspaceRole, setWorkspaceRole] = useState<{
+    workspaceId: string;
+    isOwner: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (!effectiveWorkspaceId) {
-      setResolvedWorkspaceName(null);
-      setIsOwner(false);
       return;
-    }
-
-    if (workspaceName) {
-      setResolvedWorkspaceName(null);
     }
 
     let cancelled = false;
@@ -81,32 +77,33 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
         const currentWorkspace = workspaces.find(
           (workspace) => workspace.id === effectiveWorkspaceId
         );
-        if (!workspaceName) {
-          setResolvedWorkspaceName(currentWorkspace?.name ?? null);
-        }
-        setIsOwner(currentWorkspace?.role === "owner");
+        setWorkspaceRole({
+          workspaceId: effectiveWorkspaceId,
+          isOwner: currentWorkspace?.role === "owner",
+        });
       })
       .catch(() => {
         if (!cancelled) {
-          setResolvedWorkspaceName(null);
-          setIsOwner(false);
+          setWorkspaceRole({
+            workspaceId: effectiveWorkspaceId,
+            isOwner: false,
+          });
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [effectiveWorkspaceId, workspaceName]);
+  }, [effectiveWorkspaceId]);
 
-  const displayWorkspaceName = workspaceName ?? resolvedWorkspaceName ?? "Workspace";
   const displayUserName = userName ?? user?.name ?? "User";
   const workspaceQuery = effectiveWorkspaceId
     ? `?workspace_id=${encodeURIComponent(effectiveWorkspaceId)}`
     : "";
-  const workspaceInitial = useMemo(
-    () => getInitial(displayWorkspaceName, "W"),
-    [displayWorkspaceName]
-  );
+  const isOwner =
+    workspaceRole !== null &&
+    workspaceRole.workspaceId === effectiveWorkspaceId &&
+    workspaceRole.isOwner;
   const userInitial = useMemo(() => getInitial(displayUserName, "U"), [displayUserName]);
 
   return (
@@ -118,27 +115,10 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
       }}
     >
       <div
-        className="px-4 py-5 flex items-center gap-3"
+        className="px-3 py-4"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
       >
-        <div
-          className="h-9 w-9 rounded-md flex items-center justify-center text-sm font-semibold text-white flex-shrink-0"
-          style={{ background: "#1E3A8A" }}
-          aria-hidden="true"
-        >
-          {workspaceInitial}
-        </div>
-        <div className="min-w-0">
-          <span
-            className="text-[10px] uppercase tracking-[0.18em] block truncate"
-            style={{ color: "rgba(255,255,255,0.45)" }}
-          >
-            {displayWorkspaceName}
-          </span>
-          <span className="text-sm font-medium text-white truncate block mt-1">
-            Workspace
-          </span>
-        </div>
+        <WorkspaceSwitcher workspaceId={effectiveWorkspaceId} />
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5">
