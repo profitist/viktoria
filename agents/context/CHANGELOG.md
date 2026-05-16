@@ -1,3 +1,13 @@
+## FEAT-0016 — Wire-up CommentFeed + AttachmentList в TaskModal — 2026-05-17
+
+Статус: DONE (CTO approved, без issues). **Завершает I-08.**
+
+**Изменён 1 файл.**
+
+- Изменён `frontend/components/board/TaskModal.tsx` — добавлены импорты CommentFeed/AttachmentList; две новые секции («Вложения» + «Комментарии») после блока «Подзадачи», до Footer, внутри основного `<>` (не в confirm-режиме). Каждая секция: `<div marginTop:20px>` + `<SectionLabel>` + компонент с `taskId={task.id}`
+
+**Архитектура:** Confirm-режим (`mode === "confirm"`) рендерит `<ConfirmDeleteBlock>` вместо `<>`, поэтому CommentFeed/AttachmentList не монтируются при подтверждении удаления — нет лишних запросов. Весь state данных инкапсулирован в дочерних компонентах.
+
 ## FEAT-0015 — UI-компоненты CommentFeed и AttachmentList — 2026-05-17
 
 Статус: DONE (CTO approved, без issues)

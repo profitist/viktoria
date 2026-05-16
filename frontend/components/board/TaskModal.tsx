@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api, subtasksApi, tagsApi } from "@/lib/api";
+import CommentFeed from "./CommentFeed";
+import AttachmentList from "./AttachmentList";
 import type { DeadlineUrgency, Subtask, Tag, Task, TaskPriority, WorkspaceMember } from "@/lib/types";
 import SubtaskList from "./SubtaskList";
 
@@ -508,6 +510,18 @@ export default function TaskModal({ task, boardId, workspaceId, onSave, onDelete
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Вложения */}
+            <div style={{ marginTop: "20px" }}>
+              <SectionLabel text="Вложения" />
+              <AttachmentList taskId={task.id} />
+            </div>
+
+            {/* Комментарии */}
+            <div style={{ marginTop: "20px" }}>
+              <SectionLabel text="Комментарии" />
+              <CommentFeed taskId={task.id} />
             </div>
 
             {mode === "view" ? (
