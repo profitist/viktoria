@@ -22,7 +22,13 @@ export interface Workspace {
 }
 
 export interface WorkspaceSettings {
+  workspace_id: string;
   automation_enabled: boolean;
+}
+
+export interface MemberInvite {
+  email: string;
+  role: "admin" | "member";
 }
 
 export interface WorkspaceMember {

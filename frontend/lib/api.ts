@@ -1,4 +1,4 @@
-import type { BoardMeta, BoardDetail, Project } from "./types";
+import type { BoardMeta, BoardDetail, Project, WorkspaceMember, WorkspaceSettings } from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -229,4 +229,28 @@ export const boardsApi = {
 export const projectsApi = {
   list: (workspaceId: string): Promise<Project[]> =>
     api.get<Project[]>(`/api/v1/workspaces/${workspaceId}/projects`),
+};
+
+export const workspaceApi = {
+  addMember: (
+    workspaceId: string,
+    email: string,
+    role: "admin" | "member"
+  ): Promise<{ member: WorkspaceMember }> =>
+    api.post<{ member: WorkspaceMember }>(
+      `/api/v1/workspaces/${workspaceId}/members`,
+      { email, role }
+    ),
+
+  removeMember: (workspaceId: string, userId: string): Promise<void> =>
+    api.delete(`/api/v1/workspaces/${workspaceId}/members/${userId}`),
+
+  updateSettings: (
+    workspaceId: string,
+    settings: Partial<WorkspaceSettings>
+  ): Promise<{ settings: WorkspaceSettings }> =>
+    api.patch<{ settings: WorkspaceSettings }>(
+      `/api/v1/workspaces/${workspaceId}/settings`,
+      settings
+    ),
 };
