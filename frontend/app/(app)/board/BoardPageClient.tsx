@@ -1,6 +1,6 @@
-import { Suspense } from "react";
+"use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers";
 import { api, ApiError } from "@/lib/api";
@@ -15,11 +15,10 @@ import {
 } from "@/lib/boardUtils";
 import KanbanBoard from "@/components/board/KanbanBoard";
 import TaskModal from "@/components/board/TaskModal";
-import type { AddTaskData } from "@/components/board/AddTaskForm";
 import BoardSkeleton from "@/components/board/BoardSkeleton";
 import ErrorBanner from "@/components/board/ErrorBanner";
 
-function BoardPageContent() {
+export default function BoardPageClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -219,33 +218,30 @@ function BoardPageContent() {
       });
   }
 
-  async function handleTaskCreate(columnId: string, data: AddTaskData): Promise<void> {
+  async function handleTaskCreate(columnId: string, title: string): Promise<void> {
     if (!workspaceId) return;
 
     const tempTask: Task = {
       id: `temp-${Date.now()}`,
-      title: data.title,
+      title,
       column_id: columnId,
       workspace_id: workspaceId,
-      priority: data.priority,
-      description: data.description ?? "",
-      deadline: data.deadline ?? null,
-      deadline_urgency: "none",
+      priority: "medium",
       tags: [],
       assignee_id: null,
       created_at: new Date().toISOString(),
+      deadline: null,
+      deadline_urgency: "none",
+      description: "",
     };
 
     setBoard((prev) => (prev ? addTaskToColumn(prev, tempTask) : prev));
 
     try {
       const created = await api.post<Task>("/api/v1/tasks", {
-        title: data.title,
+        title,
         column_id: columnId,
         workspace_id: workspaceId,
-        priority: data.priority,
-        description: data.description,
-        deadline: data.deadline,
       });
       setBoard((prev) => {
         if (!prev) return prev;
@@ -315,10 +311,3 @@ function BoardPageContent() {
   );
 }
 
-export default function BoardPage() {
-  return (
-    <Suspense fallback={<BoardSkeleton />}>
-      <BoardPageClient />
-    </Suspense>
-  );
-}
