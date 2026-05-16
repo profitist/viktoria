@@ -38,6 +38,12 @@ class Task(Base):
         nullable=False,
         index=True,
     )
+    board_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("boards.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     workspace_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("workspaces.id", ondelete="CASCADE"),
