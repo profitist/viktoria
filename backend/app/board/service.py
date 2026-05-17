@@ -97,7 +97,7 @@ async def create_board(
     workspace_id: UUID,
     payload: BoardCreate,
     current_user: User,
-) -> BoardCreatedOut:
+) -> Board:
     await _require_workspace_admin(session, workspace_id, current_user.id)
     await _validate_project(session, workspace_id, payload.project_id)
 
@@ -109,11 +109,14 @@ async def create_board(
     )
     session.add(board)
     await session.flush()
+    return board
 
-    await create_default_columns(board.id, session)
 
-    await session.commit()
-    await session.refresh(board)
+async def get_created_board(
+    session: AsyncSession,
+    board_id: UUID,
+) -> BoardCreatedOut:
+    board = await _get_board_or_404(session, board_id)
     return _build_board_created_out(board)
 
 
@@ -489,6 +492,16 @@ def _build_board_created_out(board: Board) -> BoardCreatedOut:
         name=board.name,
         description=board.description,
         project_id=board.project_id,
+        columns=[
+            ColumnOut(
+                id=column.id,
+                name=column.name,
+                position=column.position,
+                color=column.color,
+                tasks=[],
+            )
+            for column in sorted(board.columns, key=lambda item: item.position)
+        ],
     )
 
 

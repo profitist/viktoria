@@ -90,6 +90,7 @@ class BoardCreatedOut(BaseModel):
     name: str
     description: str | None
     project_id: UUID | None
+    columns: list[ColumnOut] = Field(default_factory=list)
 
 
 class BoardListItem(BaseModel):
