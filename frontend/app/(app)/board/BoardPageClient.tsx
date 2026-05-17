@@ -105,7 +105,9 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
       return;
     }
 
-    loadBoard();
+    queueMicrotask(() => {
+      void loadBoard();
+    });
   }, [authLoading, isAuthenticated, boardId, loadBoard, router]);
 
   const handleTaskCreated = useCallback((params: Record<string, unknown>) => {
@@ -171,9 +173,28 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
   const handleColumnUpdated = useCallback((col: Column) => {
     setBoard(prev => {
       if (!prev) return prev;
-      const columns = prev.columns
-        .map(c => (c.id === col.id ? col : c))
-        .sort((a, b) => a.position - b.position);
+      const current = prev.columns.find(c => c.id === col.id);
+      if (!current) return prev;
+
+      const ordered = [...prev.columns].sort((a, b) => a.position - b.position);
+      const updated = { ...current, ...col, tasks: current.tasks };
+
+      if (current.position === col.position) {
+        const columns = ordered.map(c => (c.id === col.id ? updated : c));
+        return { ...prev, columns };
+      }
+
+      const columnsWithoutUpdated = ordered.filter(c => c.id !== col.id);
+      const targetPosition = Math.min(
+        Math.max(col.position, 0),
+        columnsWithoutUpdated.length
+      );
+      const columns = [
+        ...columnsWithoutUpdated.slice(0, targetPosition),
+        updated,
+        ...columnsWithoutUpdated.slice(targetPosition),
+      ].map((column, position) => ({ ...column, position }));
+
       return { ...prev, columns };
     });
   }, []);
