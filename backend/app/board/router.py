@@ -23,11 +23,13 @@ from app.board.schemas import (
 )
 from app.board.service import (
     create_board,
+    create_default_columns,
     create_column,
     delete_board,
     delete_column,
     get_board,
     get_board_with_columns,
+    get_created_board,
     list_boards,
     patch_board,
     reorder_columns,
@@ -60,7 +62,7 @@ async def list_boards_route(
 @router.post(
     "/workspaces/{workspace_id}/boards",
     response_model=BoardCreatedResponse,
-    status_code=status.HTTP_200_OK,
+    status_code=status.HTTP_201_CREATED,
 )
 async def create_board_route(
     workspace_id: UUID,
@@ -74,7 +76,12 @@ async def create_board_route(
         payload=payload,
         current_user=current_user,
     )
-    return BoardCreatedResponse(board=board)
+    if payload.with_default_columns:
+        await create_default_columns(board.id, session)
+
+    await session.commit()
+    created_board = await get_created_board(session, board.id)
+    return BoardCreatedResponse(board=created_board)
 
 
 @router.get(
