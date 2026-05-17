@@ -112,45 +112,29 @@ export default function WorkspaceSwitcher({ workspaceId }: WorkspaceSwitcherProp
 
   const displayName = currentWorkspace?.name ?? (isLoading ? "Загрузка..." : "Workspace");
   const roleLabel = currentWorkspace ? getRoleLabel(currentWorkspace.role) : "Workspace";
-  const initial = getInitial(displayName);
 
   return (
     <div ref={dropdownRef} className="relative w-full">
       <button
         type="button"
         onClick={() => setIsOpen((value) => !value)}
-        className="w-full flex items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors"
+        className="w-full flex items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors"
         style={{
           background: isOpen ? "rgba(255,255,255,0.05)" : "transparent",
           border: "1px solid rgba(255,255,255,0.06)",
         }}
       >
-        <span
-          className="h-9 w-9 rounded-md flex items-center justify-center text-sm font-semibold text-white flex-shrink-0"
-          style={{ background: "#1E3A8A" }}
-          aria-hidden="true"
-        >
-          {initial}
-        </span>
         <span className="min-w-0 flex-1">
+          <span className="text-sm font-medium text-white truncate block">{displayName}</span>
           <span
-            className="text-[10px] uppercase tracking-[0.18em] block truncate"
-            style={{ color: "rgba(255,255,255,0.45)" }}
+            className="mt-0.5 inline-block rounded-full px-1.5 py-0.5 text-[9px] uppercase tracking-[0.12em]"
+            style={{
+              color: "rgba(255,255,255,0.52)",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
           >
-            {displayName}
-          </span>
-          <span className="mt-1 flex items-center gap-2">
-            <span className="text-sm font-medium text-white truncate">Workspace</span>
-            <span
-              className="rounded-full px-1.5 py-0.5 text-[9px] uppercase tracking-[0.12em]"
-              style={{
-                color: "rgba(255,255,255,0.72)",
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}
-            >
-              {roleLabel}
-            </span>
+            {roleLabel}
           </span>
         </span>
         <ChevronIcon open={isOpen} />
