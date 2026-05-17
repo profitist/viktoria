@@ -5,6 +5,7 @@ export interface CreateBoardInput {
   name: string;
   description?: string;
   project_id?: string;
+  with_default_columns: boolean;
 }
 
 interface CreateBoardResponse {
