@@ -97,6 +97,7 @@ class TaskOut(BaseModel):
     assignee_id: UUID | None
     created_at: datetime
     deadline: datetime | None
+    deadline_days_remaining: int | None = None
     deadline_urgency: DeadlineUrgency
     subtask_progress: SubtaskProgress | None = None
     """Агрегат подзадач. Вычисляется на backend, не хранится в БД."""

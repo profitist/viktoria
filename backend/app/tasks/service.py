@@ -149,6 +149,9 @@ async def update_task(
                 compute_deadline_urgency(payload.deadline)
             )
             changed_fields["deadline"] = payload.deadline
+            changed_fields["deadline_days_remaining"] = (
+                compute_deadline_days_remaining(payload.deadline)
+            )
             changed_fields["deadline_urgency"] = task.deadline_urgency.value
 
     if not changed_fields:
@@ -432,6 +435,15 @@ def compute_deadline_urgency(deadline: datetime | None) -> str:
     return DeadlineUrgencyModel.NONE.value
 
 
+def compute_deadline_days_remaining(deadline: datetime | None) -> int | None:
+    if deadline is None:
+        return None
+
+    deadline_date = _normalize_datetime(deadline).date()
+    today = datetime.now(UTC).date()
+    return (deadline_date - today).days
+
+
 async def _get_task_or_404(session: AsyncSession, task_id: UUID) -> Task:
     task = await session.scalar(select(Task).where(Task.id == task_id))
     if task is None:
@@ -552,6 +564,9 @@ def _task_payload(task: Task, tags: list[TagOut]) -> dict[str, Any]:
             "assignee_id": task.assignee_id,
             "created_at": task.created_at,
             "deadline": task.deadline,
+            "deadline_days_remaining": compute_deadline_days_remaining(
+                task.deadline
+            ),
             "deadline_urgency": compute_deadline_urgency(task.deadline),
         }
     )
@@ -575,6 +590,7 @@ def _build_task_out(task: Task, tags: list[TagOut]) -> TaskOut:
         assignee_id=task.assignee_id,
         created_at=task.created_at,
         deadline=task.deadline,
+        deadline_days_remaining=compute_deadline_days_remaining(task.deadline),
         deadline_urgency=compute_deadline_urgency(task.deadline),
     )
 
