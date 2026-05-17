@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 
 import { WsProvider } from "@/contexts/WsContext";
 import Sidebar from "@/components/sidebar/Sidebar";
+import HelpCenter from "@/components/help/HelpCenter";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
@@ -16,6 +17,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
+        <HelpCenter />
       </div>
     </WsProvider>
   );
