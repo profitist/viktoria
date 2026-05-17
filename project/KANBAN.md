@@ -1,5 +1,23 @@
 # Kanban
 
+## Iteration I-21 (active) — Цель: Deadline decay инфраструктура + Automation auth fix
+
+**DoD:**
+- `PATCH /workspaces/{id}/settings` принимает `deadline_decay_enabled`; `alembic upgrade head` добавляет колонку
+- `GET /boards/{id}` → задачи содержат `deadline_days_remaining: int | null`
+- `frontend/hooks/useDeadlineColor.ts` возвращает hex-цвет (green→red) или null при decay отключён
+- SettingsTab: тоггл «Градиент дедлайна» сохраняется через API
+- Sidebar Automation-ссылка открывает external URL с ?workspace_id + token (без редиректа на логин)
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-115 | Alembic: deadline_decay_enabled в Workspace | infra | — | todo | #247 | `backend/alembic/versions/20260518_000007_deadline_decay.py` |
+| T-116 | Workspace: deadline_decay_enabled в settings CRUD | workspace | — | todo | #248 | `backend/app/workspace/service.py`, `backend/app/workspace/router.py` |
+| T-117 | Tasks: deadline_days_remaining в TaskResponse | tasks | — | todo | #249 | `backend/app/tasks/service.py`, `backend/app/tasks/schemas.py` |
+| T-118 | Frontend: useDeadlineColor hook (gradient calculator) | frontend | — | todo | #250 | `frontend/hooks/useDeadlineColor.ts` |
+| T-119 | SettingsTab: тоггл deadline_decay_enabled | frontend | — | todo | #251 | `frontend/components/admin/SettingsTab.tsx` |
+| T-120 | Sidebar: Automation URL → ?workspace_id + token | frontend | — | todo | #252 | `frontend/app/(app)/layout.tsx` |
+
 ## Iteration I-20 (active) — Цель: Mark as Done на канбан-доске
 
 **DoD:**
@@ -9,12 +27,12 @@
 
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
-| T-111 | Tasks: PATCH /tasks/{id}/mark-done toggle (service + router) | tasks | — | todo | #236 | `backend/app/tasks/service.py`, `backend/app/tasks/router.py` |
-| T-112 | Frontend api: markTaskDone(taskId) + тип ответа | frontend | — | todo | #237 | `frontend/lib/api.ts` |
+| T-111 | Tasks: PATCH /tasks/{id}/mark-done toggle (service + router) | tasks | — | done | #236 | `backend/app/tasks/service.py`, `backend/app/tasks/router.py` |
+| T-112 | Frontend api: markTaskDone(taskId) + тип ответа | frontend | — | done | #237 | `frontend/lib/api.ts` |
 | T-113 | TaskCard: чекбокс «Выполнено» с оптимистичным move | frontend | — | todo | #238 | `frontend/components/board/TaskCard.tsx` |
 | T-114 | TaskPanel: кнопка «Отметить выполненным» / toggle | frontend | — | todo | #239 | `frontend/components/board/TaskPanel.tsx` |
 
-## Iteration I-19 (active) — Цель: Admin в sidebar + внешняя Automation
+## Iteration I-19 (closed) — Цель: Admin в sidebar + внешняя Automation
 
 **DoD:**
 - Sidebar (owner/admin): пункты «Участники» → `/admin/members`, «Настройки» → `/admin/settings`, «Automation» → `https://localhost3000.work.gd/automation` (новая вкладка)
@@ -24,12 +42,12 @@
 
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
-| T-107 | Sidebar: admin-секция (Members, Settings, Automation-ext) | frontend | — | todo | #231 | `frontend/app/(app)/layout.tsx` |
-| T-108 | Admin: страница /admin/members (role-guard + MembersTab) | frontend | — | todo | #232 | `frontend/app/(app)/admin/members/page.tsx` |
-| T-109 | Admin: страница /admin/settings (role-guard + SettingsTab) | frontend | — | todo | #233 | `frontend/app/(app)/admin/settings/page.tsx` |
-| T-110 | Admin: /admin → редирект + убрать Automation-вкладку | frontend | — | todo | #234 | `frontend/app/(app)/admin/page.tsx` |
+| T-107 | Sidebar: admin-секция (Members, Settings, Automation-ext) | frontend | — | done | #231 | `frontend/app/(app)/layout.tsx` |
+| T-108 | Admin: страница /admin/members (role-guard + MembersTab) | frontend | — | done | #232 | `frontend/app/(app)/admin/members/page.tsx` |
+| T-109 | Admin: страница /admin/settings (role-guard + SettingsTab) | frontend | — | done | #233 | `frontend/app/(app)/admin/settings/page.tsx` |
+| T-110 | Admin: /admin → редирект + убрать Automation-вкладку | frontend | — | done | #234 | `frontend/app/(app)/admin/page.tsx` |
 
-## Iteration I-18 (active) — Цель: UX-полировка + Real-time расширение
+## Iteration I-18 (closed) — Цель: UX-полировка + Real-time расширение
 
 **DoD:**
 - Sidebar: ссылки Event Log / Мои задачи / Automation / AI Груминг — видны и кликабельны
@@ -43,7 +61,7 @@
 | T-101 | Sidebar: навигация /event-log, /my-tasks, /automation, /ai-groom | frontend | — | done | #216 | `frontend/app/(app)/layout.tsx` |
 | T-102 | Notifications: dropdown-панель + badge + mark-all-read | frontend | — | done | #218 | `frontend/components/notifications/NotificationDropdown.tsx`, `frontend/components/notifications/NotificationBell.tsx`, `frontend/app/(app)/AppShell.tsx` |
 | T-103 | Events consumer: WS push audit.event_created | events | — | done | #219 | `backend/app/events/consumer.py` |
-| T-104 | Event Log: real-time prepend через WS audit.event_created | frontend | — | todo | #220 | `frontend/components/event-log/EventLogPanel.tsx` |
+| T-104 | Event Log: real-time prepend через WS audit.event_created | frontend | — | done | #220 | `frontend/components/event-log/EventLogPanel.tsx` |
 | T-105 | My Tasks: WS-обновление при board.task_* | frontend | — | done | #221 | `frontend/components/my-tasks/MyTasksPage.tsx` |
 | T-106 | Analytics: auto-refresh (debounce 3 сек) при board.task_* | frontend | — | done | #222 | `frontend/app/(app)/board/[boardId]/analytics/page.tsx` |
 
