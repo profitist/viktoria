@@ -27,6 +27,8 @@ export interface TaskPanelProps {
   onClose: () => void;
   workspaceId: string;
   boardId?: string;
+  onTaskUpdate?: (task: Task) => void;
+  onTaskDelete?: (taskId: string) => void;
 }
 
 // ── constants ──────────────────────────────────────────────────────────────────
@@ -648,6 +650,8 @@ export default function TaskPanel({
   onClose,
   workspaceId,
   boardId,
+  onTaskUpdate,
+  onTaskDelete,
 }: TaskPanelProps) {
   const [task, setTask] = useState<Task | null>(null);
   const [columns, setColumns] = useState<Column[]>([]);
@@ -747,9 +751,24 @@ export default function TaskPanel({
     try {
       const { task: saved } = await api.patch<{ task: Task }>(`/api/v1/tasks/${task.id}`, patch);
       setTask(saved);
+      onTaskUpdate?.(saved);
     } catch {
       setTask(prev);
       showToast("Не удалось обновить задачу");
+    }
+  }
+
+  // ── delete ───────────────────────────────────────────────────────────────────
+
+  async function handleDelete() {
+    if (!task) return;
+    const id = task.id;
+    try {
+      await api.delete(`/api/v1/tasks/${id}`);
+      onTaskDelete?.(id);
+      onClose();
+    } catch {
+      showToast("Не удалось удалить задачу");
     }
   }
 
@@ -790,21 +809,6 @@ export default function TaskPanel({
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        aria-hidden="true"
-        onClick={onClose}
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.45)",
-          zIndex: 40,
-          opacity: isOpen ? 1 : 0,
-          pointerEvents: isOpen ? "auto" : "none",
-          transition: "opacity 250ms ease",
-        }}
-      />
-
       {/* Panel */}
       <div
         style={{
@@ -885,6 +889,40 @@ export default function TaskPanel({
               >
                 {task.title}
               </p>
+
+              {/* Delete */}
+              <button
+                onClick={handleDelete}
+                title="Удалить задачу"
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  flexShrink: 0,
+                  background: "rgba(255,255,255,0.06)",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 150ms",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = "rgba(239,68,68,0.15)";
+                  (e.currentTarget.querySelector("svg") as SVGElement | null)?.setAttribute("stroke", "#FCA5A5");
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                  (e.currentTarget.querySelector("svg") as SVGElement | null)?.setAttribute("stroke", "rgba(255,255,255,0.4)");
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14H6L5 6" />
+                  <path d="M10 11v6M14 11v6" />
+                  <path d="M9 6V4h6v2" />
+                </svg>
+              </button>
 
               {/* Close */}
               <button
