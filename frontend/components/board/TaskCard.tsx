@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import type { Task, DeadlineUrgency } from "@/lib/types";
 import PriorityBadge from "./PriorityBadge";
 
@@ -50,6 +53,8 @@ interface TaskCardProps {
   task: Task;
   isDragging: boolean;
   onClick?: () => void;
+  isDone?: boolean;
+  onToggleDone?: () => Promise<void>;
 }
 
 const URGENCY_SHADOW: Record<DeadlineUrgency, string> = {
@@ -89,7 +94,22 @@ function formatDeadline(deadline: string): string {
   return `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}`;
 }
 
-export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
+export default function TaskCard({ task, isDragging, onClick, isDone = false, onToggleDone }: TaskCardProps) {
+  const [optimisticDone, setOptimisticDone] = useState(isDone);
+
+  useEffect(() => { setOptimisticDone(isDone); }, [isDone]);
+
+  async function handleCheckboxClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    const next = !optimisticDone;
+    setOptimisticDone(next);
+    try {
+      await onToggleDone?.();
+    } catch {
+      setOptimisticDone(!next);
+    }
+  }
+
   const isCritical = task.deadline_urgency === "critical";
   const deadlineClassName = [
     "flex items-center gap-1 text-xs px-1.5 py-0.5 rounded",
@@ -101,6 +121,7 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
       className="w-full p-3 cursor-grab select-none group transition-all duration-150"
       onClick={() => { if (!isDragging) onClick?.(); }}
       style={{
+        position: "relative",
         background: "#111111",
         border: "1px solid rgba(255,255,255,0.08)",
         borderLeft: isCritical
@@ -108,7 +129,7 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
           : "1px solid rgba(255,255,255,0.08)",
         borderRadius: "18px",
         boxShadow: URGENCY_SHADOW[task.deadline_urgency],
-        opacity: isDragging ? 0.5 : 1,
+        opacity: isDragging ? 0.5 : optimisticDone ? 0.65 : 1,
         transform: isDragging ? "scale(1.02) rotate(1deg)" : undefined,
       }}
       onMouseEnter={(e) => {
@@ -130,7 +151,60 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
           : "1px solid rgba(255,255,255,0.08)";
       }}
     >
-      <p className="text-sm font-medium text-white leading-snug">{task.title}</p>
+      {onToggleDone && (
+        <button
+          type="button"
+          aria-label={optimisticDone ? "Снять отметку" : "Отметить выполненным"}
+          onClick={handleCheckboxClick}
+          onPointerDown={(e) => e.stopPropagation()}
+          style={{
+            position: "absolute",
+            top: "8px",
+            right: "10px",
+            width: "18px",
+            height: "18px",
+            borderRadius: "50%",
+            border: optimisticDone ? "none" : "1.5px solid rgba(255,255,255,0.22)",
+            background: optimisticDone ? "#22C55E" : "transparent",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0,
+            transition: "background 150ms, border-color 150ms",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            if (!optimisticDone) {
+              e.currentTarget.style.borderColor = "rgba(34,197,94,0.6)";
+              e.currentTarget.style.background = "rgba(34,197,94,0.12)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!optimisticDone) {
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.22)";
+              e.currentTarget.style.background = "transparent";
+            }
+          }}
+        >
+          {optimisticDone && (
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+              <path d="M2 5l2.5 2.5L8 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </button>
+      )}
+
+      <p
+        className="text-sm font-medium leading-snug"
+        style={{
+          color: optimisticDone ? "rgba(255,255,255,0.45)" : "#FFFFFF",
+          textDecoration: optimisticDone ? "line-through" : "none",
+          paddingRight: onToggleDone ? "24px" : undefined,
+        }}
+      >
+        {task.title}
+      </p>
 
       {task.tags.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "8px" }}>

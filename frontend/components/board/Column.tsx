@@ -8,7 +8,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ApiError, columnsApi } from "@/lib/api";
+import { ApiError, columnsApi, markTaskDone } from "@/lib/api";
 import type { Column as ColumnType, Task } from "@/lib/types";
 import TaskCard from "./TaskCard";
 import AddTaskForm, { type AddTaskData } from "./AddTaskForm";
@@ -30,12 +30,25 @@ interface ColumnProps {
 function SortableTaskCard({
   task,
   onCardClick,
+  isLastColumn,
+  showToast,
 }: {
   task: Task;
   onCardClick: (task: Task) => void;
+  isLastColumn: boolean;
+  showToast: (msg: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.id });
+
+  async function handleToggleDone() {
+    try {
+      await markTaskDone(task.id);
+    } catch {
+      showToast("Не удалось изменить статус задачи");
+      throw new Error();
+    }
+  }
 
   return (
     <div
@@ -44,7 +57,13 @@ function SortableTaskCard({
       {...attributes}
       {...listeners}
     >
-      <TaskCard task={task} isDragging={isDragging} onClick={() => onCardClick(task)} />
+      <TaskCard
+        task={task}
+        isDragging={isDragging}
+        onClick={() => onCardClick(task)}
+        isDone={isLastColumn}
+        onToggleDone={handleToggleDone}
+      />
     </div>
   );
 }
@@ -506,7 +525,13 @@ export default function Column({
             strategy={verticalListSortingStrategy}
           >
             {column.tasks.map((task) => (
-              <SortableTaskCard key={task.id} task={task} onCardClick={onCardClick} />
+              <SortableTaskCard
+                key={task.id}
+                task={task}
+                onCardClick={onCardClick}
+                isLastColumn={isLast ?? false}
+                showToast={setToast}
+              />
             ))}
           </SortableContext>
 
