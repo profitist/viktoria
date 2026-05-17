@@ -21,6 +21,8 @@ interface KanbanBoardProps {
   onTaskMove: (taskId: string, targetColumnId: string, newPosition: number) => void;
   onTaskCreate: (columnId: string, data: AddTaskData) => Promise<void>;
   onCardClick?: (task: Task) => void;
+  onTaskUpdate?: (task: Task) => void;
+  onTaskDelete?: (taskId: string) => void;
   isAdmin?: boolean;
   boardId?: string;
   onColumnUpdated?: (col: Column) => void;
@@ -32,6 +34,8 @@ export default function KanbanBoard({
   board,
   onTaskMove,
   onTaskCreate,
+  onTaskUpdate,
+  onTaskDelete,
   isAdmin,
   boardId,
   onColumnUpdated,
@@ -140,6 +144,14 @@ export default function KanbanBoard({
         workspaceId={selectedTask?.workspace_id ?? ""}
         boardId={boardId}
         onClose={() => setSelectedTask(null)}
+        onTaskUpdate={(updated) => {
+          setSelectedTask(updated);
+          onTaskUpdate?.(updated);
+        }}
+        onTaskDelete={(id) => {
+          setSelectedTask(null);
+          onTaskDelete?.(id);
+        }}
       />
     </>
   );

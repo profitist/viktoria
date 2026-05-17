@@ -388,6 +388,8 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
           onTaskMove={handleTaskMove}
           onTaskCreate={handleTaskCreate}
           onCardClick={handleCardClick}
+          onTaskUpdate={(task) => setBoard(prev => prev ? replaceTask(prev, task) as BoardDetail : prev)}
+          onTaskDelete={(taskId) => setBoard(prev => prev ? deleteTask(prev, taskId) as BoardDetail : prev)}
           isAdmin={isAdmin}
           boardId={boardId}
           onColumnUpdated={handleColumnUpdated}
