@@ -20,6 +20,8 @@ import type {
 import SubtaskList from "./SubtaskList";
 import AttachmentList from "./AttachmentList";
 import CommentFeed from "./CommentFeed";
+import TaskSummary from "./TaskSummary";
+import { useDeadlineColor } from "@/hooks/useDeadlineColor";
 
 // ── props ──────────────────────────────────────────────────────────────────────
 
@@ -768,6 +770,7 @@ export default function TaskPanel({
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [isTogglingDone, setIsTogglingDone] = useState(false);
+  const [decayEnabled, setDecayEnabled] = useState(false);
 
   const doneCount = subtasks ? subtasks.filter(s => s.is_done).length : 0;
   const totalCount = subtasks ? subtasks.length : 0;
@@ -852,6 +855,15 @@ export default function TaskPanel({
 
     return () => { cancelled = true; };
   }, [resolvedBoardId]);
+
+  // workspace settings (decayEnabled)
+  useEffect(() => {
+    let cancelled = false;
+    workspaceApi.getSettings(workspaceId).then(({ settings }) => {
+      if (!cancelled) setDecayEnabled(settings.deadline_decay_enabled);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [workspaceId]);
 
   // ── escape key ───────────────────────────────────────────────────────────────
 
@@ -972,6 +984,11 @@ export default function TaskPanel({
   }, []);
 
   // ── render ───────────────────────────────────────────────────────────────────
+
+  const deadlineColor = useDeadlineColor(
+    task?.deadline_days_remaining ?? null,
+    decayEnabled
+  );
 
   const isOpen = !!taskId;
 
@@ -1164,10 +1181,23 @@ export default function TaskPanel({
                 </FieldRow>
 
                 <FieldRow label="Дедлайн">
-                  <DeadlineField
-                    value={task.deadline}
-                    onChange={d => patchTask({ deadline: d })}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <DeadlineField
+                      value={task.deadline}
+                      onChange={d => patchTask({ deadline: d })}
+                    />
+                    {deadlineColor && (
+                      <span
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          backgroundColor: deadlineColor,
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
+                  </div>
                 </FieldRow>
 
                 <FieldRow label="Исполнитель">
@@ -1209,6 +1239,7 @@ export default function TaskPanel({
                   </p>
                 </div>
               )}
+              <TaskSummary taskId={task.id} />
 
               {/* ── Subtasks ── */}
               <SectionHead text="Подзадачи" />

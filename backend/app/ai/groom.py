@@ -66,6 +66,22 @@ async def complete_grooming(
     return await call_llm(GROOM_COMPLETE_SYSTEM, user_msg)
 
 
+SUMMARIZE_SYSTEM = """
+Ты — ассистент в канбан-системе. Сделай краткое резюме задачи (2-4 предложения):
+ключевая цель, что нужно сделать, важные детали. Отвечай JSON: {"summary": "..."}
+"""
+
+
+async def summarize_task(title: str, description: str) -> str:
+    """Return a short AI summary string for a task."""
+    user_msg = f"Задача: {title}\n\nОписание: {description or '(нет описания)'}"
+    result = await call_llm(SUMMARIZE_SYSTEM, user_msg)
+    summary = result.get("summary")
+    if not isinstance(summary, str) or not summary.strip():
+        raise ValueError("LLM returned no summary")
+    return summary.strip()
+
+
 def _parse_json_object(content: Any) -> dict[str, Any]:
     if not isinstance(content, str):
         raise ValueError("LLM response content is not a string")
