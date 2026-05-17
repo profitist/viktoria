@@ -21,6 +21,7 @@ interface ColumnProps {
   onCardClick: (task: Task) => void;
   isAdmin?: boolean;
   isLast?: boolean;
+  deadlineDecayEnabled?: boolean;
   onColumnUpdated?: (col: ColumnType) => void;
   onColumnDeleted?: (id: string) => void;
 }
@@ -31,11 +32,13 @@ function SortableTaskCard({
   task,
   onCardClick,
   isLastColumn,
+  deadlineDecayEnabled,
   showToast,
 }: {
   task: Task;
   onCardClick: (task: Task) => void;
   isLastColumn: boolean;
+  deadlineDecayEnabled: boolean;
   showToast: (msg: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -62,6 +65,7 @@ function SortableTaskCard({
         isDragging={isDragging}
         onClick={() => onCardClick(task)}
         isDone={isLastColumn}
+        deadlineDecayEnabled={deadlineDecayEnabled}
         onToggleDone={handleToggleDone}
       />
     </div>
@@ -271,6 +275,7 @@ export default function Column({
   onCardClick,
   isAdmin = false,
   isLast = false,
+  deadlineDecayEnabled = false,
   onColumnUpdated,
   onColumnDeleted,
 }: ColumnProps) {
@@ -312,7 +317,9 @@ export default function Column({
 
   // sync rename value when column name changes externally
   useEffect(() => {
-    if (!isRenaming) setRenameValue(column.name);
+    if (!isRenaming) {
+      queueMicrotask(() => setRenameValue(column.name));
+    }
   }, [column.name, isRenaming]);
 
   // ── handlers ────────────────────────────────────────────────────────────────
@@ -530,6 +537,7 @@ export default function Column({
                 task={task}
                 onCardClick={onCardClick}
                 isLastColumn={isLast ?? false}
+                deadlineDecayEnabled={deadlineDecayEnabled}
                 showToast={setToast}
               />
             ))}

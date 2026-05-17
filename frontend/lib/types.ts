@@ -80,6 +80,7 @@ export interface Task {
   assignee_id: string | null;
   created_at: string;
   deadline: string | null;
+  deadline_days_remaining: number | null;
   deadline_urgency: DeadlineUrgency;
 }
 
@@ -250,6 +251,10 @@ export function parseBoardTask(params: Record<string, unknown>): Task {
     typeof t["priority"] !== "string" ||
     !Array.isArray(t["tags"]) ||
     typeof t["created_at"] !== "string" ||
+    (
+      typeof t["deadline_days_remaining"] !== "number" &&
+      t["deadline_days_remaining"] !== null
+    ) ||
     typeof t["deadline_urgency"] !== "string"
   ) {
     throw new Error(`Invalid board task payload: ${JSON.stringify(params)}`);

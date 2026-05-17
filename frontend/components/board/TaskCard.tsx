@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Task, DeadlineUrgency } from "@/lib/types";
+import { useDeadlineColor } from "@/hooks/useDeadlineColor";
 import PriorityBadge from "./PriorityBadge";
 
 function SubtaskProgressBar({ done, total }: { done: number; total: number }) {
@@ -54,6 +55,7 @@ interface TaskCardProps {
   isDragging: boolean;
   onClick?: () => void;
   isDone?: boolean;
+  deadlineDecayEnabled?: boolean;
   onToggleDone?: () => Promise<void>;
 }
 
@@ -94,10 +96,19 @@ function formatDeadline(deadline: string): string {
   return `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}`;
 }
 
-export default function TaskCard({ task, isDragging, onClick, isDone = false, onToggleDone }: TaskCardProps) {
+export default function TaskCard({
+  task,
+  isDragging,
+  onClick,
+  isDone = false,
+  deadlineDecayEnabled = false,
+  onToggleDone,
+}: TaskCardProps) {
   const [optimisticDone, setOptimisticDone] = useState(isDone);
 
-  useEffect(() => { setOptimisticDone(isDone); }, [isDone]);
+  useEffect(() => {
+    queueMicrotask(() => setOptimisticDone(isDone));
+  }, [isDone]);
 
   async function handleCheckboxClick(e: React.MouseEvent) {
     e.stopPropagation();
@@ -111,6 +122,15 @@ export default function TaskCard({ task, isDragging, onClick, isDone = false, on
   }
 
   const isCritical = task.deadline_urgency === "critical";
+  const deadlineColor = useDeadlineColor(
+    task.deadline_days_remaining,
+    deadlineDecayEnabled
+  );
+  const baseBorderColor = deadlineColor ?? "rgba(255,255,255,0.08)";
+  const hoverBorderColor = deadlineColor ?? "rgba(255,255,255,0.16)";
+  const leftBorder = isCritical
+    ? "2px solid #EF4444"
+    : `1px solid ${baseBorderColor}`;
   const deadlineClassName = [
     "flex items-center gap-1 text-xs px-1.5 py-0.5 rounded",
     DEADLINE_CHIP_CLASS[task.deadline_urgency],
@@ -123,10 +143,8 @@ export default function TaskCard({ task, isDragging, onClick, isDone = false, on
       style={{
         position: "relative",
         background: "#111111",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderLeft: isCritical
-          ? "2px solid #EF4444"
-          : "1px solid rgba(255,255,255,0.08)",
+        border: `1px solid ${baseBorderColor}`,
+        borderLeft: leftBorder,
         borderRadius: "18px",
         boxShadow: URGENCY_SHADOW[task.deadline_urgency],
         opacity: isDragging ? 0.5 : optimisticDone ? 0.65 : 1,
@@ -134,21 +152,19 @@ export default function TaskCard({ task, isDragging, onClick, isDone = false, on
       }}
       onMouseEnter={(e) => {
         if (!isDragging) {
-          e.currentTarget.style.borderColor = "rgba(255,255,255,0.16)";
-          if (isCritical) {
-            e.currentTarget.style.borderLeftColor = "#EF4444";
-          }
+          e.currentTarget.style.borderColor = hoverBorderColor;
+          e.currentTarget.style.borderLeftColor = isCritical
+            ? "#EF4444"
+            : hoverBorderColor;
           e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.6)";
           e.currentTarget.style.transform = "translateY(-1px)";
         }
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+        e.currentTarget.style.borderColor = baseBorderColor;
         e.currentTarget.style.boxShadow = URGENCY_SHADOW[task.deadline_urgency];
         e.currentTarget.style.transform = isDragging ? "scale(1.02) rotate(1deg)" : "";
-        e.currentTarget.style.borderLeft = isCritical
-          ? "2px solid #EF4444"
-          : "1px solid rgba(255,255,255,0.08)";
+        e.currentTarget.style.borderLeft = leftBorder;
       }}
     >
       {onToggleDone && (

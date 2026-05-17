@@ -44,6 +44,7 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
   const [members, setMembers] = useState<FilterSortMember[]>([]);
   const [tags, setTags] = useState<FilterSortTag[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [deadlineDecayEnabled, setDeadlineDecayEnabled] = useState(false);
 
   const [board, setBoard] = useState<BoardDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,6 +77,9 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
     tagsApi.getBoardTags(boardId)
       .then((data) => setTags(data.map((t) => ({ id: t.id, name: t.name, color: t.color }))))
       .catch(() => {});
+    workspaceApi.getSettings(workspaceId)
+      .then(({ settings }) => setDeadlineDecayEnabled(settings.deadline_decay_enabled))
+      .catch(() => setDeadlineDecayEnabled(false));
   }, [workspaceId, boardId, user]);
 
   const loadBoard = useCallback(async () => {
@@ -308,6 +312,7 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
       assignee_id: null,
       created_at: new Date().toISOString(),
       deadline: data.deadline ?? null,
+      deadline_days_remaining: null,
       deadline_urgency: "none",
       description: data.description ?? "",
     };
@@ -398,6 +403,7 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
           })}
           onTaskDelete={(taskId) => setBoard(prev => prev ? deleteTask(prev, taskId) as BoardDetail : prev)}
           isAdmin={isAdmin}
+          deadlineDecayEnabled={deadlineDecayEnabled}
           boardId={boardId}
           onColumnUpdated={handleColumnUpdated}
           onColumnDeleted={handleColumnDeleted}
