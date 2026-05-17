@@ -587,6 +587,7 @@ def _build_task_out(task: Task, tags: list[TagOut]) -> TaskOut:
         workspace_id=task.workspace_id,
         priority=task.priority.value,
         tags=tags,
+        done=task.done,
         assignee_id=task.assignee_id,
         created_at=task.created_at,
         deadline=task.deadline,

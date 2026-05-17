@@ -565,6 +565,7 @@ def _build_board_out(
                         workspace_id=task.workspace_id,
                         priority=task.priority.value,
                         tags=tags_by_task_id.get(task.id, []),
+                        done=task.done,
                         assignee_id=task.assignee_id,
                         created_at=task.created_at,
                         deadline=task.deadline,

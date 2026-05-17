@@ -94,6 +94,7 @@ class TaskOut(BaseModel):
     workspace_id: UUID
     priority: TaskPriority
     tags: list[TagOut]
+    done: bool = False
     assignee_id: UUID | None
     created_at: datetime
     deadline: datetime | None
