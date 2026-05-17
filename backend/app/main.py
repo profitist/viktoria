@@ -8,6 +8,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import app.models  # noqa: F401 — registers all ORM mappers before any query runs
+from app.ai.router import router as ai_router
 from app.analytics.router import router as analytics_router
 from app.analytics.snapshot import snapshot_loop
 from app.audit.recorder import AuditRecorder
@@ -107,6 +108,7 @@ def create_application() -> FastAPI:
 
     application.include_router(api_router)
     application.include_router(analytics_router)
+    application.include_router(ai_router)
     application.include_router(_notifications_ws_router)
     return application
 
