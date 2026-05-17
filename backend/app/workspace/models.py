@@ -116,5 +116,10 @@ class WorkspaceSettings(Base):
         nullable=False,
         server_default=text("true"),
     )
+    deadline_decay_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("true"),
+    )
 
     workspace = relationship("Workspace", back_populates="settings")
