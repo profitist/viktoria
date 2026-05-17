@@ -30,7 +30,7 @@ export function removeMember(
 
 export function getRules(workspaceId: string): Promise<AutomationRule[]> {
   return api.get<AutomationRule[]>(
-    `/api/v1/workspaces/${workspaceId}/automation-rules`
+    `/api/v1/workspaces/${workspaceId}/automation`
   );
 }
 
@@ -39,7 +39,7 @@ export function createRule(
   input: CreateRuleInput
 ): Promise<AutomationRule> {
   return api.post<AutomationRule>(
-    `/api/v1/workspaces/${workspaceId}/automation-rules`,
+    `/api/v1/workspaces/${workspaceId}/automation`,
     input
   );
 }
@@ -48,11 +48,11 @@ export function updateRule(
   ruleId: string,
   input: PatchRuleInput
 ): Promise<AutomationRule> {
-  return api.patch<AutomationRule>(`/api/v1/automation-rules/${ruleId}`, input);
+  return api.patch<AutomationRule>(`/api/v1/automation/${ruleId}`, input);
 }
 
 export function deleteRule(ruleId: string): Promise<void> {
-  return api.delete(`/api/v1/automation-rules/${ruleId}`);
+  return api.delete(`/api/v1/automation/${ruleId}`);
 }
 
 export function getSettings(workspaceId: string): Promise<WorkspaceSettings> {
