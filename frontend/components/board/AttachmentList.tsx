@@ -59,8 +59,9 @@ export default function AttachmentList({ taskId }: Props) {
 
     try {
       const created = await attachmentsApi.uploadAttachment(taskId, file);
-      URL.revokeObjectURL(objectUrl);
       setAttachments(prev => prev.map(a => a.id === tempId ? created : a));
+      // Даём браузеру сначала отрисовать новый URL, потом освобождаем blob
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
     } catch (e) {
       URL.revokeObjectURL(objectUrl);
       setAttachments(prev => prev.filter(a => a.id !== tempId));
