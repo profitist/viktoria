@@ -23,6 +23,7 @@ class WorkspaceOut(BaseModel):
     name: str
     slug: str
     role: Literal["owner", "admin", "member"]
+    deadline_decay_enabled: bool
     """Роль текущего пользователя в этом workspace."""
 
 
@@ -66,6 +67,7 @@ class WorkspaceSettingsPatch(BaseModel):
     """Частичное обновление настроек workspace. Все поля опциональны."""
 
     automation_enabled: bool | None = None
+    deadline_decay_enabled: bool | None = None
     """Если False — AutomationEngine пропускает все правила этого workspace."""
 
 
@@ -76,3 +78,4 @@ class WorkspaceSettingsOut(BaseModel):
 
     workspace_id: UUID
     automation_enabled: bool
+    deadline_decay_enabled: bool

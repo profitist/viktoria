@@ -55,6 +55,7 @@ async def create_workspace(
         name=workspace.name,
         slug=workspace.slug,
         role=WorkspaceRole.OWNER.value,
+        deadline_decay_enabled=workspace.deadline_decay_enabled,
     )
 
 
@@ -69,6 +70,7 @@ async def get_workspace(
         name=membership.workspace.name,
         slug=membership.workspace.slug,
         role=membership.role.value,
+        deadline_decay_enabled=membership.workspace.deadline_decay_enabled,
     )
 
 
@@ -89,6 +91,7 @@ async def list_user_workspaces(
             name=membership.workspace.name,
             slug=membership.workspace.slug,
             role=membership.role.value,
+            deadline_decay_enabled=membership.workspace.deadline_decay_enabled,
         )
         for membership in memberships
     ]
@@ -212,10 +215,16 @@ async def update_settings(
 
     if payload.automation_enabled is not None:
         settings.automation_enabled = payload.automation_enabled
+    if payload.deadline_decay_enabled is not None:
+        membership.workspace.deadline_decay_enabled = payload.deadline_decay_enabled
 
     await session.commit()
     await session.refresh(settings)
-    return WorkspaceSettingsOut.model_validate(settings)
+    return WorkspaceSettingsOut(
+        workspace_id=settings.workspace_id,
+        automation_enabled=settings.automation_enabled,
+        deadline_decay_enabled=membership.workspace.deadline_decay_enabled,
+    )
 
 
 async def _get_membership(
