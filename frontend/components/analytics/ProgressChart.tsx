@@ -27,8 +27,8 @@ function formatDateLabel(value: string): string {
   return `${day}.${month}`;
 }
 
-function formatTooltipLabel(value: string): string {
-  return formatDateLabel(value);
+function formatTooltipLabel(value: unknown): string {
+  return formatDateLabel(String(value ?? ""));
 }
 
 export function ProgressChart({ boardId, initialData }: Props) {
@@ -69,14 +69,16 @@ export function ProgressChart({ boardId, initialData }: Props) {
       }
     }
 
-    loadProgress();
+    queueMicrotask(() => {
+      void loadProgress();
+    });
 
     return () => {
       cancelled = true;
     };
   }, [boardId, initialData, range]);
 
-  const trend = data?.trend ?? [];
+  const trend = useMemo(() => data?.trend ?? [], [data?.trend]);
   const donePct = data?.done_pct ?? initialData?.done_pct ?? 0;
   const maxValue = useMemo(
     () => Math.max(1, ...trend.map((point) => Math.max(point.done, point.total))),
