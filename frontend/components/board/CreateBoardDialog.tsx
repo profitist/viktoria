@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useState } from "react";
 
 import { createBoard } from "@/lib/board-api";
 import type { BoardMeta } from "@/lib/types";
@@ -20,17 +20,23 @@ export function CreateBoardDialog({
 }: Props) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [withDefaultColumns, setWithDefaultColumns] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open) {
-      setName("");
-      setDescription("");
-      setError(null);
-      setIsSubmitting(false);
-    }
-  }, [open]);
+  function resetForm() {
+    setName("");
+    setDescription("");
+    setWithDefaultColumns(true);
+    setError(null);
+    setIsSubmitting(false);
+  }
+
+  function closeDialog() {
+    if (isSubmitting) return;
+    resetForm();
+    onOpenChange(false);
+  }
 
   if (!open) return null;
 
@@ -48,8 +54,10 @@ export function CreateBoardDialog({
       const board = await createBoard(workspaceId, {
         name: trimmedName,
         ...(trimmedDescription ? { description: trimmedDescription } : {}),
+        with_default_columns: withDefaultColumns,
       });
       onCreated(board);
+      resetForm();
       onOpenChange(false);
     } catch {
       setError("Не удалось создать доску");
@@ -62,9 +70,7 @@ export function CreateBoardDialog({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 px-4"
       role="presentation"
-      onMouseDown={() => {
-        if (!isSubmitting) onOpenChange(false);
-      }}
+      onMouseDown={closeDialog}
     >
       <div
         className="w-full max-w-md rounded-lg border border-white/10 bg-[#111111] p-5 shadow-2xl"
@@ -111,6 +117,17 @@ export function CreateBoardDialog({
             />
           </div>
 
+          <label className="flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white/80">
+            <input
+              type="checkbox"
+              checked={withDefaultColumns}
+              onChange={(event) => setWithDefaultColumns(event.target.checked)}
+              disabled={isSubmitting}
+              className="h-4 w-4 rounded border-white/20 bg-white/[0.04] accent-blue-500 disabled:cursor-wait disabled:opacity-60"
+            />
+            <span>Создать дефолтные колонки (To Do / In Progress / Done)</span>
+          </label>
+
           {error !== null && (
             <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-200">
               {error}
@@ -120,7 +137,7 @@ export function CreateBoardDialog({
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
-              onClick={() => onOpenChange(false)}
+              onClick={closeDialog}
               disabled={isSubmitting}
               className="h-9 rounded-md border border-white/10 px-3 text-sm text-white/65 transition-colors hover:bg-white/[0.04] disabled:cursor-wait disabled:opacity-60"
             >
