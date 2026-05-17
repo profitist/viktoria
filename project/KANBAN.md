@@ -1,5 +1,21 @@
 # Kanban
 
+## Iteration I-14 (active) — Цель: Board UX — управление колонками + создание досок + realtime-баги
+
+**DoD:**
+- Owner/admin: «+ Колонка», меню колонки (rename / ←→ / delete с confirm) — через API, без reload
+- Sidebar: «+ Новая доска» → dialog → POST → доска в switcher'е без reload
+- TaskCard: `deadline_urgency=soon` → жёлтый индикатор; `critical` → красный
+- TaskModal: чекнуть/снять/добавить подзадачу → прогресс-бар меняется мгновенно
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-078 | Column management: api-методы + типы | frontend | — | todo | #168 | `frontend/lib/column-api.ts` |
+| T-079 | Column management: UI в Column (rename/←→/delete + создание) | frontend | — | todo | #169 | `frontend/components/board/Column.tsx` |
+| T-080 | Create Board: api + CreateBoardDialog + кнопка в sidebar | frontend | — | todo | #170 | `frontend/lib/board-api.ts`, `frontend/components/board/CreateBoardDialog.tsx`, `frontend/app/(app)/layout.tsx` |
+| T-081 | TaskCard: fix deadline urgency display (soon/critical) | frontend | — | todo | #171 | `frontend/components/board/TaskCard.tsx` |
+| T-082 | TaskModal: subtask progress bar real-time | frontend | — | todo | #172 | `frontend/components/board/TaskModal.tsx` |
+
 ## Iteration I-13 (active) — Цель: Analytics frontend (3 чарта) + Notifications mark-all-read
 
 **DoD:**
