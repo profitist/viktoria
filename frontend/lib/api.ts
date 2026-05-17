@@ -320,6 +320,29 @@ export const workspaceApi = {
     ),
 };
 
+export const columnsApi = {
+  create: (
+    boardId: string,
+    payload: { name: string; position: number }
+  ): Promise<{ column: import("./types").Column }> =>
+    api.post<{ column: import("./types").Column }>(
+      `/api/v1/boards/${boardId}/columns`,
+      payload
+    ),
+
+  update: (
+    columnId: string,
+    payload: { name?: string; position?: number }
+  ): Promise<{ column: import("./types").Column }> =>
+    api.patch<{ column: import("./types").Column }>(
+      `/api/v1/columns/${columnId}`,
+      payload
+    ),
+
+  delete: (columnId: string): Promise<void> =>
+    api.delete(`/api/v1/columns/${columnId}`),
+};
+
 export const tagsApi = {
   getBoardTags: (boardId: string): Promise<Tag[]> =>
     api.get<Tag[]>(`/api/v1/boards/${boardId}/tags`),

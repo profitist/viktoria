@@ -10,8 +10,8 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import type { Board, Task } from "@/lib/types";
-import Column from "./Column";
+import type { Board, Column, Task } from "@/lib/types";
+import ColumnComponent from "./Column";
 import TaskCard from "./TaskCard";
 import type { AddTaskData } from "./AddTaskForm";
 
@@ -20,9 +20,24 @@ interface KanbanBoardProps {
   onTaskMove: (taskId: string, targetColumnId: string, newPosition: number) => void;
   onTaskCreate: (columnId: string, data: AddTaskData) => Promise<void>;
   onCardClick: (task: Task) => void;
+  isAdmin?: boolean;
+  boardId?: string;
+  onColumnUpdated?: (col: Column) => void;
+  onColumnDeleted?: (id: string) => void;
+  onColumnCreated?: (col: Column) => void;
 }
 
-export default function KanbanBoard({ board, onTaskMove, onTaskCreate, onCardClick }: KanbanBoardProps) {
+export default function KanbanBoard({
+  board,
+  onTaskMove,
+  onTaskCreate,
+  onCardClick,
+  isAdmin,
+  boardId,
+  onColumnUpdated,
+  onColumnDeleted,
+  onColumnCreated,
+}: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
@@ -84,6 +99,8 @@ export default function KanbanBoard({ board, onTaskMove, onTaskCreate, onCardCli
     setActiveTask(null);
   }
 
+  const lastIndex = board.columns.length - 1;
+
   return (
     <DndContext
       sensors={sensors}
@@ -92,12 +109,18 @@ export default function KanbanBoard({ board, onTaskMove, onTaskCreate, onCardCli
       onDragCancel={handleDragCancel}
     >
       <div className="flex gap-6 px-8 py-6 overflow-x-auto min-h-screen items-start bg-[#050505] dot-texture">
-        {board.columns.map((column) => (
-          <Column
+        {board.columns.map((column, idx) => (
+          <ColumnComponent
             key={column.id}
             column={column}
             onTaskCreate={onTaskCreate}
             onCardClick={onCardClick}
+            isAdmin={isAdmin}
+            boardId={boardId}
+            isLast={idx === lastIndex}
+            onColumnUpdated={onColumnUpdated}
+            onColumnDeleted={onColumnDeleted}
+            onColumnCreated={onColumnCreated}
           />
         ))}
       </div>
