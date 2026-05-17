@@ -90,7 +90,7 @@ export default function HelpCenter() {
                     Справка
                   </div>
                   <h2 className="mt-3 text-2xl font-semibold text-white sm:text-[30px]">
-                    Как пользоваться Victory
+                    Как пользоваться Victoria
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-white/65 sm:text-[15px]">
                     Короткая встроенная документация по основным экранам и возможностям:
