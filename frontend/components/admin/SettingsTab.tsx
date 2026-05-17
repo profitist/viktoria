@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, workspaceApi } from "@/lib/api";
 import type { WorkspaceSettings } from "@/lib/types";
+import { Switch } from "@/components/ui/switch";
 
 interface SettingsTabProps {
   workspaceId: string;
@@ -12,7 +13,9 @@ interface SettingsTabProps {
 export default function SettingsTab({ workspaceId, currentUserRole }: SettingsTabProps) {
   const [settings, setSettings] = useState<WorkspaceSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isPending, setIsPending] = useState(false);
+  const [pendingSetting, setPendingSetting] = useState<
+    "automation_enabled" | "deadline_decay_enabled" | null
+  >(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; kind: "success" | "error" } | null>(null);
 
@@ -43,27 +46,35 @@ export default function SettingsTab({ workspaceId, currentUserRole }: SettingsTa
   }, [workspaceId]);
 
   useEffect(() => {
-    loadSettings();
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void loadSettings();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [loadSettings]);
 
-  async function handleToggle() {
-    if (!settings || isPending || isReadOnly) return;
+  async function handleToggle(
+    key: "automation_enabled" | "deadline_decay_enabled"
+  ) {
+    if (!settings || pendingSetting !== null || isReadOnly) return;
 
-    const newValue = !settings.automation_enabled;
-    setSettings(prev => (prev ? { ...prev, automation_enabled: newValue } : prev));
-    setIsPending(true);
+    const newValue = !settings[key];
+    setSettings(prev => (prev ? { ...prev, [key]: newValue } : prev));
+    setPendingSetting(key);
 
     try {
       const data = await workspaceApi.updateSettings(workspaceId, {
-        automation_enabled: newValue,
+        [key]: newValue,
       });
       setSettings(data.settings);
       showToast("Сохранено", "success");
     } catch {
-      setSettings(prev => (prev ? { ...prev, automation_enabled: !newValue } : prev));
+      setSettings(prev => (prev ? { ...prev, [key]: !newValue } : prev));
       showToast("Ошибка при сохранении. Попробуйте ещё раз.", "error");
     } finally {
-      setIsPending(false);
+      setPendingSetting(null);
     }
   }
 
@@ -95,12 +106,26 @@ export default function SettingsTab({ workspaceId, currentUserRole }: SettingsTa
         ) : loadError ? (
           <ErrorRow message={loadError} onRetry={loadSettings} />
         ) : settings ? (
-          <SettingRow
-            enabled={settings.automation_enabled}
-            pending={isPending}
-            disabled={isReadOnly}
-            onToggle={handleToggle}
-          />
+          <>
+            <SettingRow
+              label="Automation rules"
+              description="Включает/выключает выполнение всех правил автоматизации"
+              enabled={settings.automation_enabled}
+              pending={pendingSetting === "automation_enabled"}
+              disabled={isReadOnly || pendingSetting !== null}
+              activeColor="#3B82F6"
+              onToggle={() => handleToggle("automation_enabled")}
+            />
+            <SettingRow
+              label="Градиентная окраска по дедлайну"
+              description="Карточки меняют цвет по мере приближения к дедлайну"
+              enabled={settings.deadline_decay_enabled}
+              pending={pendingSetting === "deadline_decay_enabled"}
+              disabled={isReadOnly || pendingSetting !== null}
+              activeColor="#22C55E"
+              onToggle={() => handleToggle("deadline_decay_enabled")}
+            />
+          </>
         ) : null}
       </div>
 
@@ -131,14 +156,20 @@ export default function SettingsTab({ workspaceId, currentUserRole }: SettingsTa
 }
 
 function SettingRow({
+  label,
+  description,
   enabled,
   pending,
   disabled,
+  activeColor,
   onToggle,
 }: {
+  label: string;
+  description: string;
   enabled: boolean;
   pending: boolean;
   disabled: boolean;
+  activeColor: string;
   onToggle: () => void;
 }) {
   return (
@@ -160,10 +191,10 @@ function SettingRow({
             marginBottom: "3px",
           }}
         >
-          Automation rules
+          {label}
         </p>
         <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.40)" }}>
-          Включает/выключает выполнение всех правил автоматизации
+          {description}
         </p>
       </div>
 
@@ -172,70 +203,21 @@ function SettingRow({
           style={{
             fontSize: "12px",
             fontWeight: 500,
-            color: enabled ? "#3B82F6" : "rgba(255,255,255,0.35)",
+            color: enabled ? activeColor : "rgba(255,255,255,0.35)",
             transition: "color 0.2s ease",
             letterSpacing: "0.01em",
           }}
         >
           {enabled ? "Активна" : "Отключена"}
         </span>
-        <Toggle enabled={enabled} disabled={pending || disabled} onToggle={onToggle} />
+        <Switch
+          checked={enabled}
+          disabled={pending || disabled}
+          aria-label={label}
+          onCheckedChange={onToggle}
+        />
       </div>
     </div>
-  );
-}
-
-function Toggle({
-  enabled,
-  disabled,
-  onToggle,
-}: {
-  enabled: boolean;
-  disabled: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      role="switch"
-      aria-checked={enabled}
-      disabled={disabled}
-      onClick={onToggle}
-      title={
-        disabled && !enabled
-          ? "Только владелец или администратор может изменить настройку"
-          : enabled
-          ? "Отключить автоматизацию"
-          : "Включить автоматизацию"
-      }
-      style={{
-        position: "relative",
-        width: "42px",
-        height: "24px",
-        borderRadius: "12px",
-        border: "none",
-        background: enabled ? "#3B82F6" : "rgba(255,255,255,0.10)",
-        outline: "1px solid",
-        outlineColor: enabled ? "transparent" : "rgba(255,255,255,0.10)",
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.45 : 1,
-        transition: "background 0.2s ease, opacity 0.15s ease, outline-color 0.2s ease",
-        flexShrink: 0,
-      }}
-    >
-      <span
-        style={{
-          position: "absolute",
-          top: "3px",
-          left: enabled ? "21px" : "3px",
-          width: "18px",
-          height: "18px",
-          borderRadius: "50%",
-          background: enabled ? "#FFFFFF" : "rgba(255,255,255,0.55)",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.45)",
-          transition: "left 0.2s ease, background 0.2s ease",
-        }}
-      />
-    </button>
   );
 }
 

@@ -216,7 +216,7 @@ async def update_settings(
     if payload.automation_enabled is not None:
         settings.automation_enabled = payload.automation_enabled
     if payload.deadline_decay_enabled is not None:
-        membership.workspace.deadline_decay_enabled = payload.deadline_decay_enabled
+        settings.deadline_decay_enabled = payload.deadline_decay_enabled
 
     await session.commit()
     await session.refresh(settings)

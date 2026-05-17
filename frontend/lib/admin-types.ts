@@ -39,6 +39,7 @@ export interface AutomationRule {
 
 export interface WorkspaceSettings {
   automation_enabled: boolean;
+  deadline_decay_enabled: boolean;
 }
 
 export interface InviteMemberInput {

@@ -16,6 +16,7 @@ export interface Workspace {
 export interface WorkspaceSettings {
   workspace_id: string;
   automation_enabled: boolean;
+  deadline_decay_enabled: boolean;
 }
 
 export interface MemberInvite {
