@@ -71,12 +71,13 @@ export default function HelpCenter() {
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-[60] bg-black/70 px-4 py-5 backdrop-blur-sm sm:px-6 sm:py-8"
+          className="fixed inset-0 z-[60] overflow-y-auto bg-black/70 px-4 py-5 backdrop-blur-sm sm:px-6 sm:py-8"
           role="presentation"
           onMouseDown={() => setIsOpen(false)}
         >
           <div
-            className="mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#0B0B0B] shadow-[0_32px_120px_rgba(0,0,0,0.65)]"
+            className="mx-auto w-full max-w-5xl overflow-y-auto rounded-[28px] border border-white/10 bg-[#0B0B0B] shadow-[0_32px_120px_rgba(0,0,0,0.65)]"
+            style={{ maxHeight: "calc(100vh - 40px)" }}
             role="dialog"
             aria-modal="true"
             aria-label="Справка по Victory"
@@ -124,9 +125,9 @@ export default function HelpCenter() {
               </div>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+            <div className="flex flex-col lg:flex-row">
               <aside className="hidden w-[240px] flex-shrink-0 border-r border-white/10 bg-[#090909] lg:block">
-                <div className="sticky top-0 p-5">
+                <div className="p-5">
                   <div className="text-[11px] uppercase tracking-[0.18em] text-white/30">
                     Разделы
                   </div>
@@ -145,7 +146,7 @@ export default function HelpCenter() {
                 </div>
               </aside>
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-8 sm:py-7">
+              <div className="flex-1 px-5 py-5 sm:px-8 sm:py-7">
                 <div className="mb-4 flex gap-2 overflow-x-auto pb-1 lg:hidden">
                   {sectionLinks.map((section) => (
                     <button
@@ -164,7 +165,7 @@ export default function HelpCenter() {
                     <section
                       key={section.id}
                       id={section.id}
-                      className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] p-5 sm:p-6"
+                      className="scroll-mt-6 rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] p-5 sm:p-6"
                     >
                       <div className="flex items-start gap-4">
                         <div
