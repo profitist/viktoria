@@ -21,12 +21,14 @@ interface KanbanBoardProps {
   board: Board;
   onTaskMove: (taskId: string, targetColumnId: string, newPosition: number) => void;
   onTaskCreate: (columnId: string, data: AddTaskData) => Promise<void>;
+  onTaskCreated?: (task: Task) => void;
   onCardClick?: (task: Task) => void;
   onTaskUpdate?: (task: Task) => void;
   onTaskDelete?: (taskId: string) => void;
   isAdmin?: boolean;
   deadlineDecayEnabled?: boolean;
   boardId?: string;
+  workspaceId?: string;
   onColumnUpdated?: (col: Column) => void;
   onColumnDeleted?: (id: string) => void;
   onColumnCreated?: (col: Column) => void;
@@ -36,11 +38,13 @@ export default function KanbanBoard({
   board,
   onTaskMove,
   onTaskCreate,
+  onTaskCreated,
   onTaskUpdate,
   onTaskDelete,
   isAdmin,
   deadlineDecayEnabled = false,
   boardId,
+  workspaceId,
   onColumnUpdated,
   onColumnDeleted,
   onColumnCreated,
@@ -161,10 +165,13 @@ export default function KanbanBoard({
               key={column.id}
               column={column}
               onTaskCreate={onTaskCreate}
+              onTaskCreated={onTaskCreated}
               onCardClick={setSelectedTask}
               isAdmin={isAdmin}
               isLast={idx === lastIndex}
               deadlineDecayEnabled={deadlineDecayEnabled}
+              boardId={boardId}
+              workspaceId={workspaceId}
               onColumnUpdated={onColumnUpdated}
               onColumnDeleted={onColumnDeleted}
             />
