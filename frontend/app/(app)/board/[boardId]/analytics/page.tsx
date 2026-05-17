@@ -5,17 +5,23 @@ import { WorkloadChart } from "@/components/analytics/WorkloadChart";
 
 export default async function AnalyticsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ boardId: string }>;
+  searchParams: Promise<{ workspace_id?: string }>;
 }) {
   const { boardId } = await params;
+  const { workspace_id: workspaceId } = await searchParams;
+  const workspaceQuery = workspaceId
+    ? `?workspace_id=${encodeURIComponent(workspaceId)}`
+    : "";
 
   return (
     <div className="space-y-8 p-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold text-white">Аналитика доски</h1>
         <Link
-          href={`/board/${boardId}`}
+          href={`/board/${boardId}${workspaceQuery}`}
           className="inline-flex h-10 items-center rounded-md border border-white/10 bg-transparent px-4 text-sm font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.04] hover:text-white"
         >
           ← Назад к доске
