@@ -1,5 +1,22 @@
 # Kanban
 
+## Iteration I-13 (active) — Цель: Analytics frontend (3 чарта) + Notifications mark-all-read
+
+**DoD:**
+- `/board/{boardId}/analytics` рендерит три секции: Donut «по статусу», Line «прогресс + done%», Bar «нагрузка по assignee»
+- Данные грузятся с `GET /api/v1/boards/{id}/analytics/overview|progress?range=week|workload`
+- Loading-скелетоны и empty state на каждом чарте
+- `PATCH /api/v1/notifications/read-all?workspace_id={id}` → 200, все unread записи юзера → `read=true`
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-072 | Analytics frontend: api-методы + типы | frontend | — | done | #151 | `frontend/lib/analytics-api.ts` |
+| T-073 | Analytics: OverviewChart (donut по статусу) | frontend | — | done | #152 | `frontend/components/analytics/OverviewChart.tsx` |
+| T-074 | Analytics: ProgressChart (line + done_pct %) | frontend | @frakin-000 | in progress | #154 | `frontend/components/analytics/ProgressChart.tsx` |
+| T-075 | Analytics: WorkloadChart (bar по assignee) | frontend | — | todo | #155 | `frontend/components/analytics/WorkloadChart.tsx` |
+| T-076 | Analytics: страница /board/[boardId]/analytics | frontend | — | todo | #156 | `frontend/app/(app)/board/[boardId]/analytics/page.tsx` |
+| T-077 | Notifications: PATCH /notifications/read-all | notifications | @xionter | done | #157 | `backend/app/notifications/router.py` |
+
 ## Iteration I-12 (active) — Цель: Admin panel — управление workspace для owner/admin
 
 **DoD:**
