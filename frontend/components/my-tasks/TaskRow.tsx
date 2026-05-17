@@ -4,6 +4,7 @@ import type { MyTask } from "@/lib/my-tasks-api";
 
 interface Props {
   task: MyTask;
+  boardName?: string;
   onToggleDone?: (taskId: string, done: boolean) => void;
   onTaskClick?: (taskId: string) => void;
 }
@@ -31,7 +32,12 @@ function truncate(str: string, max: number) {
   return str.length > max ? str.slice(0, max) + "…" : str;
 }
 
-export default function TaskRow({ task, onToggleDone, onTaskClick }: Props) {
+export default function TaskRow({
+  task,
+  boardName,
+  onToggleDone,
+  onTaskClick,
+}: Props) {
   return (
     <div
       className="ui-hover"
@@ -101,10 +107,28 @@ export default function TaskRow({ task, onToggleDone, onTaskClick }: Props) {
         {task.title}
       </span>
 
-      {/* Board path */}
-      <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)", whiteSpace: "nowrap", flexShrink: 0 }}>
-        {truncate(task.board_name, 14)}
-      </span>
+      {/* Board badge */}
+      {boardName && (
+        <span
+          title={boardName}
+          style={{
+            maxWidth: "120px",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            borderRadius: "999px",
+            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(255,255,255,0.045)",
+            padding: "2px 7px",
+            fontSize: "11px",
+            fontWeight: 500,
+            color: "rgba(255,255,255,0.42)",
+          }}
+        >
+          {truncate(boardName, 18)}
+        </span>
+      )}
 
       {/* Deadline */}
       {task.deadline && (

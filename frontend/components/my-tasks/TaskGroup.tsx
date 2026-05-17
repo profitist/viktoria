@@ -6,6 +6,7 @@ import TaskRow from "./TaskRow";
 
 interface Props {
   group: TaskGroupType;
+  boardNamesById: Record<string, string>;
   onToggleDone: (taskId: string, done: boolean) => void;
   onTaskClick: (taskId: string) => void;
   workspaceId: string;
@@ -23,7 +24,12 @@ const DISABLED_ACTIONS = [
   { icon: "+", title: "Скоро" },
 ];
 
-export default function TaskGroup({ group, onToggleDone, onTaskClick }: Props) {
+export default function TaskGroup({
+  group,
+  boardNamesById,
+  onToggleDone,
+  onTaskClick,
+}: Props) {
   const [expanded, setExpanded] = useState(DEFAULT_EXPANDED[group.key] ?? true);
 
   return (
@@ -108,6 +114,7 @@ export default function TaskGroup({ group, onToggleDone, onTaskClick }: Props) {
             <TaskRow
               key={task.id}
               task={task}
+              boardName={boardNamesById[task.board_id]}
               onToggleDone={onToggleDone}
               onTaskClick={onTaskClick}
             />
