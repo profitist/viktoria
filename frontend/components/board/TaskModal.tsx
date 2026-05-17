@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, subtasksApi, tagsApi } from "@/lib/api";
 import CommentFeed from "./CommentFeed";
 import AttachmentList from "./AttachmentList";
@@ -107,6 +107,14 @@ export default function TaskModal({ task, boardId, workspaceId, onSave, onDelete
   const [boardTags, setBoardTags] = useState<Tag[]>([]);
   const [subtasks, setSubtasks] = useState<Subtask[] | undefined>(undefined);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
+
+  const doneCount = subtasks ? subtasks.filter(s => s.is_done).length : 0;
+  const totalCount = subtasks ? subtasks.length : 0;
+  const progressPct = totalCount > 0 ? (doneCount / totalCount) * 100 : 0;
+
+  const handleSubtasksChange = useCallback((items: Subtask[]) => {
+    setSubtasks(items);
+  }, []);
 
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
@@ -492,9 +500,48 @@ export default function TaskModal({ task, boardId, workspaceId, onSave, onDelete
 
             {/* Подзадачи — всегда видимы; subtasks=undefined пока идёт загрузка → SubtaskList покажет skeleton */}
             <div style={{ marginTop: "20px" }}>
-              <SectionLabel text="Подзадачи" />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                <p
+                  className="uppercase"
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 500,
+                    color: "rgba(255,255,255,0.35)",
+                    letterSpacing: "0.08em",
+                    margin: 0,
+                  }}
+                >
+                  Подзадачи
+                </p>
+                {subtasks !== undefined && totalCount > 0 && (
+                  <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", flexShrink: 0 }}>
+                    {doneCount}/{totalCount}
+                  </span>
+                )}
+              </div>
+              {subtasks !== undefined && totalCount > 0 && (
+                <div
+                  style={{
+                    height: "3px",
+                    borderRadius: "999px",
+                    background: "rgba(255,255,255,0.08)",
+                    marginBottom: "10px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${progressPct}%`,
+                      borderRadius: "999px",
+                      background: progressPct === 100 ? "#22C55E" : "#3B82F6",
+                      transition: "width 200ms ease, background 200ms ease",
+                    }}
+                  />
+                </div>
+              )}
               {subtasks !== undefined ? (
-                <SubtaskList taskId={task.id} subtasks={subtasks} />
+                <SubtaskList taskId={task.id} subtasks={subtasks} onItemsChange={handleSubtasksChange} />
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   {[1, 2].map(i => (
