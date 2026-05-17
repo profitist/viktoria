@@ -6,6 +6,7 @@ import {
   tagsApi,
   workspaceApi,
   boardsApi,
+  markTaskDone,
 } from "@/lib/api";
 import type {
   AuditLogEntry,
@@ -67,6 +68,40 @@ function auditLabel(entry: AuditLogEntry): string {
     case "task.deleted":  return `${entry.actor.name} удалил задачу`;
     default:              return `${entry.actor.name} • ${entry.event_type}`;
   }
+}
+
+function CheckCircleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M8 12.5l2.5 2.5L16 9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function XCircleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M9 9l6 6M15 9l-6 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function taskBoardId(task: Task | null): string | undefined {
+  const value = (task as (Task & { board_id?: unknown }) | null)?.board_id;
+  return typeof value === "string" ? value : undefined;
 }
 
 // ── shared style ───────────────────────────────────────────────────────────────
@@ -505,13 +540,19 @@ function TagsField({
     !boardTags.find(t => t.name.toLowerCase() === query.trim().toLowerCase());
 
   useEffect(() => {
-    if (!open) { setQuery(""); return; }
-    setTimeout(() => inputRef.current?.focus(), 50);
+    if (!open) {
+      const resetId = setTimeout(() => setQuery(""), 0);
+      return () => clearTimeout(resetId);
+    }
+    const focusId = setTimeout(() => inputRef.current?.focus(), 50);
     function out(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", out);
-    return () => document.removeEventListener("mousedown", out);
+    return () => {
+      clearTimeout(focusId);
+      document.removeEventListener("mousedown", out);
+    };
   }, [open]);
 
   function handleCreate() {
@@ -726,27 +767,49 @@ export default function TaskPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [isTogglingDone, setIsTogglingDone] = useState(false);
 
   const doneCount = subtasks ? subtasks.filter(s => s.is_done).length : 0;
   const totalCount = subtasks ? subtasks.length : 0;
   const progressPct = totalCount > 0 ? (doneCount / totalCount) * 100 : 0;
+  const resolvedBoardId = boardId ?? taskBoardId(task);
+  const orderedColumns = [...columns].sort(
+    (a, b) => a.position - b.position || a.id.localeCompare(b.id)
+  );
+  const firstColumn = orderedColumns[0] ?? null;
+  const doneColumn = orderedColumns[orderedColumns.length - 1] ?? null;
+  const isTaskDone =
+    task !== null && doneColumn !== null && task.column_id === doneColumn.id;
+  const canToggleDone =
+    task !== null &&
+    firstColumn !== null &&
+    doneColumn !== null &&
+    firstColumn.id !== doneColumn.id &&
+    !isTogglingDone;
 
   // ── data loading ─────────────────────────────────────────────────────────────
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!taskId) {
-      setTask(null);
-      setSubtasks(undefined);
-      setAuditLog([]);
-      return;
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setTask(null);
+        setSubtasks(undefined);
+        setAuditLog([]);
+        setIsTogglingDone(false);
+      });
+      return () => { cancelled = true; };
     }
 
     const id = taskId; // capture for async — TypeScript doesn't narrow across async boundaries
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
     async function fetchAll() {
+      if (cancelled) return;
+      setLoading(true);
+      setError(null);
+      setIsTogglingDone(false);
+
       try {
         const { task: loaded } = await api.get<{ task: Task }>(`/api/v1/tasks/${id}`);
         if (cancelled) return;
@@ -767,18 +830,20 @@ export default function TaskPanel({
       }
     }
 
-    fetchAll();
+    queueMicrotask(() => {
+      void fetchAll();
+    });
     return () => { cancelled = true; };
   }, [taskId, workspaceId]);
 
   // board data (columns + tags) loaded separately — boardId may change
   useEffect(() => {
-    if (!boardId) return;
+    if (!resolvedBoardId) return;
     let cancelled = false;
 
     Promise.allSettled([
-      boardsApi.getDetail(boardId),
-      tagsApi.getBoardTags(boardId),
+      boardsApi.getDetail(resolvedBoardId),
+      tagsApi.getBoardTags(resolvedBoardId),
     ]).then(([boardRes, tagsRes]) => {
       if (cancelled) return;
       if (boardRes.status === "fulfilled") setColumns(boardRes.value.board.columns);
@@ -786,7 +851,7 @@ export default function TaskPanel({
     });
 
     return () => { cancelled = true; };
-  }, [boardId]);
+  }, [resolvedBoardId]);
 
   // ── escape key ───────────────────────────────────────────────────────────────
 
@@ -823,6 +888,26 @@ export default function TaskPanel({
   }
 
   // ── delete ───────────────────────────────────────────────────────────────────
+
+  async function handleToggleDone() {
+    if (!task || !firstColumn || !doneColumn || !canToggleDone) return;
+
+    const prev = task;
+    const targetColumn = isTaskDone ? firstColumn : doneColumn;
+    setIsTogglingDone(true);
+    setTask({ ...task, column_id: targetColumn.id });
+
+    try {
+      const saved = await markTaskDone(task.id);
+      setTask(saved);
+      onTaskUpdate?.(saved);
+    } catch {
+      setTask(prev);
+      showToast("Не удалось изменить статус задачи");
+    } finally {
+      setIsTogglingDone(false);
+    }
+  }
 
   async function handleDelete() {
     if (!task) return;
@@ -867,9 +952,9 @@ export default function TaskPanel({
   }
 
   async function handleCreateTag(name: string, color: string) {
-    if (!task || !boardId) return;
+    if (!task || !resolvedBoardId) return;
     try {
-      const newTag = await tagsApi.createTag(boardId, { name, color });
+      const newTag = await tagsApi.createTag(resolvedBoardId, { name, color });
       setBoardTags(prev => [...prev, newTag]);
       const updated = { ...task, tags: [...task.tags, newTag] };
       setTask(updated);
@@ -1031,6 +1116,36 @@ export default function TaskPanel({
 
             {/* ── Scrollable body ── */}
             <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 32px" }}>
+              <button
+                type="button"
+                onClick={handleToggleDone}
+                disabled={!canToggleDone}
+                style={{
+                  width: "100%",
+                  marginTop: "20px",
+                  minHeight: "44px",
+                  border: isTaskDone
+                    ? "1px solid rgba(255,255,255,0.12)"
+                    : "1px solid rgba(34,197,94,0.36)",
+                  borderRadius: "10px",
+                  background: isTaskDone
+                    ? "rgba(255,255,255,0.06)"
+                    : "rgba(34,197,94,0.16)",
+                  color: isTaskDone ? "rgba(255,255,255,0.72)" : "#86EFAC",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  cursor: canToggleDone ? "pointer" : "not-allowed",
+                  opacity: canToggleDone ? 1 : 0.55,
+                  transition: "background 150ms, border-color 150ms, color 150ms",
+                }}
+              >
+                {isTaskDone ? <XCircleIcon /> : <CheckCircleIcon />}
+                {isTaskDone ? "Снять отметку" : "Отметить выполненным"}
+              </button>
 
               {/* ── Fields grid ── */}
               <div
@@ -1072,7 +1187,7 @@ export default function TaskPanel({
                     boardTags={boardTags}
                     onAdd={handleAddTag}
                     onRemove={handleRemoveTag}
-                    onCreate={boardId ? handleCreateTag : undefined}
+                    onCreate={resolvedBoardId ? handleCreateTag : undefined}
                   />
                 </FieldRow>
               </div>
