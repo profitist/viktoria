@@ -339,6 +339,7 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
       deadline_days_remaining: null,
       deadline_urgency: "none",
       description: data.description ?? "",
+      done: false,
     };
 
     setBoard((prev) => (prev ? addTaskToColumn(prev, tempTask) as BoardDetail : prev));

@@ -8,7 +8,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ApiError, columnsApi, markTaskDone } from "@/lib/api";
+import { ApiError, columnsApi, patchTaskDone } from "@/lib/api";
 import type { Column as ColumnType, Task } from "@/lib/types";
 import TaskCard from "./TaskCard";
 import AddTaskForm, { type AddTaskData } from "./AddTaskForm";
@@ -35,13 +35,11 @@ interface ColumnProps {
 function SortableTaskCard({
   task,
   onCardClick,
-  isLastColumn,
   deadlineDecayEnabled,
   showToast,
 }: {
   task: Task;
   onCardClick: (task: Task) => void;
-  isLastColumn: boolean;
   deadlineDecayEnabled: boolean;
   showToast: (msg: string) => void;
 }) {
@@ -50,7 +48,7 @@ function SortableTaskCard({
 
   async function handleToggleDone() {
     try {
-      await markTaskDone(task.id);
+      await patchTaskDone(task.id, !task.done);
     } catch {
       showToast("Не удалось изменить статус задачи");
       throw new Error();
@@ -68,7 +66,7 @@ function SortableTaskCard({
         task={task}
         isDragging={isDragging}
         onClick={() => onCardClick(task)}
-        isDone={isLastColumn}
+        isDone={task.done}
         deadlineDecayEnabled={deadlineDecayEnabled}
         onToggleDone={handleToggleDone}
       />
@@ -551,7 +549,6 @@ export default function Column({
                 key={task.id}
                 task={task}
                 onCardClick={onCardClick}
-                isLastColumn={isLast ?? false}
                 deadlineDecayEnabled={deadlineDecayEnabled}
                 showToast={setToast}
               />
