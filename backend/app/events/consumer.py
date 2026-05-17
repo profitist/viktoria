@@ -1,20 +1,21 @@
 import asyncio
+from datetime import UTC, datetime
 import inspect
 import json
 import logging
 from json import JSONDecodeError
 from typing import Any, get_args
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import aio_pika
 from aio_pika.abc import AbstractIncomingMessage
 from fastapi import FastAPI
 from pydantic import ValidationError
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
-from app.events.publisher import EVENTS_EXCHANGE, get_channel
+from app.events.publisher import EVENTS_EXCHANGE, get_channel, publish
 from app.events.types import EventEnvelope, EventType
 from app.notifications.jsonrpc import (
     EVENT_LOG_ENTRY,
@@ -170,7 +171,7 @@ async def _persist_event_side_effects(enriched_event: dict[str, Any]) -> bool:
             event_type=event_type,
             data=event_data,
         )
-        await _process_automation_rules(session, enriched_event)
+        automation_events = await _process_automation_rules(session, enriched_event)
 
         session.add(
             ProcessedEvent(
@@ -186,13 +187,14 @@ async def _persist_event_side_effects(enriched_event: dict[str, Any]) -> bool:
             logger.info("durable duplicate event skipped after insert race: %s", event_id)
             return False
 
+    await _publish_automation_events(automation_events)
     return True
 
 
 async def _process_automation_rules(
     session: AsyncSession,
     enriched_event: dict[str, Any],
-) -> None:
+) -> list[EventEnvelope]:
     from app.automation.models import AutomationRule
     from app.workspace.models import WorkspaceSettings
 
@@ -204,7 +206,7 @@ async def _process_automation_rules(
         )
     )
     if automation_enabled is False:
-        return
+        return []
 
     result = await session.execute(
         select(AutomationRule)
@@ -217,20 +219,34 @@ async def _process_automation_rules(
     )
     rules = result.scalars().all()
 
+    events: list[EventEnvelope] = []
     for rule in rules:
         if not _condition_matches(rule.condition, enriched_event):
             continue
-        await _execute_rule_action(session, rule, enriched_event)
+        event = await _execute_rule_action(session, rule, enriched_event)
+        if event is not None:
+            events.append(event)
+    return events
 
 
 async def _execute_rule_action(
     session: AsyncSession,
     rule: Any,
     enriched_event: dict[str, Any],
-) -> None:
+) -> EventEnvelope | None:
     action = rule.action or {}
+    if not isinstance(action, dict):
+        logger.warning("automation action skipped: invalid action payload")
+        return None
+
     action_type = action.get("type")
     params = action.get("params") or {}
+    if not isinstance(params, dict):
+        logger.warning(
+            "automation action skipped: invalid params for action type %r",
+            action_type,
+        )
+        return None
 
     if action_type in {"notify_members", "notify_all"}:
         from app.notifications.service import create_notifications_for_workspace
@@ -251,17 +267,24 @@ async def _execute_rule_action(
                 "action_type": action_type,
             },
         )
-        return
+        return None
 
     if action_type == "add_tag":
         await _add_task_tag(session, enriched_event, params)
-        return
+        return None
 
     if action_type == "suggest_assignee_balanced":
         await _suggest_assignee_balanced(session, rule, enriched_event)
-        return
+        return None
 
-    logger.info("automation action skipped: unsupported action type %r", action_type)
+    if action_type == "set_priority":
+        return await _set_task_priority(session, enriched_event, params)
+
+    if action_type == "set_assignee":
+        return await _set_task_assignee(session, enriched_event, params)
+
+    logger.warning("automation action skipped: unsupported action type %r", action_type)
+    return None
 
 
 async def _add_task_tag(
@@ -365,6 +388,150 @@ async def _suggest_assignee_balanced(
                 "current_task_count": current_task_count,
             },
         )
+
+
+async def _set_task_priority(
+    session: AsyncSession,
+    enriched_event: dict[str, Any],
+    params: dict[str, Any],
+) -> EventEnvelope | None:
+    from app.tasks.models import Task, TaskPriority
+
+    raw_priority = params.get("priority")
+    if raw_priority not in {item.value for item in TaskPriority}:
+        logger.warning(
+            "automation set_priority skipped: invalid priority %r",
+            raw_priority,
+        )
+        return None
+
+    task_id = _as_uuid(enriched_event["task_id"])
+    workspace_id = _as_uuid(enriched_event["workspace_id"])
+    priority = TaskPriority(str(raw_priority))
+
+    current_priority = await session.scalar(
+        select(Task.priority).where(
+            Task.id == task_id,
+            Task.workspace_id == workspace_id,
+        )
+    )
+    if current_priority is None:
+        logger.warning("automation set_priority skipped: task not found")
+        return None
+    if current_priority == priority:
+        return None
+
+    result = await session.execute(
+        update(Task)
+        .where(
+            Task.id == task_id,
+            Task.workspace_id == workspace_id,
+        )
+        .values(priority=priority)
+    )
+    if result.rowcount == 0:
+        logger.warning("automation set_priority skipped: task not found")
+        return None
+
+    return _build_task_updated_event(enriched_event, {"priority": priority.value})
+
+
+async def _set_task_assignee(
+    session: AsyncSession,
+    enriched_event: dict[str, Any],
+    params: dict[str, Any],
+) -> EventEnvelope | None:
+    from app.tasks.models import Task
+    from app.workspace.models import WorkspaceMember
+
+    raw_assignee_id = params.get("assignee_id")
+    if raw_assignee_id is None:
+        assignee_id = None
+    else:
+        try:
+            assignee_id = _as_uuid(raw_assignee_id)
+        except (TypeError, ValueError):
+            logger.warning(
+                "automation set_assignee skipped: invalid assignee_id %r",
+                raw_assignee_id,
+            )
+            return None
+
+    task_id = _as_uuid(enriched_event["task_id"])
+    workspace_id = _as_uuid(enriched_event["workspace_id"])
+
+    if assignee_id is not None:
+        membership = await session.scalar(
+            select(WorkspaceMember.user_id).where(
+                WorkspaceMember.workspace_id == workspace_id,
+                WorkspaceMember.user_id == assignee_id,
+            )
+        )
+        if membership is None:
+            logger.warning(
+                "automation set_assignee skipped: assignee %s is not a workspace member",
+                assignee_id,
+            )
+            return None
+
+    task_result = await session.execute(
+        select(Task.assignee_id).where(
+            Task.id == task_id,
+            Task.workspace_id == workspace_id,
+        )
+    )
+    task_row = task_result.first()
+    if task_row is None:
+        logger.warning("automation set_assignee skipped: task not found")
+        return None
+
+    current_assignee_id = task_row[0]
+    if current_assignee_id == assignee_id:
+        return None
+
+    result = await session.execute(
+        update(Task)
+        .where(
+            Task.id == task_id,
+            Task.workspace_id == workspace_id,
+        )
+        .values(assignee_id=assignee_id)
+    )
+    if result.rowcount == 0:
+        logger.warning("automation set_assignee skipped: task not found")
+        return None
+
+    payload = {"assignee_id": str(assignee_id) if assignee_id is not None else None}
+    return _build_task_updated_event(enriched_event, payload)
+
+
+async def _publish_automation_events(events: list[EventEnvelope]) -> None:
+    if not events:
+        return
+    if _consumer_app is None:
+        logger.warning(
+            "automation task.updated publish skipped: consumer app is not initialized"
+        )
+        return
+
+    channel = await get_channel(_consumer_app)
+    for event in events:
+        await publish(event, channel)
+
+
+def _build_task_updated_event(
+    enriched_event: dict[str, Any],
+    payload: dict[str, Any],
+) -> EventEnvelope:
+    return EventEnvelope(
+        event_id=uuid4(),
+        event_type="task.updated",
+        workspace_id=_as_uuid(enriched_event["workspace_id"]),
+        task_id=_as_uuid(enriched_event["task_id"]),
+        timestamp=datetime.now(UTC),
+        actor_id=_as_uuid(enriched_event["actor_id"]),
+        payload=payload,
+    )
 
 
 def _condition_matches(

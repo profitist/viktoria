@@ -26,6 +26,8 @@ RuleActionType = Literal[
     "notify_members",
     "notify_all",
     "suggest_assignee_balanced",
+    "set_priority",
+    "set_assignee",
 ]
 """
 Действие при срабатывании правила:
@@ -34,6 +36,8 @@ RuleActionType = Literal[
   notify_members  — отправить уведомление участникам workspace
   notify_all      — alias notify_members для событийного consumer-а
   suggest_assignee_balanced — предложить менеджерам исполнителя с минимальной нагрузкой
+  set_priority    — установить priority задачи
+  set_assignee    — назначить или снять исполнителя задачи
 """
 
 
@@ -64,6 +68,8 @@ class RuleAction(BaseModel):
       notify_members:  {"message": "Задача стала критической"}
       notify_all:      {"message": "Задача стала критической"}
       suggest_assignee_balanced: {}
+      set_priority:    {"priority": "high"}
+      set_assignee:    {"assignee_id": "<uuid>"}
     """
 
     type: RuleActionType
