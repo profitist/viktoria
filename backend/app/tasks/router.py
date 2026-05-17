@@ -5,9 +5,10 @@ from typing import Annotated, Literal
 from uuid import UUID
 
 from aio_pika.abc import AbstractChannel
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import httpx
@@ -26,6 +27,7 @@ from app.tasks.schemas import (
     TaskOut,
     TaskPatch,
 )
+from app.tasks.models import Task
 from app.tasks.service import (
     DuplicateTaskError,
     create_subtask,
@@ -178,6 +180,39 @@ async def mark_task_done_route(
         return _duplicate_task_response(exc)
 
     return TaskResponse(task=task)
+
+
+class TaskDoneRequest(BaseModel):
+    done: bool
+
+
+class TaskDoneResponse(BaseModel):
+    id: UUID
+    done: bool
+
+
+@router.patch(
+    "/tasks/{task_id}/done",
+    response_model=TaskDoneResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def set_task_done_route(
+    task_id: UUID,
+    payload: TaskDoneRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> TaskDoneResponse:
+    result = await session.execute(
+        sa_update(Task)
+        .where(Task.id == task_id)
+        .values(done=payload.done)
+        .returning(Task.id, Task.done)
+    )
+    row = result.first()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="task not found")
+    await session.commit()
+    return TaskDoneResponse(id=row.id, done=row.done)
 
 
 class TaskSummaryResponse(BaseModel):
