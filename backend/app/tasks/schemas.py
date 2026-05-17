@@ -102,6 +102,13 @@ class TaskOut(BaseModel):
     """Агрегат подзадач. Вычисляется на backend, не хранится в БД."""
 
 
+class TaskListPage(BaseModel):
+    items: list[TaskOut]
+    total: int
+    page: int
+    page_size: int
+
+
 class DuplicateCheckOut(BaseModel):
     """Ответ на проверку существования задачи с таким же названием в колонке."""
 
