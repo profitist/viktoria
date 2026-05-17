@@ -140,10 +140,34 @@ async def fanout_event(enriched_event: dict[str, Any]) -> None:
             fanout_calls.append(_maybe_await(notification_hub.broadcast(workspace_id, log_message)))
 
     if audit_recorder is not None:
-        fanout_calls.append(_maybe_await(audit_recorder.record(enriched_event)))
+        fanout_calls.append(
+            _record_audit_and_broadcast(
+                audit_recorder=audit_recorder,
+                notification_hub=notification_hub,
+                enriched_event=enriched_event,
+            )
+        )
 
     if fanout_calls:
         await asyncio.gather(*fanout_calls)
+
+
+async def _record_audit_and_broadcast(
+    audit_recorder: Any,
+    notification_hub: Any,
+    enriched_event: dict[str, Any],
+) -> None:
+    audit_log = await _maybe_await(audit_recorder.record(enriched_event))
+    if audit_log is None or notification_hub is None:
+        return
+
+    workspace_id = str(enriched_event["workspace_id"])
+    await _maybe_await(
+        notification_hub.broadcast(
+            workspace_id,
+            build("audit.event_created", _audit_event_payload(audit_log, enriched_event)),
+        )
+    )
 
 
 async def _persist_event_side_effects(enriched_event: dict[str, Any]) -> bool:
@@ -605,6 +629,19 @@ def _notification_data(enriched_event: dict[str, Any]) -> dict[str, Any]:
         "task_id": str(enriched_event["task_id"]),
         "actor_id": str(enriched_event["actor_id"]),
         "payload": enriched_event.get("payload", {}),
+    }
+
+
+def _audit_event_payload(audit_log: Any, enriched_event: dict[str, Any]) -> dict[str, Any]:
+    entity_id = audit_log.task_id or _as_uuid(enriched_event["task_id"])
+    return {
+        "event_type": str(audit_log.event_type),
+        "entity_type": "task",
+        "entity_id": str(entity_id) if entity_id is not None else None,
+        "actor_id": str(audit_log.actor_id),
+        "actor_name": enriched_event.get("actor_name"),
+        "created_at": audit_log.created_at.isoformat(),
+        "board_id": str(audit_log.board_id) if audit_log.board_id is not None else None,
     }
 
 
