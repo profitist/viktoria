@@ -378,7 +378,7 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
           }
         />
         <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-          <ViewTabs value={viewMode} onChange={handleViewChange} />
+          <ViewTabs value={viewMode} onChange={handleViewChange} boardId={boardId} />
         </div>
       </div>
 

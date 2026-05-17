@@ -4,7 +4,6 @@ import { useSearchParams } from "next/navigation";
 
 import { WsProvider } from "@/contexts/WsContext";
 import Sidebar from "@/components/sidebar/Sidebar";
-import NotificationBell from "@/components/notifications/NotificationBell";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
@@ -14,7 +13,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <WsProvider>
       <div className="flex h-screen overflow-hidden bg-[#050505]">
         <Sidebar workspaceId={workspaceId} />
-        <NotificationBell workspaceId={workspaceId} />
         <main className="flex-1 overflow-y-auto bg-[#050505]">
           {children}
         </main>
