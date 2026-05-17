@@ -20,11 +20,9 @@ interface ColumnProps {
   onTaskCreate: (columnId: string, data: AddTaskData) => Promise<void>;
   onCardClick: (task: Task) => void;
   isAdmin?: boolean;
-  boardId?: string;
   isLast?: boolean;
   onColumnUpdated?: (col: ColumnType) => void;
   onColumnDeleted?: (id: string) => void;
-  onColumnCreated?: (col: ColumnType) => void;
 }
 
 // ── sortable task card ─────────────────────────────────────────────────────────
@@ -253,11 +251,9 @@ export default function Column({
   onTaskCreate,
   onCardClick,
   isAdmin = false,
-  boardId,
   isLast = false,
   onColumnUpdated,
   onColumnDeleted,
-  onColumnCreated,
 }: ColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
@@ -277,12 +273,6 @@ export default function Column({
   // delete
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isPendingDelete, setIsPendingDelete] = useState(false);
-
-  // create column
-  const [isCreatingColumn, setIsCreatingColumn] = useState(false);
-  const [newColumnName, setNewColumnName] = useState("");
-  const [isPendingCreate, setIsPendingCreate] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
 
   // toast
   const [toast, setToast] = useState<string | null>(null);
@@ -374,25 +364,6 @@ export default function Column({
     }
   }
 
-  async function handleCreateColumn() {
-    const name = newColumnName.trim();
-    if (!name || !boardId) return;
-    setIsPendingCreate(true);
-    setCreateError(null);
-    try {
-      const { column: created } = await columnsApi.create(boardId, {
-        name,
-        position: column.position + 1,
-      });
-      onColumnCreated?.({ ...created, tasks: [] });
-      setIsCreatingColumn(false);
-      setNewColumnName("");
-    } catch {
-      setCreateError("Не удалось создать колонку");
-    } finally {
-      setIsPendingCreate(false);
-    }
-  }
 
   // ── render ───────────────────────────────────────────────────────────────────
 
@@ -560,37 +531,6 @@ export default function Column({
           </button>
         )}
 
-        {/* "+ Колонка" button — only on last column, admin only */}
-        {isAdmin && isLast && boardId && (
-          <button
-            onClick={() => {
-              setNewColumnName("");
-              setCreateError(null);
-              setIsCreatingColumn(true);
-            }}
-            style={{
-              marginTop: "8px",
-              padding: "6px 12px",
-              borderRadius: "8px",
-              border: "1px dashed rgba(255,255,255,0.12)",
-              background: "none",
-              color: "rgba(255,255,255,0.35)",
-              fontSize: "12px",
-              cursor: "pointer",
-              transition: "border-color 120ms, color 120ms",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
-              e.currentTarget.style.color = "rgba(255,255,255,0.65)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
-              e.currentTarget.style.color = "rgba(255,255,255,0.35)";
-            }}
-          >
-            + Колонка
-          </button>
-        )}
       </div>
 
       {/* Delete confirmation modal */}
@@ -633,74 +573,6 @@ export default function Column({
               }}
             >
               {isPendingDelete ? "Удаление…" : "Удалить"}
-            </button>
-          </div>
-        </Modal>
-      )}
-
-      {/* Create column modal */}
-      {isCreatingColumn && (
-        <Modal onBackdropClick={() => !isPendingCreate && setIsCreatingColumn(false)}>
-          <h2 style={{ fontSize: "15px", fontWeight: 600, color: "#FFFFFF", margin: 0 }}>
-            Новая колонка
-          </h2>
-          <input
-            autoFocus
-            type="text"
-            value={newColumnName}
-            onChange={(e) => setNewColumnName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleCreateColumn();
-              if (e.key === "Escape") setIsCreatingColumn(false);
-            }}
-            placeholder="Название колонки"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "8px",
-              color: "#FFFFFF",
-              padding: "8px 12px",
-              fontSize: "13px",
-              outline: "none",
-              width: "100%",
-              boxSizing: "border-box",
-            }}
-          />
-          {createError && (
-            <p style={{ fontSize: "12px", color: "#FCA5A5", margin: 0 }}>{createError}</p>
-          )}
-          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-            <button
-              onClick={() => setIsCreatingColumn(false)}
-              disabled={isPendingCreate}
-              style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                color: "rgba(255,255,255,0.72)",
-                borderRadius: "8px",
-                padding: "8px 16px",
-                fontSize: "13px",
-                cursor: "pointer",
-              }}
-            >
-              Отмена
-            </button>
-            <button
-              onClick={handleCreateColumn}
-              disabled={isPendingCreate || !newColumnName.trim()}
-              style={{
-                background: "#3B82F6",
-                border: "none",
-                color: "#FFFFFF",
-                borderRadius: "8px",
-                padding: "8px 16px",
-                fontSize: "13px",
-                fontWeight: 500,
-                cursor: isPendingCreate || !newColumnName.trim() ? "not-allowed" : "pointer",
-                opacity: isPendingCreate || !newColumnName.trim() ? 0.6 : 1,
-              }}
-            >
-              {isPendingCreate ? "Создание…" : "Создать"}
             </button>
           </div>
         </Modal>
