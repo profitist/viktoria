@@ -1,6 +1,53 @@
 # Kanban
 
-## Iteration I-17 (active) — Цель: Automation расширение + AI Grooming (backend + frontend wizard)
+## Iteration I-20 (active) — Цель: Mark as Done на канбан-доске
+
+**DoD:**
+- `PATCH /api/v1/tasks/{id}/mark-done` → 200, задача переносится в последнюю колонку (Done); повторный вызов → возврат в первую (toggle)
+- TaskCard: чекбокс «Выполнено» — клик → оптимистичный move на доске
+- TaskPanel: кнопка «Отметить выполненным» / «Снять отметку» — то же поведение
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-111 | Tasks: PATCH /tasks/{id}/mark-done toggle (service + router) | tasks | — | todo | #236 | `backend/app/tasks/service.py`, `backend/app/tasks/router.py` |
+| T-112 | Frontend api: markTaskDone(taskId) + тип ответа | frontend | — | todo | #237 | `frontend/lib/api.ts` |
+| T-113 | TaskCard: чекбокс «Выполнено» с оптимистичным move | frontend | — | todo | #238 | `frontend/components/board/TaskCard.tsx` |
+| T-114 | TaskPanel: кнопка «Отметить выполненным» / toggle | frontend | — | todo | #239 | `frontend/components/board/TaskPanel.tsx` |
+
+## Iteration I-19 (active) — Цель: Admin в sidebar + внешняя Automation
+
+**DoD:**
+- Sidebar (owner/admin): пункты «Участники» → `/admin/members`, «Настройки» → `/admin/settings`, «Automation» → `https://localhost3000.work.gd/automation` (новая вкладка)
+- `/admin/members` — страница с MembersTab; не-admin → редирект на `/`
+- `/admin/settings` — страница с SettingsTab; не-admin → редирект на `/`
+- `/admin` — редирект на `/admin/members` для admin/owner, заглушка для member
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-107 | Sidebar: admin-секция (Members, Settings, Automation-ext) | frontend | — | todo | #231 | `frontend/app/(app)/layout.tsx` |
+| T-108 | Admin: страница /admin/members (role-guard + MembersTab) | frontend | — | todo | #232 | `frontend/app/(app)/admin/members/page.tsx` |
+| T-109 | Admin: страница /admin/settings (role-guard + SettingsTab) | frontend | — | todo | #233 | `frontend/app/(app)/admin/settings/page.tsx` |
+| T-110 | Admin: /admin → редирект + убрать Automation-вкладку | frontend | — | todo | #234 | `frontend/app/(app)/admin/page.tsx` |
+
+## Iteration I-18 (active) — Цель: UX-полировка + Real-time расширение
+
+**DoD:**
+- Sidebar: ссылки Event Log / Мои задачи / Automation / AI Груминг — видны и кликабельны
+- Колокольчик → выпадающий список уведомлений с badge непрочитанных + кнопка «Прочитать все»
+- Перемещение/создание задачи на доске → Event Log получает новое событие без reload
+- Создание/перемещение задачи → «Мои задачи» обновляется автоматически
+- Изменение задачи на доске → Analytics-страница перезапрашивает данные (debounce 3 сек)
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-101 | Sidebar: навигация /event-log, /my-tasks, /automation, /ai-groom | frontend | — | done | #216 | `frontend/app/(app)/layout.tsx` |
+| T-102 | Notifications: dropdown-панель + badge + mark-all-read | frontend | — | done | #218 | `frontend/components/notifications/NotificationDropdown.tsx`, `frontend/components/notifications/NotificationBell.tsx`, `frontend/app/(app)/AppShell.tsx` |
+| T-103 | Events consumer: WS push audit.event_created | events | — | done | #219 | `backend/app/events/consumer.py` |
+| T-104 | Event Log: real-time prepend через WS audit.event_created | frontend | — | todo | #220 | `frontend/components/event-log/EventLogPanel.tsx` |
+| T-105 | My Tasks: WS-обновление при board.task_* | frontend | — | done | #221 | `frontend/components/my-tasks/MyTasksPage.tsx` |
+| T-106 | Analytics: auto-refresh (debounce 3 сек) при board.task_* | frontend | — | done | #222 | `frontend/app/(app)/board/[boardId]/analytics/page.tsx` |
+
+## Iteration I-17 (closed) — Цель: Automation расширение + AI Grooming (backend + frontend wizard)
 
 **DoD:**
 - `POST /api/v1/ai/groom/start` → session_id + questions от LLM
@@ -11,12 +58,12 @@
 
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
-| T-095 | AI: groom.py — LLM-клиент + prompt templates | ai | — | todo | #200 | `backend/app/ai/groom.py`, `backend/app/ai/__init__.py` |
-| T-096 | AI: router.py (groom/start + groom/complete) | ai | — | todo | #201 | `backend/app/ai/router.py` |
-| T-097 | AI grooming frontend: api + типы | frontend | — | todo | #202 | `frontend/lib/ai-api.ts` |
-| T-098 | AI grooming: wizard-страница /ai-groom | frontend | — | todo | #203 | `frontend/app/(app)/ai-groom/page.tsx`, `frontend/components/ai/GroomingWizard.tsx` |
-| T-099 | Automation: action types set_priority + set_assignee в engine | automation | — | todo | #204 | `backend/app/automation/service.py` |
-| T-100 | Automation: standalone страница /automation + AutomationManager | frontend | — | todo | #205 | `frontend/app/(app)/automation/page.tsx`, `frontend/components/automation/AutomationManager.tsx` |
+| T-095 | AI: groom.py — LLM-клиент + prompt templates | ai | — | done | #200 | `backend/app/ai/groom.py`, `backend/app/ai/__init__.py` |
+| T-096 | AI: router.py (groom/start + groom/complete) | ai | — | done | #201 | `backend/app/ai/router.py` |
+| T-097 | AI grooming frontend: api + типы | frontend | — | done | #202 | `frontend/lib/ai-api.ts` |
+| T-098 | AI grooming: wizard-страница /ai-groom | frontend | — | done | #203 | `frontend/app/(app)/ai-groom/page.tsx`, `frontend/components/ai/GroomingWizard.tsx` |
+| T-099 | Automation: action types set_priority + set_assignee в engine | automation | — | done | #204 | `backend/app/automation/service.py` |
+| T-100 | Automation: standalone страница /automation + AutomationManager | frontend | — | done | #205 | `frontend/app/(app)/automation/page.tsx`, `frontend/components/automation/AutomationManager.tsx` |
 
 ## Iteration I-16 (closed) — Цель: «Мои задачи» — личная очередь задач в sidebar
 
