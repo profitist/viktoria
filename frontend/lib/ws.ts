@@ -3,8 +3,8 @@ import type { JsonRpcMessage } from "./types";
 const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000";
 
 export class WsClient {
-  private workspaceId: string;
-  private getToken: () => string | null;
+  private workspaceId: string | null = null;
+  private getToken: (() => string | null) | null = null;
   private socket: WebSocket | null = null;
   private handlers: Map<
     string,
@@ -14,12 +14,22 @@ export class WsClient {
   private shouldReconnect: boolean = false;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(workspaceId: string, getToken: () => string | null) {
-    this.workspaceId = workspaceId;
-    this.getToken = getToken;
-  }
+  connect(workspaceId: string, getToken: () => string | null): void;
+  connect(): void;
+  connect(workspaceId?: string, getToken?: () => string | null): void {
+    if (workspaceId !== undefined || getToken !== undefined) {
+      if (workspaceId === undefined || getToken === undefined) {
+        throw new Error("connect requires workspaceId and getToken");
+      }
 
-  connect(): void {
+      this.workspaceId = workspaceId;
+      this.getToken = getToken;
+    }
+
+    if (this.workspaceId === null || this.getToken === null) {
+      throw new Error("connect requires workspaceId and getToken");
+    }
+
     this.shouldReconnect = true;
 
     const token = this.getToken();

@@ -85,7 +85,7 @@ export function WsProvider({ children }: { children: React.ReactNode }) {
     // Другой workspaceId или первый вызов — сбрасываем старое соединение
     wsRef.current?.disconnect();
 
-    const ws = new WsClient(newWorkspaceId, getAccessToken);
+    const ws = new WsClient();
     wsRef.current = ws;
     currentWorkspaceId.current = newWorkspaceId;
     // ISSUE-001: обновляем реактивный state чтобы потребители узнали о смене workspaceId
@@ -99,7 +99,7 @@ export function WsProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    ws.connect();
+    ws.connect(newWorkspaceId, getAccessToken);
   }, []);
 
   // Disconnect при размонтировании layout (logout)
