@@ -1,6 +1,34 @@
 # Kanban
 
-## Iteration I-08 (active) — Цель: завершение Фазы 2 — комментарии + вложения
+## Iteration I-10 (active) — Цель: техдолг T-B02 — WsClient переиспользуем (параметры в connect())
+
+**DoD:** `new WsClient()` без аргументов; `client.connect(workspaceId, getToken)` коннектит; `WsContext.init()` на новой сигнатуре; смена воркспейса по-прежнему переподключает WS; `npx tsc --noEmit` чисто
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-060 | WsClient: параметры из конструктора в connect(workspaceId, getToken) | frontend | — | todo | #126 | `frontend/lib/ws.ts` |
+| T-061 | WsContext: переход на новую сигнатуру connect() | frontend | — | todo | #127 | `frontend/contexts/WsContext.tsx` |
+
+## Iteration I-09 (active) — Цель: Фаза 3 — представления Table + Calendar поверх задач
+
+**DoD:**
+- `GET /workspaces/{id}/tasks?board_id=&page=&page_size=&sort=` → `{items,total,page,page_size}`; без `page` — массив (обратная совместимость)
+- `sort` поддерживает `created_at|deadline|priority|title` с префиксом `-` (desc)
+- `?deadline_from=&deadline_to=` фильтрует по `Task.deadline` включительно
+- Вкладки Board / Table / Calendar на странице доски переключают представление
+- Table: сортируемые колонки, пагинация; Calendar: сетка месяца, задачи в днях по deadline
+- FilterSortBar: фильтр по assignee/tag/priority + выбор сортировки, общий для Table/Calendar
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-054 | Tasks: пагинация + сортировка + deadline-range в list | tasks | — | todo | #120 | `backend/app/tasks/service.py`, `backend/app/tasks/router.py` |
+| T-055 | Frontend: типы представлений + api-методы | frontend | — | todo | #121 | `frontend/lib/types.ts`, `frontend/lib/api.ts` |
+| T-056 | Frontend: FilterSortBar (assignee/tag/priority/sort) | frontend | — | todo | #122 | `frontend/components/views/FilterSortBar.tsx` |
+| T-057 | Frontend: TableView (колонки + сортировка + пагинация) | frontend | — | todo | #123 | `frontend/components/views/TableView.tsx` |
+| T-058 | Frontend: CalendarView (сетка месяца по deadline) | frontend | — | todo | #124 | `frontend/components/views/CalendarView.tsx` |
+| T-059 | Frontend: ViewTabs + врезка в страницу доски | frontend | — | todo | #125 | `frontend/components/views/ViewTabs.tsx`, `frontend/app/(app)/board/BoardPageClient.tsx` |
+
+## Iteration I-08 (closed) — Цель: завершение Фазы 2 — комментарии + вложения
 
 **DoD:**
 - `POST /api/v1/tasks/{id}/comments` создаёт комментарий; `@имя` в теле → `Notification` упомянутому
@@ -12,14 +40,14 @@
 
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
-| T-046 | Comment: модели + схемы (новый модуль) | comments | — | todo | #105 | `backend/app/comments/models.py`, `backend/app/comments/schemas.py`, `backend/app/comments/__init__.py` |
-| T-047 | Attachment: модели + схемы (новый модуль) | attachments | — | todo | #106 | `backend/app/attachments/models.py`, `backend/app/attachments/schemas.py`, `backend/app/attachments/__init__.py` |
-| T-048 | Alembic: миграция comment+attachment + MinIO в compose | infra | — | todo | #107 | `backend/alembic/versions/20260517_000005_comments_attachments.py`, `docker-compose.yml`, `.env.example` |
-| T-049 | Comments: service + router + @mentions→Notification | comments | — | todo | #108 | `backend/app/comments/service.py`, `backend/app/comments/router.py` |
-| T-050 | Attachments: service + StorageService + router + main.py | attachments | — | todo | #109 | `backend/app/attachments/service.py`, `backend/app/attachments/storage.py`, `backend/app/attachments/router.py`, `backend/app/main.py` |
-| T-051 | Frontend: типы + api (Comment, Attachment, multipart) | frontend | — | todo | #110 | `frontend/lib/types.ts`, `frontend/lib/api.ts` |
-| T-052 | Frontend: CommentFeed + AttachmentList компоненты | frontend | — | todo | #111 | `frontend/components/board/CommentFeed.tsx`, `frontend/components/board/AttachmentList.tsx` |
-| T-053 | Frontend: TaskModal — секции комментариев + вложений | frontend | — | todo | #112 | `frontend/components/board/TaskModal.tsx` |
+| T-046 | Comment: модели + схемы (новый модуль) | comments | — | done | #105 | `backend/app/comments/models.py`, `backend/app/comments/schemas.py`, `backend/app/comments/__init__.py` |
+| T-047 | Attachment: модели + схемы (новый модуль) | attachments | — | done | #106 | `backend/app/attachments/models.py`, `backend/app/attachments/schemas.py`, `backend/app/attachments/__init__.py` |
+| T-048 | Alembic: миграция comment+attachment + MinIO в compose | infra | — | done | #107 | `backend/alembic/versions/20260517_000005_comments_attachments.py`, `docker-compose.yml`, `.env.example` |
+| T-049 | Comments: service + router + @mentions→Notification | comments | — | done | #108 | `backend/app/comments/service.py`, `backend/app/comments/router.py` |
+| T-050 | Attachments: service + StorageService + router + main.py | attachments | — | done | #109 | `backend/app/attachments/service.py`, `backend/app/attachments/storage.py`, `backend/app/attachments/router.py`, `backend/app/main.py` |
+| T-051 | Frontend: типы + api (Comment, Attachment, multipart) | frontend | — | done | #110 | `frontend/lib/types.ts`, `frontend/lib/api.ts` |
+| T-052 | Frontend: CommentFeed + AttachmentList компоненты | frontend | — | done | #111 | `frontend/components/board/CommentFeed.tsx`, `frontend/components/board/AttachmentList.tsx` |
+| T-053 | Frontend: TaskModal — секции комментариев + вложений | frontend | — | done | #112 | `frontend/components/board/TaskModal.tsx` |
 
 ## Iteration I-07 (closed) — Цель: богатые задачи — теги + подзадачи
 

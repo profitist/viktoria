@@ -201,9 +201,18 @@ Task schema:
       # critical = <24h или просрочено
   }
 
-GET /api/v1/workspaces/{workspace_id}/tasks?board_id=&column_id=&assignee_id=&tag=
-  200:  [task]
-  # board_id обязателен для доски; дедуп title проверяется в пределах (board_id, column_id)
+GET /api/v1/workspaces/{workspace_id}/tasks
+       ?board_id=&column_id=&assignee_id=&tag=
+       &sort=&page=&page_size=&deadline_from=&deadline_to=
+  200 (без page):       [task]                       # обратная совместимость
+  200 (page задан):     { items: [task], total: int, page: int, page_size: int }
+  # board_id обязателен для доски; дедуп title в пределах (board_id, column_id)
+  # sort: "created_at" | "-created_at" | "deadline" | "-deadline"
+  #       | "priority" | "-priority" | "title" | "-title"  (минус = desc)
+  # page начинается с 1; page_size 1..100 (по умолчанию 50)
+  # deadline_from / deadline_to — ISO8601; фильтр по Task.deadline включительно
+  #   (используется Calendar-представлением для выборки диапазона)
+  # view=table — синоним включения пагинации (если page не задан, page=1)
 
 GET /api/v1/tasks/{task_id}/duplicate-check?title={str}
   200:  { exists: bool, task_id?: uuid }
