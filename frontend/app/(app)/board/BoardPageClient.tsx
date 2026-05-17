@@ -416,6 +416,12 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
           board={board}
           onTaskMove={handleTaskMove}
           onTaskCreate={handleTaskCreate}
+          onTaskCreated={(task) => setBoard(prev => {
+            if (!prev) return prev;
+            const col = prev.columns.find((c) => c.id === task.column_id);
+            if (col?.tasks.some((t) => t.id === task.id)) return prev;
+            return addTaskToColumn(prev, task) as BoardDetail;
+          })}
           onCardClick={handleCardClick}
           onTaskUpdate={(task) => setBoard(prev => {
             if (!prev) return prev;
@@ -429,6 +435,7 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
           isAdmin={isAdmin}
           deadlineDecayEnabled={deadlineDecayEnabled}
           boardId={boardId}
+          workspaceId={workspaceId ?? ""}
           onColumnUpdated={handleColumnUpdated}
           onColumnDeleted={handleColumnDeleted}
           onColumnCreated={handleColumnCreated}
