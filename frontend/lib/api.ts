@@ -1,4 +1,18 @@
-import type { BoardMeta, BoardDetail, Project, WorkspaceMember, WorkspaceSettings, Tag, Subtask, Comment, Attachment } from "./types";
+import type {
+  Attachment,
+  BoardDetail,
+  BoardMeta,
+  Comment,
+  Paginated,
+  Project,
+  SortKey,
+  Subtask,
+  Tag,
+  Task,
+  TaskFilters,
+  WorkspaceMember,
+  WorkspaceSettings,
+} from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -206,6 +220,48 @@ export const api = {
     const res = await apiFetch(path, { method: "DELETE" });
     if (!res.ok) return handleError(res);
   },
+};
+
+function buildTaskListPath(
+  workspaceId: string,
+  filters: TaskFilters,
+  extra?: Record<string, string | number | undefined>
+): string {
+  const params = new URLSearchParams();
+
+  const values: Record<string, string | number | undefined> = {
+    ...filters,
+    ...extra,
+  };
+
+  for (const [key, value] of Object.entries(values)) {
+    if (value === undefined || value === "") continue;
+    params.set(key, String(value));
+  }
+
+  return `/api/v1/workspaces/${workspaceId}/tasks?${params.toString()}`;
+}
+
+export const tasksApi = {
+  listTasksPaged: (
+    workspaceId: string,
+    filters: TaskFilters,
+    sort: SortKey | undefined,
+    page: number,
+    pageSize: number
+  ): Promise<Paginated<Task>> =>
+    api.get<Paginated<Task>>(
+      buildTaskListPath(workspaceId, filters, {
+        sort,
+        page,
+        page_size: pageSize,
+      })
+    ),
+
+  listTasksByDeadline: (
+    workspaceId: string,
+    filters: TaskFilters
+  ): Promise<Task[]> => api.get<Task[]>(buildTaskListPath(workspaceId, filters)),
 };
 
 // =============================================================================

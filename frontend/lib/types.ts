@@ -35,6 +35,18 @@ export type TaskPriority = "low" | "medium" | "high" | "critical";
 
 export type DeadlineUrgency = "none" | "soon" | "critical";
 
+export type ViewMode = "board" | "table" | "calendar";
+
+export type SortKey =
+  | "created_at"
+  | "-created_at"
+  | "deadline"
+  | "-deadline"
+  | "priority"
+  | "-priority"
+  | "title"
+  | "-title";
+
 export interface Tag {
   id: string;
   board_id: string;
@@ -68,6 +80,22 @@ export interface Task {
   created_at: string;
   deadline: string | null;
   deadline_urgency: DeadlineUrgency;
+}
+
+export interface TaskFilters {
+  board_id: string;
+  column_id?: string;
+  assignee_id?: string;
+  tag?: string;
+  deadline_from?: string;
+  deadline_to?: string;
+}
+
+export interface Paginated<T> {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
 }
 
 export interface Column {
