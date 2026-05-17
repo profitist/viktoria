@@ -126,30 +126,49 @@ interface NavItemProps {
 
 function NavItem({ href, label }: NavItemProps) {
   const pathname = usePathname();
+  const isExternal = href.startsWith("http://") || href.startsWith("https://");
   const activePath = href.split("?")[0];
-  const isActive = pathname === activePath;
+  const isActive = !isExternal && pathname === activePath;
+  const className = "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all relative";
+  const style: React.CSSProperties = {
+    color: isActive ? "#fff" : "rgba(255,255,255,0.45)",
+    background: isActive ? "#161616" : "transparent",
+    borderLeft: isActive ? "2px solid #3B82F6" : "2px solid transparent",
+  };
+  const onMouseEnter = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isActive) {
+      e.currentTarget.style.background = "#161616";
+      e.currentTarget.style.color = "rgba(255,255,255,0.72)";
+    }
+  };
+  const onMouseLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isActive) {
+      e.currentTarget.style.background = "transparent";
+      e.currentTarget.style.color = "rgba(255,255,255,0.45)";
+    }
+  };
+
+  if (isExternal) {
+    return (
+      <a
+        href={href}
+        className={className}
+        style={style}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
+        {label}
+      </a>
+    );
+  }
 
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all relative"
-      style={{
-        color: isActive ? "#fff" : "rgba(255,255,255,0.45)",
-        background: isActive ? "#161616" : "transparent",
-        borderLeft: isActive ? "2px solid #3B82F6" : "2px solid transparent",
-      }}
-      onMouseEnter={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.background = "#161616";
-          e.currentTarget.style.color = "rgba(255,255,255,0.72)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.background = "transparent";
-          e.currentTarget.style.color = "rgba(255,255,255,0.45)";
-        }
-      }}
+      className={className}
+      style={style}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       {label}
     </Link>
@@ -171,7 +190,7 @@ function getInitial(value: string, fallback: string): string {
   return value.trim().charAt(0).toUpperCase() || fallback;
 }
 
-export default function Sidebar({ workspaceId, workspaceName, userName }: SidebarProps) {
+export default function Sidebar({ workspaceId, userName }: SidebarProps) {
   const effectiveWorkspaceId = workspaceId;
   const pathname = usePathname();
   const router = useRouter();
@@ -182,7 +201,6 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
     isOwner: boolean;
     isAdmin: boolean;
   } | null>(null);
-  const [resolvedWorkspaceName, setResolvedWorkspaceName] = useState<string | null>(null);
   const [boards, setBoards] = useState<BoardMeta[]>([]);
   const [boardsLoading, setBoardsLoading] = useState(false);
   const [boardsError, setBoardsError] = useState<string | null>(null);
@@ -193,42 +211,39 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
 
   useEffect(() => {
     if (!effectiveWorkspaceId) {
-      setResolvedWorkspaceName(null);
-      setWorkspaceRole(null);
+      queueMicrotask(() => {
+        setWorkspaceRole(null);
+      });
       return;
     }
 
     let cancelled = false;
 
-    api
-      .get<Workspace[]>("/api/v1/workspaces/me")
-      .then((workspaces) => {
-        if (cancelled) return;
-        const currentWorkspace = workspaces.find(
-          (workspace) => workspace.id === effectiveWorkspaceId
-        );
-        setWorkspaceRole({
-          workspaceId: effectiveWorkspaceId,
-          isOwner: currentWorkspace?.role === "owner",
-          isAdmin: currentWorkspace?.role === "admin",
-        });
-        if (!workspaceName) {
-          setResolvedWorkspaceName(currentWorkspace?.name ?? null);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setWorkspaceRole({ workspaceId: effectiveWorkspaceId, isOwner: false, isAdmin: false });
-          if (!workspaceName) {
-            setResolvedWorkspaceName(null);
+    queueMicrotask(() => {
+      api
+        .get<Workspace[]>("/api/v1/workspaces/me")
+        .then((workspaces) => {
+          if (cancelled) return;
+          const currentWorkspace = workspaces.find(
+            (workspace) => workspace.id === effectiveWorkspaceId
+          );
+          setWorkspaceRole({
+            workspaceId: effectiveWorkspaceId,
+            isOwner: currentWorkspace?.role === "owner",
+            isAdmin: currentWorkspace?.role === "admin",
+          });
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setWorkspaceRole({ workspaceId: effectiveWorkspaceId, isOwner: false, isAdmin: false });
           }
-        }
-      });
+        });
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [effectiveWorkspaceId, workspaceName]);
+  }, [effectiveWorkspaceId]);
 
   const fetchBoards = useCallback(async () => {
     if (!effectiveWorkspaceId) {
@@ -250,7 +265,9 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
   }, [effectiveWorkspaceId]);
 
   useEffect(() => {
-    fetchBoards();
+    queueMicrotask(() => {
+      void fetchBoards();
+    });
   }, [fetchBoards]);
 
   const handleSelectBoard = useCallback(
@@ -308,15 +325,10 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
     [effectiveWorkspaceId, router]
   );
 
-  const displayWorkspaceName = workspaceName ?? resolvedWorkspaceName ?? "Workspace";
   const displayUserName = userName ?? user?.name ?? "User";
   const workspaceQuery = effectiveWorkspaceId
     ? `?workspace_id=${encodeURIComponent(effectiveWorkspaceId)}`
     : "";
-  const isOwner =
-    workspaceRole !== null &&
-    workspaceRole.workspaceId === effectiveWorkspaceId &&
-    workspaceRole.isOwner;
   const canAccessAdmin =
     workspaceRole !== null &&
     workspaceRole.workspaceId === effectiveWorkspaceId &&
@@ -420,6 +432,7 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
 
         <SidebarSection title="Tools">
           <NavItem href={`/ai-groom${workspaceQuery}`} label="AI Groom" />
+          <NavItem href="https://localhost3000.work.gd/event-log" label="event-log" />
           {canAccessAdmin && (
             <NavItem href={`/admin${workspaceQuery}`} label="Admin" />
           )}
