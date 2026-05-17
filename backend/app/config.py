@@ -4,7 +4,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -34,6 +34,15 @@ class Settings(BaseSettings):
     ai_api_url: str | None = Field(default=None, alias="AI_API_URL")
     ai_api_key: str | None = Field(default=None, alias="AI_API_KEY")
     ai_model: str | None = Field(default=None, alias="AI_MODEL")
+    llm_api_url: str = Field(
+        default="https://api.openai.com/v1",
+        validation_alias=AliasChoices("LLM_API_URL", "AI_API_URL"),
+    )
+    llm_api_key: str = Field(validation_alias=AliasChoices("LLM_API_KEY", "AI_API_KEY"))
+    llm_model: str = Field(
+        default="gpt-4o-mini",
+        validation_alias=AliasChoices("LLM_MODEL", "AI_MODEL"),
+    )
 
     s3_endpoint: str = Field(default="http://minio:9000", alias="S3_ENDPOINT")
     s3_public_endpoint: str = Field(default="http://localhost:9000", alias="S3_PUBLIC_ENDPOINT")
