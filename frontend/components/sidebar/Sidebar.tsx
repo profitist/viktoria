@@ -355,7 +355,7 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
-        <SidebarSection title="Favorites">
+        <SidebarSection title="Избранное">
           {favoriteBoards.length > 0 ? (
             favoriteBoards.map((board) => (
               <BoardRow
@@ -375,7 +375,7 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
         </SidebarSection>
 
         <SidebarSection
-          title="Boards"
+          title="Доски"
           action={
             canAccessAdmin && effectiveWorkspaceId ? (
               <button
@@ -430,15 +430,13 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
           )}
         </SidebarSection>
 
-        <SidebarSection title="Tools">
+        <SidebarSection title="Инструменты">
           <NavItem href={`/my-tasks${workspaceQuery}`} label="Мои задачи" />
-          <NavItem href={`/ai-groom${workspaceQuery}`} label="AI Groom" />
-          <NavItem
-            href={`https://localhost3000.work.gd/event-log${workspaceQuery}`}
-            label="event-log"
-          />
+          <NavItem href={`/event-log${workspaceQuery}`} label="Журнал событий" />
+          <NavItem href={`/automation${workspaceQuery}`} label="Автоматизация" />
+          <NavItem href={`/ai-groom${workspaceQuery}`} label="AI Груминг" />
           {canAccessAdmin && (
-            <NavItem href={`/admin${workspaceQuery}`} label="Admin" />
+            <NavItem href={`/admin${workspaceQuery}`} label="Администрирование" />
           )}
         </SidebarSection>
       </nav>
@@ -473,7 +471,7 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
               e.currentTarget.style.color = "rgba(255,255,255,0.45)";
             }}
           >
-            Logout
+            Выйти
           </button>
         </div>
       </div>
