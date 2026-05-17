@@ -431,6 +431,7 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
         </SidebarSection>
 
         <SidebarSection title="Tools">
+          <NavItem href={`/my-tasks${workspaceQuery}`} label="Мои задачи" />
           <NavItem href={`/ai-groom${workspaceQuery}`} label="AI Groom" />
           <NavItem
             href={`https://localhost3000.work.gd/event-log${workspaceQuery}`}
