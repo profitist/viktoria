@@ -50,13 +50,13 @@ export default function RealtimeEventLogPanel() {
       >
         <span
           className="text-xs font-semibold uppercase tracking-widest"
-          style={{ color: "rgba(255,255,255,0.45)" }}
+          style={{ color: "rgba(255,255,255,0.65)" }}
         >
           Event Log
         </span>
         <button
           className="text-xs px-2 py-1 rounded ui-hover"
-          style={{ color: "rgba(255,255,255,0.45)" }}
+          style={{ color: "rgba(255,255,255,0.65)" }}
           onClick={() => setEntries([])}
         >
           Очистить

@@ -35,7 +35,7 @@ function SectionLabel({ text }: { text: string }) {
       style={{
         fontSize: "11px",
         fontWeight: 500,
-        color: "rgba(255,255,255,0.35)",
+        color: "rgba(255,255,255,0.55)",
         letterSpacing: "0.08em",
         textTransform: "uppercase",
         marginBottom: "4px",
@@ -141,7 +141,7 @@ export default function AddTaskForm({ onSubmit, onCancel }: AddTaskFormProps) {
             background: "rgba(255,255,255,0.06)",
             border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: "8px",
-            color: "rgba(255,255,255,0.45)",
+            color: "rgba(255,255,255,0.65)",
             fontSize: "11px",
             cursor: "pointer",
             display: "flex",
@@ -177,7 +177,7 @@ export default function AddTaskForm({ onSubmit, onCancel }: AddTaskFormProps) {
                 <option value="high">HIGH</option>
                 <option value="critical">CRITICAL</option>
               </select>
-              <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.45)", pointerEvents: "none", fontSize: "11px" }}>▾</span>
+              <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.65)", pointerEvents: "none", fontSize: "11px" }}>▾</span>
             </div>
           </div>
 
@@ -233,7 +233,7 @@ export default function AddTaskForm({ onSubmit, onCancel }: AddTaskFormProps) {
           onClick={onCancel}
           disabled={isSubmitting}
           className="text-sm px-3 py-1.5 transition-colors disabled:opacity-50"
-          style={{ color: "rgba(255,255,255,0.45)" }}
+          style={{ color: "rgba(255,255,255,0.65)" }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.72)")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
         >

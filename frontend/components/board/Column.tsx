@@ -12,16 +12,20 @@ import { ApiError, columnsApi, markTaskDone } from "@/lib/api";
 import type { Column as ColumnType, Task } from "@/lib/types";
 import TaskCard from "./TaskCard";
 import AddTaskForm, { type AddTaskData } from "./AddTaskForm";
+import { CreateTaskDialog } from "./CreateTaskDialog";
 
 // ── props ──────────────────────────────────────────────────────────────────────
 
 interface ColumnProps {
   column: ColumnType;
   onTaskCreate: (columnId: string, data: AddTaskData) => Promise<void>;
+  onTaskCreated?: (task: Task) => void;
   onCardClick: (task: Task) => void;
   isAdmin?: boolean;
   isLast?: boolean;
   deadlineDecayEnabled?: boolean;
+  boardId?: string;
+  workspaceId?: string;
   onColumnUpdated?: (col: ColumnType) => void;
   onColumnDeleted?: (id: string) => void;
 }
@@ -272,14 +276,18 @@ function DropdownMenu({
 export default function Column({
   column,
   onTaskCreate,
+  onTaskCreated,
   onCardClick,
   isAdmin = false,
   isLast = false,
   deadlineDecayEnabled = false,
+  boardId,
+  workspaceId,
   onColumnUpdated,
   onColumnDeleted,
 }: ColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
   // menu
@@ -435,15 +443,15 @@ export default function Column({
               <>
                 <span
                   className="text-xs font-semibold uppercase tracking-widest truncate"
-                  style={{ color: "rgba(255,255,255,0.45)" }}
+                  style={{ color: "rgba(255,255,255,0.75)" }}
                 >
                   {column.name}
                 </span>
                 <span
                   className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
                   style={{
-                    background: "rgba(255,255,255,0.06)",
-                    color: "rgba(255,255,255,0.45)",
+                    background: "rgba(255,255,255,0.08)",
+                    color: "rgba(255,255,255,0.6)",
                   }}
                 >
                   {column.tasks.length}
@@ -453,16 +461,23 @@ export default function Column({
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-            {/* Add task button */}
-            {!isRenaming && (
+            {/* Add task button — admin only → opens CreateTaskDialog */}
+            {isAdmin && !isRenaming && (
               <button
-                onClick={() => setIsAddingTask(true)}
-                className="text-lg leading-none transition-colors"
-                style={{ color: "rgba(255,255,255,0.25)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.25)")}
+                onClick={() => setDialogOpen(true)}
+                className="flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors"
+                style={{ color: "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.05)" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "rgba(255,255,255,0.75)";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.09)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "rgba(255,255,255,0.4)";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                }}
+                title="Создать задачу"
               >
-                +
+                + Задача
               </button>
             )}
 
@@ -613,6 +628,18 @@ export default function Column({
 
       {/* Toast */}
       {toast && <Toast msg={toast} onDone={() => setToast(null)} />}
+
+      {/* Create task dialog (admin only) */}
+      {isAdmin && boardId && workspaceId && (
+        <CreateTaskDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onCreated={(task) => onTaskCreated?.(task)}
+          boardId={boardId}
+          columnId={column.id}
+          workspaceId={workspaceId}
+        />
+      )}
     </>
   );
 }

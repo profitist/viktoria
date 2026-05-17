@@ -1,5 +1,41 @@
 # Kanban
 
+## Iteration I-23 (active) — Цель: Fixes + CreateTaskDialog + done field foundation
+
+**DoD:**
+- Event Log показывает имена вместо UUID
+- Кнопка «Прочитать все» в нотификациях работает
+- Задача, помеченная done в My Tasks, обновляется на доске
+- My Tasks показывает название доски у каждой задачи
+- «+ Задача» сверху в колонке → полная форма создания (теги, приоритет, дедлайн)
+- Подзадачи: edit/delete в UI (backend CRUD уже есть)
+- `alembic upgrade head` добавляет колонку `done: bool` в Task
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-125 | Fix: notifications mark-all-read | frontend | — | todo | #268 | `frontend/components/notifications/NotificationDropdown.tsx` |
+| T-126 | Audit: UUID → имена в event log response | audit | — | todo | #270 | `backend/app/audit/router.py` |
+| T-127 | BoardPageClient: re-fetch при mount (fix My Tasks → board sync) | frontend | — | todo | #271 | `frontend/app/(app)/board/BoardPageClient.tsx` |
+| T-128 | My Tasks: board_name в строке задачи | frontend | — | todo | #272 | `frontend/components/my-tasks/MyTasksPage.tsx` |
+| T-129 | SubtaskList: edit/delete UI | frontend | — | todo | #273 | `frontend/components/board/SubtaskList.tsx` |
+| T-130 | CreateTaskDialog: полная форма (теги, приоритет, дедлайн, assignee) | frontend | — | todo | #274 | `frontend/components/board/CreateTaskDialog.tsx` |
+| T-131 | Column: кнопка «+ Задача» сверху → CreateTaskDialog | frontend | — | todo | #275 | `frontend/components/board/Column.tsx` |
+| T-133 | Alembic: done field в Task + models.py | infra | — | todo | #276 | `backend/alembic/versions/20260518_000008_task_done.py`, `backend/app/tasks/models.py` |
+
+## Iteration I-22 (active) — Цель: Deadline gradient на карточках + AI резюме задачи
+
+**DoD:**
+- TaskCard: ring/border меняет цвет (зелёный→красный) при deadline_decay_enabled=true
+- TaskPanel: badge с цветовым индикатором дедлайна + кнопка «✨ Резюме» → AI-саммари
+- `POST /api/v1/ai/summarize-task` → краткое резюме описания + комментариев
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-121 | TaskCard: deadline gradient ring (useDeadlineColor) | frontend | — | todo | #261 | `frontend/components/board/TaskCard.tsx` |
+| T-122 | TaskPanel: deadline badge + TaskSummary wiring | frontend | — | todo | #262 | `frontend/components/board/TaskPanel.tsx` |
+| T-123 | AI: POST /ai/summarize-task endpoint | ai | — | todo | #263 | `backend/app/ai/router.py` |
+| T-124 | AI: TaskSummary компонент (кнопка + резюме) | frontend | — | todo | #264 | `frontend/components/ai/TaskSummary.tsx` |
+
 ## Iteration I-21 (active) — Цель: Deadline decay инфраструктура + Automation auth fix
 
 **DoD:**
@@ -18,7 +54,7 @@
 | T-119 | SettingsTab: тоггл deadline_decay_enabled | frontend | — | todo | #251 | `frontend/components/admin/SettingsTab.tsx` |
 | T-120 | Sidebar: Automation URL → ?workspace_id + token | frontend | — | todo | #252 | `frontend/app/(app)/layout.tsx` |
 
-## Iteration I-20 (active) — Цель: Mark as Done на канбан-доске
+## Iteration I-20 (closed) — Цель: Mark as Done на канбан-доске
 
 **DoD:**
 - `PATCH /api/v1/tasks/{id}/mark-done` → 200, задача переносится в последнюю колонку (Done); повторный вызов → возврат в первую (toggle)
@@ -29,8 +65,8 @@
 |----|-------|--------|-------|--------|-------|-------|
 | T-111 | Tasks: PATCH /tasks/{id}/mark-done toggle (service + router) | tasks | — | done | #236 | `backend/app/tasks/service.py`, `backend/app/tasks/router.py` |
 | T-112 | Frontend api: markTaskDone(taskId) + тип ответа | frontend | — | done | #237 | `frontend/lib/api.ts` |
-| T-113 | TaskCard: чекбокс «Выполнено» с оптимистичным move | frontend | — | todo | #238 | `frontend/components/board/TaskCard.tsx` |
-| T-114 | TaskPanel: кнопка «Отметить выполненным» / toggle | frontend | — | todo | #239 | `frontend/components/board/TaskPanel.tsx` |
+| T-113 | TaskCard: чекбокс «Выполнено» с оптимистичным move | frontend | — | done | #238 | `frontend/components/board/TaskCard.tsx` |
+| T-114 | TaskPanel: кнопка «Отметить выполненным» / toggle | frontend | — | done | #239 | `frontend/components/board/TaskPanel.tsx` |
 
 ## Iteration I-19 (closed) — Цель: Admin в sidebar + внешняя Automation
 

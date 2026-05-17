@@ -80,7 +80,7 @@ export default function HelpCenter() {
             style={{ maxHeight: "calc(100vh - 40px)" }}
             role="dialog"
             aria-modal="true"
-            aria-label="Справка по Victory"
+            aria-label="Справка по Viktoria"
             onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(59,130,246,0.18),rgba(11,11,11,0.96)_42%,rgba(16,185,129,0.10))] px-5 py-5 sm:px-8 sm:py-7">

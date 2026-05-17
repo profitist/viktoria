@@ -231,6 +231,19 @@ export async function markTaskDone(taskId: string): Promise<Task> {
   return body.task;
 }
 
+export async function patchTaskDone(
+  taskId: string,
+  done: boolean,
+): Promise<{ id: string; done: boolean }> {
+  const res = await apiFetch(`/api/v1/tasks/${taskId}/done`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ done }),
+  });
+  if (!res.ok) return handleError(res);
+  return res.json() as Promise<{ id: string; done: boolean }>;
+}
+
 function buildTaskListPath(
   workspaceId: string,
   filters: TaskFilters,

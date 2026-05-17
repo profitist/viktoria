@@ -79,7 +79,7 @@ export default function AdminPageClient() {
           alignItems: "center",
           justifyContent: "center",
           height: "100%",
-          color: "rgba(255,255,255,0.35)",
+          color: "rgba(255,255,255,0.55)",
           fontSize: "13px",
         }}
       >
@@ -98,7 +98,7 @@ export default function AdminPageClient() {
           justifyContent: "center",
           height: "100%",
           gap: "8px",
-          color: "rgba(255,255,255,0.35)",
+          color: "rgba(255,255,255,0.55)",
         }}
       >
         <ShieldOffIcon />
@@ -130,7 +130,7 @@ export default function AdminPageClient() {
               className="flex-1 text-sm py-2 px-3 rounded-lg transition-all"
               style={{
                 background: isActive ? "#1a1a1a" : "transparent",
-                color: isActive ? "#ffffff" : "rgba(255,255,255,0.45)",
+                color: isActive ? "#ffffff" : "rgba(255,255,255,0.65)",
                 border: isActive
                   ? "1px solid rgba(255,255,255,0.10)"
                   : "1px solid transparent",

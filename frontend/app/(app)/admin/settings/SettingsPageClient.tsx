@@ -52,7 +52,7 @@ export default function SettingsPageClient() {
           alignItems: "center",
           justifyContent: "center",
           height: "100%",
-          color: "rgba(255,255,255,0.35)",
+          color: "rgba(255,255,255,0.55)",
           fontSize: "13px",
         }}
       >

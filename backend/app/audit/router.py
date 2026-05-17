@@ -13,6 +13,7 @@ from app.audit.schemas import AuditChangeItem, AuditLogOut
 from app.auth.deps import get_current_user
 from app.auth.models import User
 from app.auth.schemas import UserOut
+from app.board.models import Board
 from app.database import get_session
 from app.workspace.models import WorkspaceMember, WorkspaceRole
 
@@ -51,7 +52,24 @@ async def get_audit_log(
     )
 
     result = await session.execute(stmt)
-    return [_to_audit_log_out(entry) for entry in result.scalars().all()]
+    entries = result.scalars().all()
+
+    board_ids = {
+        entry.board_id
+        for entry in entries
+        if entry.board_id is not None and entry.task is None
+    }
+    board_titles_by_id: dict[UUID, str] = {}
+    if board_ids:
+        board_result = await session.execute(
+            select(Board.id, Board.name).where(Board.id.in_(board_ids))
+        )
+        board_titles_by_id = {
+            board_id: board_name
+            for board_id, board_name in board_result.all()
+        }
+
+    return [_to_audit_log_out(entry, board_titles_by_id) for entry in entries]
 
 
 async def _require_workspace_admin(
@@ -78,13 +96,24 @@ async def _require_workspace_admin(
     return membership
 
 
-def _to_audit_log_out(entry: AuditLog) -> AuditLogOut:
+def _to_audit_log_out(
+    entry: AuditLog,
+    board_titles_by_id: dict[UUID, str],
+) -> AuditLogOut:
+    task_title = entry.task.title if entry.task is not None else None
+    actor_name = entry.actor.name.strip() or entry.actor.email
+    entity_title = task_title
+    if entity_title is None and entry.board_id is not None:
+        entity_title = board_titles_by_id.get(entry.board_id)
+
     return AuditLogOut(
         id=entry.id,
         event_type=entry.event_type,
         actor=UserOut.model_validate(entry.actor),
+        actor_name=actor_name,
         task_id=entry.task_id,
-        task_title=entry.task.title if entry.task is not None else None,
+        task_title=task_title,
+        entity_title=entity_title,
         changes=_normalize_changes(entry.changes),
         created_at=entry.created_at,
     )

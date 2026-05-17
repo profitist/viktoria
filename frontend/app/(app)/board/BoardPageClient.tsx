@@ -101,6 +101,17 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
     }
   }, [boardId]);
 
+  // Silent re-fetch: updates board without showing the loading skeleton.
+  // Used for background sync when board data is already present.
+  const silentRefresh = useCallback(async () => {
+    try {
+      const { board: data } = await boardsApi.getDetail(boardId);
+      setBoard(data);
+    } catch {
+      // Keep existing board state visible on failure
+    }
+  }, [boardId]);
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -109,10 +120,23 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
       return;
     }
 
+    // Proactively clear Next.js router cache so navigating back to this board
+    // always triggers a fresh component mount and re-fetch via loadBoard().
+    router.refresh();
     queueMicrotask(() => {
       void loadBoard();
     });
   }, [authLoading, isAuthenticated, boardId, loadBoard, router]);
+
+  // Silent refresh when the document becomes visible again (tab switch,
+  // window restore, or navigation back when router cache serves stale state).
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void silentRefresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [silentRefresh]);
 
   const handleTaskCreated = useCallback((params: Record<string, unknown>) => {
     const task = parseBoardTask(params);
@@ -392,6 +416,12 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
           board={board}
           onTaskMove={handleTaskMove}
           onTaskCreate={handleTaskCreate}
+          onTaskCreated={(task) => setBoard(prev => {
+            if (!prev) return prev;
+            const col = prev.columns.find((c) => c.id === task.column_id);
+            if (col?.tasks.some((t) => t.id === task.id)) return prev;
+            return addTaskToColumn(prev, task) as BoardDetail;
+          })}
           onCardClick={handleCardClick}
           onTaskUpdate={(task) => setBoard(prev => {
             if (!prev) return prev;
@@ -405,6 +435,7 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
           isAdmin={isAdmin}
           deadlineDecayEnabled={deadlineDecayEnabled}
           boardId={boardId}
+          workspaceId={workspaceId ?? ""}
           onColumnUpdated={handleColumnUpdated}
           onColumnDeleted={handleColumnDeleted}
           onColumnCreated={handleColumnCreated}

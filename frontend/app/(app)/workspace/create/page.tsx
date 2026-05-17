@@ -92,7 +92,7 @@ export default function CreateWorkspacePage() {
           <h1 className="text-xl font-semibold uppercase tracking-[0.2em] text-white">
             Workspace
           </h1>
-          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.45)" }}>
+          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.65)" }}>
             Создайте рабочее пространство для команды
           </p>
         </div>
@@ -102,7 +102,7 @@ export default function CreateWorkspacePage() {
             <label
               htmlFor="workspace-name"
               className="text-xs uppercase tracking-widest font-medium"
-              style={{ color: "rgba(255,255,255,0.45)" }}
+              style={{ color: "rgba(255,255,255,0.65)" }}
             >
               Название
             </label>
@@ -129,7 +129,7 @@ export default function CreateWorkspacePage() {
               }
             />
             {nameHint !== null && (
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
+              <p className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
                 {nameHint}
               </p>
             )}
@@ -139,7 +139,7 @@ export default function CreateWorkspacePage() {
             <label
               htmlFor="workspace-slug"
               className="text-xs uppercase tracking-widest font-medium"
-              style={{ color: "rgba(255,255,255,0.45)" }}
+              style={{ color: "rgba(255,255,255,0.65)" }}
             >
               Slug
             </label>

@@ -36,7 +36,7 @@ const PRIORITY_LABEL: Record<TaskPriority, string> = {
 };
 
 const PRIORITY_STYLE: Record<TaskPriority, { bg: string; color: string }> = {
-  low: { bg: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.45)" },
+  low: { bg: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)" },
   medium: { bg: "rgba(59,130,246,0.15)", color: "#93C5FD" },
   high: { bg: "rgba(245,158,11,0.15)", color: "#FCD34D" },
   critical: { bg: "rgba(239,68,68,0.15)", color: "#FCA5A5" },
@@ -72,7 +72,7 @@ function SortableColHeader({ label, asc, desc, activeSort, onSort, width }: ColH
         textAlign: "left",
         fontSize: "11px",
         fontWeight: 500,
-        color: isActive ? "rgba(255,255,255,0.72)" : "rgba(255,255,255,0.35)",
+        color: isActive ? "rgba(255,255,255,0.72)" : "rgba(255,255,255,0.55)",
         letterSpacing: "0.06em",
         textTransform: "uppercase",
         cursor: "pointer",
@@ -97,7 +97,7 @@ function StaticColHeader({ label, width }: { label: string; width?: string }) {
         textAlign: "left",
         fontSize: "11px",
         fontWeight: 500,
-        color: "rgba(255,255,255,0.35)",
+        color: "rgba(255,255,255,0.55)",
         letterSpacing: "0.06em",
         textTransform: "uppercase",
         whiteSpace: "nowrap",
@@ -263,7 +263,7 @@ function TaskRow({ task, members, onClick, isOdd }: TaskRowProps) {
                 </span>
               ))}
               {hiddenCount > 0 && (
-                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)" }}>
+                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.55)" }}>
                   +{hiddenCount}
                 </span>
               )}
@@ -291,7 +291,7 @@ function TaskRow({ task, members, onClick, isOdd }: TaskRowProps) {
         style={{
           padding: "12px",
           fontSize: "13px",
-          color: "rgba(255,255,255,0.45)",
+          color: "rgba(255,255,255,0.65)",
           borderBottom: "1px solid rgba(255,255,255,0.04)",
           whiteSpace: "nowrap",
         }}
@@ -342,7 +342,7 @@ function Pagination({ page, totalPages, total, pageSize, onPage, onPageSize }: P
         >
           ← Назад
         </button>
-        <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.45)", whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.65)", whiteSpace: "nowrap" }}>
           Страница {page} из {totalPages || 1}
           <span style={{ marginLeft: "8px", opacity: 0.6 }}>({total} задач)</span>
         </span>
@@ -356,7 +356,7 @@ function Pagination({ page, totalPages, total, pageSize, onPage, onPageSize }: P
       </div>
 
       <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+        <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
           Показывать
         </span>
         <select

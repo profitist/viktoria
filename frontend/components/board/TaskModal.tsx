@@ -37,7 +37,7 @@ const URGENCY_DATE_COLOR: Record<DeadlineUrgency, string> = {
 };
 
 const PRIORITY_STYLE: Record<TaskPriority, { bg: string; color: string; label: string }> = {
-  low: { bg: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.45)", label: "LOW" },
+  low: { bg: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)", label: "LOW" },
   medium: { bg: "rgba(59,130,246,0.15)", color: "#93C5FD", label: "MED" },
   high: { bg: "rgba(245,158,11,0.15)", color: "#FCD34D", label: "HIGH" },
   critical: { bg: "rgba(239,68,68,0.15)", color: "#FCA5A5", label: "CRIT" },
@@ -56,7 +56,7 @@ function SectionLabel({ text }: { text: string }) {
       style={{
         fontSize: "11px",
         fontWeight: 500,
-        color: "rgba(255,255,255,0.35)",
+        color: "rgba(255,255,255,0.55)",
         letterSpacing: "0.08em",
         marginBottom: "4px",
       }}
@@ -330,7 +330,7 @@ export default function TaskModal({ task, boardId, workspaceId, onSave, onDelete
               alignItems: "center",
               justifyContent: "center",
               fontSize: "18px",
-              color: "rgba(255,255,255,0.45)",
+              color: "rgba(255,255,255,0.65)",
               transition: "all 150ms ease",
             }}
             onMouseEnter={e => {
@@ -339,7 +339,7 @@ export default function TaskModal({ task, boardId, workspaceId, onSave, onDelete
             }}
             onMouseLeave={e => {
               e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-              e.currentTarget.style.color = "rgba(255,255,255,0.45)";
+              e.currentTarget.style.color = "rgba(255,255,255,0.65)";
             }}
           >
             ×
@@ -416,7 +416,7 @@ export default function TaskModal({ task, boardId, workspaceId, onSave, onDelete
                       style={{
                         background: "rgba(255,255,255,0.05)",
                         border: "1px dashed rgba(255,255,255,0.2)",
-                        color: "rgba(255,255,255,0.45)",
+                        color: "rgba(255,255,255,0.65)",
                         borderRadius: "999px",
                         padding: "3px 10px",
                         fontSize: "12px",
@@ -429,7 +429,7 @@ export default function TaskModal({ task, boardId, workspaceId, onSave, onDelete
                       }}
                       onMouseLeave={e => {
                         e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                        e.currentTarget.style.color = "rgba(255,255,255,0.45)";
+                        e.currentTarget.style.color = "rgba(255,255,255,0.65)";
                       }}
                     >
                       + Добавить
@@ -506,7 +506,7 @@ export default function TaskModal({ task, boardId, workspaceId, onSave, onDelete
                   style={{
                     fontSize: "11px",
                     fontWeight: 500,
-                    color: "rgba(255,255,255,0.35)",
+                    color: "rgba(255,255,255,0.55)",
                     letterSpacing: "0.08em",
                     margin: 0,
                   }}
@@ -514,7 +514,7 @@ export default function TaskModal({ task, boardId, workspaceId, onSave, onDelete
                   Подзадачи
                 </p>
                 {subtasks !== undefined && totalCount > 0 && (
-                  <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", flexShrink: 0 }}>
+                  <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.55)", flexShrink: 0 }}>
                     {doneCount}/{totalCount}
                   </span>
                 )}
@@ -606,7 +606,7 @@ function ViewBody({ task, members }: { task: Task; members: WorkspaceMember[] })
             {task.description}
           </p>
         ) : (
-          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.35)", fontStyle: "italic" }}>
+          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.55)", fontStyle: "italic" }}>
             Описание не добавлено
           </p>
         )}
@@ -634,7 +634,7 @@ function ViewBody({ task, members }: { task: Task; members: WorkspaceMember[] })
             {formatDeadline(task.deadline)}
           </p>
         ) : (
-          <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.35)" }}>—</p>
+          <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.55)" }}>—</p>
         )}
       </FieldWrapper>
 
@@ -660,7 +660,7 @@ function ViewBody({ task, members }: { task: Task; members: WorkspaceMember[] })
             <p style={{ fontSize: "14px", color: "#FFFFFF" }}>{assignee.name}</p>
           </div>
         ) : (
-          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.35)" }}>Не назначен</p>
+          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.55)" }}>Не назначен</p>
         )}
       </FieldWrapper>
 
@@ -737,7 +737,7 @@ function ViewFooter({ onEdit, onDelete, onClose }: { onEdit: () => void; onDelet
         style={{
           background: "none",
           border: "none",
-          color: "rgba(255,255,255,0.45)",
+          color: "rgba(255,255,255,0.65)",
           padding: "8px 16px",
           borderRadius: "10px",
           fontSize: "14px",
@@ -749,7 +749,7 @@ function ViewFooter({ onEdit, onDelete, onClose }: { onEdit: () => void; onDelet
           e.currentTarget.style.background = "rgba(255,255,255,0.04)";
         }}
         onMouseLeave={e => {
-          e.currentTarget.style.color = "rgba(255,255,255,0.45)";
+          e.currentTarget.style.color = "rgba(255,255,255,0.65)";
           e.currentTarget.style.background = "none";
         }}
       >
@@ -770,7 +770,7 @@ interface EditBodyProps {
 
 function EditBody({ formData, members, loadingMembers, titleError, titleLength, onChange }: EditBodyProps) {
   const counterColor =
-    titleLength > 500 ? "#FCA5A5" : titleLength > 450 ? "#FCD34D" : "rgba(255,255,255,0.35)";
+    titleLength > 500 ? "#FCA5A5" : titleLength > 450 ? "#FCD34D" : "rgba(255,255,255,0.55)";
 
   const titleBorderColor = titleError
     ? "rgba(239,68,68,0.6)"
@@ -823,7 +823,7 @@ function EditBody({ formData, members, loadingMembers, titleError, titleLength, 
             <option value="high">HIGH</option>
             <option value="critical">CRITICAL</option>
           </select>
-          <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.45)", pointerEvents: "none", fontSize: "12px" }}>▾</span>
+          <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.65)", pointerEvents: "none", fontSize: "12px" }}>▾</span>
         </div>
       </FieldWrapper>
 
@@ -859,7 +859,7 @@ function EditBody({ formData, members, loadingMembers, titleError, titleLength, 
               <option key={m.user_id} value={m.user_id}>{m.name}</option>
             ))}
           </select>
-          <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.45)", pointerEvents: "none", fontSize: "12px" }}>▾</span>
+          <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.65)", pointerEvents: "none", fontSize: "12px" }}>▾</span>
         </div>
       </FieldWrapper>
 
@@ -920,7 +920,7 @@ function EditFooter({ isSaving, isSaveDisabled, onDelete, onCancel, onSave }: Ed
           style={{
             background: "none",
             border: "none",
-            color: "rgba(255,255,255,0.45)",
+            color: "rgba(255,255,255,0.65)",
             padding: "8px 16px",
             borderRadius: "10px",
             fontSize: "14px",
@@ -934,7 +934,7 @@ function EditFooter({ isSaving, isSaveDisabled, onDelete, onCancel, onSave }: Ed
             }
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.color = "rgba(255,255,255,0.45)";
+            e.currentTarget.style.color = "rgba(255,255,255,0.65)";
             e.currentTarget.style.background = "none";
           }}
         >
@@ -945,7 +945,7 @@ function EditFooter({ isSaving, isSaveDisabled, onDelete, onCancel, onSave }: Ed
           disabled={isSaveDisabled}
           style={{
             background: isSaveDisabled ? "rgba(59,130,246,0.3)" : "#3B82F6",
-            color: isSaveDisabled ? "rgba(255,255,255,0.4)" : "#FFFFFF",
+            color: isSaveDisabled ? "rgba(255,255,255,0.6)" : "#FFFFFF",
             border: "none",
             borderRadius: "10px",
             padding: "8px 20px",

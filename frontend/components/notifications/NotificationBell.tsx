@@ -132,15 +132,22 @@ export default function NotificationBell({ workspaceId }: NotificationBellProps)
 
   const handleMarkAllRead = useCallback(async () => {
     if (!workspaceId) return;
+
+    const previousNotifications = notifications;
+    const previousUnreadCount = unreadCount;
+
     setNotifications((items) => items.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
     try {
-      await api.patch(`/api/v1/notifications/read-all`, { workspace_id: workspaceId });
+      await api.patch(
+        `/api/v1/notifications/read-all?workspace_id=${encodeURIComponent(workspaceId)}`,
+        {}
+      );
     } catch {
-      void loadNotifications();
-      fetchUnread();
+      setNotifications(previousNotifications);
+      setUnreadCount(previousUnreadCount);
     }
-  }, [workspaceId, loadNotifications, fetchUnread]);
+  }, [workspaceId, notifications, unreadCount]);
 
   const bellRef = useRef<HTMLButtonElement>(null);
 

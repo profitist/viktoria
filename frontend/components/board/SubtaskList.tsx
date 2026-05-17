@@ -15,6 +15,9 @@ export default function SubtaskList({ taskId, subtasks: initialSubtasks, onItems
   const [isLoading, setIsLoading] = useState(initialSubtasks === undefined);
   const [newTitle, setNewTitle] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fetchSubtasks = useCallback(async () => {
@@ -65,6 +68,55 @@ export default function SubtaskList({ taskId, subtasks: initialSubtasks, onItems
     }
   }
 
+  function startEdit(subtask: Subtask) {
+    setEditingId(subtask.id);
+    setEditTitle(subtask.title);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditTitle("");
+  }
+
+  async function handleSaveEdit(subtask: Subtask) {
+    const title = editTitle.trim();
+    if (!title) return;
+
+    cancelEdit();
+
+    if (title === subtask.title) {
+      return;
+    }
+
+    const previousTitle = subtask.title;
+    updateItems(prev => prev.map(s => (s.id === subtask.id ? { ...s, title } : s)));
+
+    try {
+      const updated = await subtasksApi.updateSubtask(taskId, subtask.id, { title });
+      updateItems(prev => prev.map(s => (s.id === subtask.id ? updated : s)));
+    } catch {
+      updateItems(prev => prev.map(s => (s.id === subtask.id ? { ...s, title: previousTitle } : s)));
+    }
+  }
+
+  async function handleDelete(subtask: Subtask) {
+    if (!window.confirm("Удалить подзадачу?")) {
+      return;
+    }
+
+    let snapshot: Subtask[] = [];
+    updateItems(prev => {
+      snapshot = prev;
+      return prev.filter(s => s.id !== subtask.id);
+    });
+
+    try {
+      await subtasksApi.deleteSubtask(taskId, subtask.id);
+    } catch {
+      updateItems(() => snapshot);
+    }
+  }
+
   if (isLoading) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -86,17 +138,16 @@ export default function SubtaskList({ taskId, subtasks: initialSubtasks, onItems
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
       {items.map(subtask => (
-        <label
+        <div
           key={subtask.id}
-          style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "4px 0" }}
+          onMouseEnter={() => setHoveredId(subtask.id)}
+          onMouseLeave={() => setHoveredId(current => (current === subtask.id ? null : current))}
+          style={{ display: "flex", alignItems: "center", gap: "8px", padding: "4px 0" }}
         >
-          <input
-            type="checkbox"
-            checked={subtask.is_done}
-            onChange={() => handleToggle(subtask)}
-            style={{ display: "none" }}
-          />
-          <div
+          <button
+            type="button"
+            onClick={() => handleToggle(subtask)}
+            aria-label={subtask.is_done ? "Снять отметку с подзадачи" : "Отметить подзадачу выполненной"}
             style={{
               width: "16px",
               height: "16px",
@@ -107,6 +158,8 @@ export default function SubtaskList({ taskId, subtasks: initialSubtasks, onItems
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              padding: 0,
+              cursor: "pointer",
               transition: "all 150ms ease",
             }}
           >
@@ -115,19 +168,112 @@ export default function SubtaskList({ taskId, subtasks: initialSubtasks, onItems
                 <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             )}
-          </div>
-          <span
+          </button>
+
+          {editingId === subtask.id ? (
+            <input
+              autoFocus
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") handleSaveEdit(subtask);
+                if (e.key === "Escape") cancelEdit();
+              }}
+              onBlur={() => cancelEdit()}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: "6px",
+                outline: "none",
+                fontSize: "13px",
+                color: "rgba(255,255,255,0.86)",
+                padding: "4px 6px",
+              }}
+            />
+          ) : (
+            <button
+              type="button"
+              onDoubleClick={() => startEdit(subtask)}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: "transparent",
+                border: "none",
+                padding: 0,
+                textAlign: "left",
+                cursor: "text",
+                fontSize: "13px",
+                color: subtask.is_done ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.80)",
+                textDecoration: subtask.is_done ? "line-through" : "none",
+                lineHeight: 1.4,
+                transition: "color 150ms ease",
+              }}
+            >
+              {subtask.title}
+            </button>
+          )}
+
+          <div
             style={{
-              fontSize: "13px",
-              color: subtask.is_done ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.80)",
-              textDecoration: subtask.is_done ? "line-through" : "none",
-              lineHeight: 1.4,
-              transition: "color 150ms ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "2px",
+              opacity: hoveredId === subtask.id || editingId === subtask.id ? 1 : 0,
+              pointerEvents: hoveredId === subtask.id || editingId === subtask.id ? "auto" : "none",
+              transition: "opacity 120ms ease",
             }}
           >
-            {subtask.title}
-          </span>
-        </label>
+            <button
+              type="button"
+              onClick={() => startEdit(subtask)}
+              aria-label="Редактировать подзадачу"
+              style={{
+                width: "24px",
+                height: "24px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "none",
+                borderRadius: "6px",
+                background: "transparent",
+                color: "rgba(255,255,255,0.46)",
+                cursor: "pointer",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 20H21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16.5 3.5C17.3284 2.67157 18.6716 2.67157 19.5 3.5C20.3284 4.32843 20.3284 5.67157 19.5 6.5L7 19L3 20L4 16L16.5 3.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDelete(subtask)}
+              aria-label="Удалить подзадачу"
+              style={{
+                width: "24px",
+                height: "24px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "none",
+                borderRadius: "6px",
+                background: "transparent",
+                color: "rgba(248,113,113,0.72)",
+                cursor: "pointer",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3 6H21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M8 6V4H16V6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M19 6L18 20H6L5 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 11V16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                <path d="M14 11V16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
       ))}
 
       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>

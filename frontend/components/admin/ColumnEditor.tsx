@@ -124,7 +124,7 @@ export default function ColumnEditor({ workspaceId }: ColumnEditorProps) {
         className="rounded-xl p-6 mb-6"
         style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}
       >
-        <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.45)" }}>
+        <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
           Колонки
         </p>
         {[1, 2, 3].map((i) => (
@@ -161,13 +161,13 @@ export default function ColumnEditor({ workspaceId }: ColumnEditorProps) {
       className="rounded-xl p-6 mb-6"
       style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}
     >
-      <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.45)" }}>
+      <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
         Колонки
       </p>
 
       <div className="space-y-1 mb-4">
         {columns.length === 0 && (
-          <p className="text-sm py-2" style={{ color: "rgba(255,255,255,0.45)" }}>
+          <p className="text-sm py-2" style={{ color: "rgba(255,255,255,0.65)" }}>
             Колонок нет
           </p>
         )}
@@ -193,7 +193,7 @@ export default function ColumnEditor({ workspaceId }: ColumnEditorProps) {
                     color: "#fff",
                   }}
                 />
-                <span className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+                <span className="text-xs" style={{ color: "rgba(255,255,255,0.65)" }}>
                   Enter / Esc
                 </span>
               </div>
@@ -206,7 +206,7 @@ export default function ColumnEditor({ workspaceId }: ColumnEditorProps) {
                 <span className="text-sm flex-1" style={{ color: "rgba(255,255,255,0.72)" }}>
                   {col.name}
                 </span>
-                <span className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+                <span className="text-xs" style={{ color: "rgba(255,255,255,0.65)" }}>
                   Удалить колонку?
                 </span>
                 <button
@@ -238,7 +238,7 @@ export default function ColumnEditor({ workspaceId }: ColumnEditorProps) {
                 onClick={() => startEdit(col)}
                 disabled={opLoading}
                 className="text-xs px-2.5 py-1 rounded transition-colors opacity-0 group-hover:opacity-100"
-                style={{ color: "rgba(255,255,255,0.45)" }}
+                style={{ color: "rgba(255,255,255,0.65)" }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.45)"; }}
               >

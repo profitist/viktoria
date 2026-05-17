@@ -37,7 +37,7 @@ export interface TaskPanelProps {
 // ── constants ──────────────────────────────────────────────────────────────────
 
 const PRIORITY_STYLE: Record<TaskPriority, { bg: string; color: string; label: string }> = {
-  low:      { bg: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.45)", label: "LOW" },
+  low:      { bg: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)", label: "LOW" },
   medium:   { bg: "rgba(59,130,246,0.15)",  color: "#93C5FD",               label: "MED" },
   high:     { bg: "rgba(245,158,11,0.15)",  color: "#FCD34D",               label: "HIGH" },
   critical: { bg: "rgba(239,68,68,0.15)",   color: "#FCA5A5",               label: "CRIT" },
@@ -113,7 +113,7 @@ const TAG_COLORS = ["#EF4444","#F97316","#EAB308","#22C55E","#14B8A6","#3B82F6",
 const LABEL_STYLE: React.CSSProperties = {
   fontSize: "11px",
   fontWeight: 500,
-  color: "rgba(255,255,255,0.35)",
+  color: "rgba(255,255,255,0.55)",
   textTransform: "uppercase",
   letterSpacing: "0.07em",
   marginBottom: "4px",
@@ -211,7 +211,7 @@ function SectionHead({ text }: { text: string }) {
       style={{
         fontSize: "11px",
         fontWeight: 600,
-        color: "rgba(255,255,255,0.35)",
+        color: "rgba(255,255,255,0.55)",
         textTransform: "uppercase",
         letterSpacing: "0.08em",
         margin: "24px 0 8px",
@@ -321,7 +321,7 @@ function AssigneeField({
           borderRadius: "8px",
           padding: "6px 10px",
           cursor: "pointer",
-          color: assignee ? "#FFFFFF" : "rgba(255,255,255,0.35)",
+          color: assignee ? "#FFFFFF" : "rgba(255,255,255,0.55)",
           fontSize: "13px",
         }}
       >
@@ -504,7 +504,7 @@ function DeadlineField({
         padding: 0,
         cursor: "pointer",
         fontSize: "13px",
-        color: value ? "#FFFFFF" : "rgba(255,255,255,0.35)",
+        color: value ? "#FFFFFF" : "rgba(255,255,255,0.55)",
         textAlign: "left",
       }}
     >
@@ -598,7 +598,7 @@ function TagsField({
           style={{
             background: open ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
             border: "1px dashed rgba(255,255,255,0.2)",
-            color: "rgba(255,255,255,0.45)",
+            color: "rgba(255,255,255,0.65)",
             borderRadius: "999px",
             padding: "3px 10px",
             fontSize: "12px",
@@ -736,7 +736,7 @@ function ActivityItem({ entry }: { entry: AuditLogEntry }) {
         {entry.changes.length > 0 && (
           <div style={{ marginTop: "3px", display: "flex", flexDirection: "column", gap: "2px" }}>
             {entry.changes.map((ch, i) => (
-              <p key={i} style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", margin: 0 }}>
+              <p key={i} style={{ fontSize: "11px", color: "rgba(255,255,255,0.55)", margin: 0 }}>
                 {ch.field}: {String(ch.old) || "—"} → {String(ch.new) || "—"}
               </p>
             ))}
@@ -1089,10 +1089,10 @@ export default function TaskPanel({
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-                  (e.currentTarget.querySelector("svg") as SVGElement | null)?.setAttribute("stroke", "rgba(255,255,255,0.4)");
+                  (e.currentTarget.querySelector("svg") as SVGElement | null)?.setAttribute("stroke", "rgba(255,255,255,0.6)");
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6" />
                   <path d="M19 6l-1 14H6L5 6" />
                   <path d="M10 11v6M14 11v6" />
@@ -1115,7 +1115,7 @@ export default function TaskPanel({
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: "16px",
-                  color: "rgba(255,255,255,0.4)",
+                  color: "rgba(255,255,255,0.6)",
                   transition: "all 150ms",
                 }}
                 onMouseEnter={e => {
@@ -1124,7 +1124,7 @@ export default function TaskPanel({
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-                  e.currentTarget.style.color = "rgba(255,255,255,0.4)";
+                  e.currentTarget.style.color = "rgba(255,255,255,0.6)";
                 }}
               >
                 ×
@@ -1253,13 +1253,13 @@ export default function TaskPanel({
                       marginBottom: "4px",
                     }}
                   >
-                    <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)" }}>
+                    <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.55)" }}>
                       {doneCount}/{totalCount}
                     </span>
                     <span
                       style={{
                         fontSize: "11px",
-                        color: progressPct === 100 ? "#22C55E" : "rgba(255,255,255,0.35)",
+                        color: progressPct === 100 ? "#22C55E" : "rgba(255,255,255,0.55)",
                       }}
                     >
                       {Math.round(progressPct)}%

@@ -6,6 +6,7 @@ import {
   groupMyTasks,
   groupByAssignee,
 } from "@/lib/my-tasks-api";
+import { boardsApi } from "@/lib/api";
 import type { MyTask, MyTasksSort, AssigneeGroup } from "@/lib/my-tasks-api";
 import { useWs } from "@/contexts/WsContext";
 import TaskGroup from "./TaskGroup";
@@ -35,10 +36,12 @@ const SORT_OPTIONS: { value: MyTasksSort; label: string }[] = [
 
 function AssigneeGroupRow({
   group,
+  boardNamesById,
   onToggleDone,
   onTaskClick,
 }: {
   group: AssigneeGroup;
+  boardNamesById: Record<string, string>;
   onToggleDone: (id: string, done: boolean) => void;
   onTaskClick: (id: string) => void;
 }) {
@@ -71,7 +74,7 @@ function AssigneeGroupRow({
             transition: "transform 150ms ease",
           }}
         >
-          <path d="M4 2l4 4-4 4" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M4 2l4 4-4 4" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
 
         <div
@@ -99,7 +102,7 @@ function AssigneeGroupRow({
         <span
           style={{
             fontSize: "11px",
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.55)",
             background: "rgba(255,255,255,0.06)",
             borderRadius: "999px",
             padding: "1px 7px",
@@ -115,6 +118,7 @@ function AssigneeGroupRow({
             <TaskRow
               key={task.id}
               task={task}
+              boardName={boardNamesById[task.board_id]}
               onToggleDone={onToggleDone}
               onTaskClick={onTaskClick}
             />
@@ -150,6 +154,7 @@ const WS_TASK_EVENTS = ["board.task_created", "board.task_updated", "board.task_
 export default function MyTasksPage({ workspaceId }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("mine");
   const [tasks, setTasks] = useState<MyTask[]>([]);
+  const [boardNamesById, setBoardNamesById] = useState<Record<string, string>>({});
   const [sort, setSort] = useState<MyTasksSort>("priority");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -170,8 +175,37 @@ export default function MyTasksPage({ workspaceId }: Props) {
   }, [workspaceId, activeTab, sort]);
 
   useEffect(() => {
-    setTasks([]);
-    fetchTasks();
+    let cancelled = false;
+
+    boardsApi
+      .list(workspaceId)
+      .then((boards) => {
+        if (cancelled) return;
+        setBoardNamesById(
+          Object.fromEntries(boards.map((board) => [board.id, board.name]))
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setBoardNamesById({});
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setTasks([]);
+      void fetchTasks();
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [fetchTasks]);
 
   // Re-fetch on WS task events (debounced 500ms)
@@ -274,7 +308,7 @@ export default function MyTasksPage({ workspaceId }: Props) {
               padding: "8px 14px",
               fontSize: "13px",
               cursor: "pointer",
-              color: activeTab === tab.key ? "#fff" : "rgba(255,255,255,0.4)",
+              color: activeTab === tab.key ? "#fff" : "rgba(255,255,255,0.6)",
               fontWeight: activeTab === tab.key ? 500 : 400,
               borderBottom: activeTab === tab.key ? "2px solid #3B82F6" : "2px solid transparent",
               marginBottom: "-1px",
@@ -343,6 +377,7 @@ export default function MyTasksPage({ workspaceId }: Props) {
               <TaskGroup
                 key={group.key}
                 group={group}
+                boardNamesById={boardNamesById}
                 onToggleDone={handleToggleDone}
                 onTaskClick={setSelectedTaskId}
                 workspaceId={workspaceId}
@@ -360,6 +395,7 @@ export default function MyTasksPage({ workspaceId }: Props) {
               <AssigneeGroupRow
                 key={group.assignee_id ?? "__none__"}
                 group={group}
+                boardNamesById={boardNamesById}
                 onToggleDone={handleToggleDone}
                 onTaskClick={setSelectedTaskId}
               />

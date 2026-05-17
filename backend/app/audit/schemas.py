@@ -31,10 +31,14 @@ class AuditLogOut(BaseModel):
     """Тип события: task.created, task.updated, task.moved, task.deleted."""
     actor: UserOut
     """Пользователь, инициировавший изменение."""
+    actor_name: str
+    """Имя инициатора для UI event log; fallback на email если name пустой."""
     task_id: UUID | None
     """UUID задачи. None только если задача уже удалена из БД."""
     task_title: str | None
     """Название задачи на момент события. None если задача удалена."""
+    entity_title: str | None
+    """Человекочитаемое название сущности: task.title, board.name или None."""
     changes: list[AuditChangeItem]
     """Список изменённых полей. Пустой для task.created и task.deleted."""
     created_at: datetime
