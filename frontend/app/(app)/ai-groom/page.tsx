@@ -30,7 +30,7 @@ export default function AiGroomPage() {
         <h1 style={{ fontSize: "24px", fontWeight: 600, color: "#fff", marginBottom: "6px" }}>
           AI Груминг задач
         </h1>
-        <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", marginBottom: "28px" }}>
+        <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.65)", marginBottom: "28px" }}>
           Опишите проблему — AI поможет сформулировать задачу
         </p>
         <GroomingWizard workspaceId={workspaceId} />

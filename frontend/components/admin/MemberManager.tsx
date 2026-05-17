@@ -126,7 +126,7 @@ export default function MemberManager({ workspaceId }: MemberManagerProps) {
       >
         <p
           className="text-xs uppercase tracking-widest mb-4"
-          style={{ color: "rgba(255,255,255,0.45)" }}
+          style={{ color: "rgba(255,255,255,0.65)" }}
         >
           Участники
         </p>
@@ -166,14 +166,14 @@ export default function MemberManager({ workspaceId }: MemberManagerProps) {
     >
       <p
         className="text-xs uppercase tracking-widest mb-4"
-        style={{ color: "rgba(255,255,255,0.45)" }}
+        style={{ color: "rgba(255,255,255,0.65)" }}
       >
         Участники
       </p>
 
       <div className="space-y-1 mb-4">
         {members.length === 0 && (
-          <p className="text-sm py-2" style={{ color: "rgba(255,255,255,0.45)" }}>
+          <p className="text-sm py-2" style={{ color: "rgba(255,255,255,0.65)" }}>
             Участников нет
           </p>
         )}
@@ -189,7 +189,7 @@ export default function MemberManager({ workspaceId }: MemberManagerProps) {
                 <span className="text-sm flex-1" style={{ color: "rgba(255,255,255,0.72)" }}>
                   {m.name}
                 </span>
-                <span className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+                <span className="text-xs" style={{ color: "rgba(255,255,255,0.65)" }}>
                   Удалить?
                 </span>
                 <button
@@ -225,7 +225,7 @@ export default function MemberManager({ workspaceId }: MemberManagerProps) {
                 <p className="text-sm truncate" style={{ color: "rgba(255,255,255,0.87)" }}>
                   {m.name}
                 </p>
-                <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.45)" }}>
+                <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.65)" }}>
                   {m.email}
                 </p>
               </div>
@@ -242,7 +242,7 @@ export default function MemberManager({ workspaceId }: MemberManagerProps) {
 
               <span
                 className="text-xs flex-shrink-0 hidden sm:block"
-                style={{ color: "rgba(255,255,255,0.35)" }}
+                style={{ color: "rgba(255,255,255,0.55)" }}
               >
                 {formatDate(m.joined_at)}
               </span>
@@ -273,7 +273,7 @@ export default function MemberManager({ workspaceId }: MemberManagerProps) {
       )}
 
       <div className="pt-4 space-y-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-        <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+        <p className="text-xs" style={{ color: "rgba(255,255,255,0.65)" }}>
           Пригласить участника
         </p>
 

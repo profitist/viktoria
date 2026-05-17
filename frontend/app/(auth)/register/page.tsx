@@ -60,7 +60,7 @@ export default function RegisterPage() {
           >
             VIKTORIA
           </h1>
-          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.45)" }}>
+          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.65)" }}>
             Создайте аккаунт
           </p>
         </div>
@@ -70,7 +70,7 @@ export default function RegisterPage() {
             <label
               htmlFor="name"
               className="text-xs uppercase tracking-widest font-medium"
-              style={{ color: "rgba(255,255,255,0.45)" }}
+              style={{ color: "rgba(255,255,255,0.65)" }}
             >
               Имя
             </label>
@@ -100,7 +100,7 @@ export default function RegisterPage() {
             <label
               htmlFor="email"
               className="text-xs uppercase tracking-widest font-medium"
-              style={{ color: "rgba(255,255,255,0.45)" }}
+              style={{ color: "rgba(255,255,255,0.65)" }}
             >
               Email
             </label>
@@ -130,7 +130,7 @@ export default function RegisterPage() {
             <label
               htmlFor="password"
               className="text-xs uppercase tracking-widest font-medium"
-              style={{ color: "rgba(255,255,255,0.45)" }}
+              style={{ color: "rgba(255,255,255,0.65)" }}
             >
               Пароль
             </label>
@@ -179,12 +179,12 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        <p className="text-sm mt-6 text-center" style={{ color: "rgba(255,255,255,0.45)" }}>
+        <p className="text-sm mt-6 text-center" style={{ color: "rgba(255,255,255,0.65)" }}>
           Уже есть аккаунт?{" "}
           <Link
             href="/login"
             className="transition-colors hover:text-white"
-            style={{ color: "rgba(255,255,255,0.45)" }}
+            style={{ color: "rgba(255,255,255,0.65)" }}
           >
             Войти
           </Link>

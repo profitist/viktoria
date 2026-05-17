@@ -145,7 +145,7 @@ export default function NotificationDropdown({
       >
         <div>
           <p className="text-sm font-semibold text-white">Уведомления</p>
-          <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
+          <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>
             {unreadCount > 0 ? `${unreadCount} непрочитанных` : "Всё прочитано"}
           </p>
         </div>
@@ -214,7 +214,7 @@ export default function NotificationDropdown({
         {!isLoading && !error && notifications.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <span style={{ fontSize: "32px", opacity: 0.25 }}>🔔</span>
-            <p className="text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>
+            <p className="text-sm" style={{ color: "rgba(255,255,255,0.55)" }}>
               Уведомлений нет
             </p>
           </div>

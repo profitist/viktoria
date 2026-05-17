@@ -62,7 +62,7 @@ export default function LoginPage() {
           >
             VIKTORIA
           </h1>
-          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.45)" }}>
+          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.65)" }}>
             Войдите в аккаунт
           </p>
         </div>
@@ -72,7 +72,7 @@ export default function LoginPage() {
             <label
               htmlFor="email"
               className="text-xs uppercase tracking-widest font-medium"
-              style={{ color: "rgba(255,255,255,0.45)" }}
+              style={{ color: "rgba(255,255,255,0.65)" }}
             >
               Email
             </label>
@@ -102,7 +102,7 @@ export default function LoginPage() {
             <label
               htmlFor="password"
               className="text-xs uppercase tracking-widest font-medium"
-              style={{ color: "rgba(255,255,255,0.45)" }}
+              style={{ color: "rgba(255,255,255,0.65)" }}
             >
               Пароль
             </label>
@@ -151,12 +151,12 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-sm mt-6 text-center" style={{ color: "rgba(255,255,255,0.45)" }}>
+        <p className="text-sm mt-6 text-center" style={{ color: "rgba(255,255,255,0.65)" }}>
           Нет аккаунта?{" "}
           <Link
             href="/register"
             className="transition-colors hover:text-white"
-            style={{ color: "rgba(255,255,255,0.45)" }}
+            style={{ color: "rgba(255,255,255,0.65)" }}
           >
             Зарегистрироваться
           </Link>

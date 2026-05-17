@@ -14,10 +14,10 @@ function SubtaskProgressBar({ done, total }: { done: number; total: number }) {
   return (
     <div style={{ marginTop: "10px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-        <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.40)" }}>
+        <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.60)" }}>
           {done}/{total}
         </span>
-        <span style={{ fontSize: "11px", color: isComplete ? "#22C55E" : "rgba(255,255,255,0.40)" }}>
+        <span style={{ fontSize: "11px", color: isComplete ? "#22C55E" : "rgba(255,255,255,0.60)" }}>
           {pct}%
         </span>
       </div>
@@ -214,7 +214,7 @@ export default function TaskCard({
       <p
         className="text-sm font-medium leading-snug"
         style={{
-          color: optimisticDone ? "rgba(255,255,255,0.45)" : "#FFFFFF",
+          color: optimisticDone ? "rgba(255,255,255,0.65)" : "#FFFFFF",
           textDecoration: optimisticDone ? "line-through" : "none",
           paddingRight: onToggleDone ? "24px" : undefined,
         }}
@@ -252,8 +252,8 @@ export default function TaskCard({
               style={{ background: "rgba(255,255,255,0.08)" }}
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <circle cx="6" cy="4.5" r="2" fill="rgba(255,255,255,0.45)" />
-                <path d="M2 10c0-2.2 1.8-4 4-4s4 1.8 4 4" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2" strokeLinecap="round" />
+                <circle cx="6" cy="4.5" r="2" fill="rgba(255,255,255,0.65)" />
+                <path d="M2 10c0-2.2 1.8-4 4-4s4 1.8 4 4" stroke="rgba(255,255,255,0.65)" strokeWidth="1.2" strokeLinecap="round" />
               </svg>
             </div>
           )}

@@ -148,7 +148,7 @@ function SettingRow({
         >
           Автоматизация
         </p>
-        <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.40)" }}>
+        <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.60)" }}>
           {enabled
             ? "Правила выполняются автоматически"
             : "Выполнение правил приостановлено"}
@@ -160,7 +160,7 @@ function SettingRow({
           style={{
             fontSize: "12px",
             fontWeight: 500,
-            color: enabled ? "#3B82F6" : "rgba(255,255,255,0.35)",
+            color: enabled ? "#3B82F6" : "rgba(255,255,255,0.55)",
             transition: "color 0.2s ease",
             letterSpacing: "0.01em",
           }}
@@ -282,7 +282,7 @@ function ErrorRow({
         gap: "12px",
       }}
     >
-      <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.40)" }}>{message}</p>
+      <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.60)" }}>{message}</p>
       <button
         onClick={onRetry}
         style={{

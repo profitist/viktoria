@@ -71,7 +71,7 @@ function AssigneeGroupRow({
             transition: "transform 150ms ease",
           }}
         >
-          <path d="M4 2l4 4-4 4" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M4 2l4 4-4 4" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
 
         <div
@@ -99,7 +99,7 @@ function AssigneeGroupRow({
         <span
           style={{
             fontSize: "11px",
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.55)",
             background: "rgba(255,255,255,0.06)",
             borderRadius: "999px",
             padding: "1px 7px",
@@ -274,7 +274,7 @@ export default function MyTasksPage({ workspaceId }: Props) {
               padding: "8px 14px",
               fontSize: "13px",
               cursor: "pointer",
-              color: activeTab === tab.key ? "#fff" : "rgba(255,255,255,0.4)",
+              color: activeTab === tab.key ? "#fff" : "rgba(255,255,255,0.6)",
               fontWeight: activeTab === tab.key ? 500 : 400,
               borderBottom: activeTab === tab.key ? "2px solid #3B82F6" : "2px solid transparent",
               marginBottom: "-1px",

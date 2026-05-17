@@ -435,15 +435,15 @@ export default function Column({
               <>
                 <span
                   className="text-xs font-semibold uppercase tracking-widest truncate"
-                  style={{ color: "rgba(255,255,255,0.45)" }}
+                  style={{ color: "rgba(255,255,255,0.75)" }}
                 >
                   {column.name}
                 </span>
                 <span
                   className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
                   style={{
-                    background: "rgba(255,255,255,0.06)",
-                    color: "rgba(255,255,255,0.45)",
+                    background: "rgba(255,255,255,0.08)",
+                    color: "rgba(255,255,255,0.6)",
                   }}
                 >
                   {column.tasks.length}

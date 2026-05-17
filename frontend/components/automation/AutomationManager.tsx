@@ -553,7 +553,7 @@ export function AutomationManager({ workspaceId }: AutomationManagerProps) {
                 onChange={(event) =>
                   setForm((current) => ({ ...current, name: event.target.value }))
                 }
-                className="field-input"
+                className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-[9px] text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400/75 focus:ring-[3px] focus:ring-blue-500/[0.16]"
                 placeholder="Например: Critical task owner alert"
               />
             </Field>
@@ -567,7 +567,7 @@ export function AutomationManager({ workspaceId }: AutomationManagerProps) {
                     trigger: event.target.value as TriggerType,
                   }))
                 }
-                className="field-input"
+                className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-[9px] text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400/75 focus:ring-[3px] focus:ring-blue-500/[0.16]"
               >
                 {TRIGGER_TYPES.map((item) => (
                   <option key={item.value} value={item.value}>
@@ -604,7 +604,7 @@ export function AutomationManager({ workspaceId }: AutomationManagerProps) {
                         conditionField: event.target.value,
                       }))
                     }
-                    className="field-input"
+                    className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-[9px] text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400/75 focus:ring-[3px] focus:ring-blue-500/[0.16]"
                     placeholder="priority"
                   />
                 </Field>
@@ -617,7 +617,7 @@ export function AutomationManager({ workspaceId }: AutomationManagerProps) {
                         conditionOperator: event.target.value as ConditionOperator,
                       }))
                     }
-                    className="field-input"
+                    className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-[9px] text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400/75 focus:ring-[3px] focus:ring-blue-500/[0.16]"
                   >
                     {OPERATORS.map((item) => (
                       <option key={item.value} value={item.value}>
@@ -635,7 +635,7 @@ export function AutomationManager({ workspaceId }: AutomationManagerProps) {
                         conditionValue: event.target.value,
                       }))
                     }
-                    className="field-input"
+                    className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-[9px] text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400/75 focus:ring-[3px] focus:ring-blue-500/[0.16]"
                     placeholder="critical"
                   />
                 </Field>
@@ -653,7 +653,7 @@ export function AutomationManager({ workspaceId }: AutomationManagerProps) {
                     actionType: event.target.value as ExtendedActionType,
                   }))
                 }
-                className="field-input"
+                className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-[9px] text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400/75 focus:ring-[3px] focus:ring-blue-500/[0.16]"
               >
                 {ACTION_TYPES.map((item) => (
                   <option key={item.value} value={item.value}>
@@ -736,32 +736,6 @@ export function AutomationManager({ workspaceId }: AutomationManagerProps) {
         )}
       </div>
 
-      <style jsx>{`
-        .field-input {
-          width: 100%;
-          border-radius: 8px;
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          background: rgba(255, 255, 255, 0.05);
-          color: white;
-          font-size: 14px;
-          outline: none;
-          padding: 9px 11px;
-        }
-
-        .field-input:focus {
-          border-color: rgba(96, 165, 250, 0.75);
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
-        }
-
-        .field-input::placeholder {
-          color: rgba(255, 255, 255, 0.28);
-        }
-
-        .field-input option {
-          background: #111111;
-          color: white;
-        }
-      `}</style>
     </section>
   );
 }
@@ -796,7 +770,7 @@ function ActionParamsField({
           onChange={(event) =>
             onChange((current) => ({ ...current, columnId: event.target.value }))
           }
-          className="field-input"
+          className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-[9px] text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400/75 focus:ring-[3px] focus:ring-blue-500/[0.16]"
         >
           <option value="">Выберите колонку</option>
           {columns.map((column) => (
@@ -817,7 +791,7 @@ function ActionParamsField({
           onChange={(event) =>
             onChange((current) => ({ ...current, tag: event.target.value }))
           }
-          className="field-input"
+          className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-[9px] text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400/75 focus:ring-[3px] focus:ring-blue-500/[0.16]"
           placeholder="urgent"
         />
       </Field>
@@ -832,7 +806,7 @@ function ActionParamsField({
           onChange={(event) =>
             onChange((current) => ({ ...current, message: event.target.value }))
           }
-          className="field-input min-h-24 resize-y"
+          className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-[9px] text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400/75 focus:ring-[3px] focus:ring-blue-500/[0.16] min-h-[96px] resize-y font-[inherit]"
           placeholder="Задача требует внимания"
         />
       </Field>
@@ -850,7 +824,7 @@ function ActionParamsField({
               priority: event.target.value as Priority,
             }))
           }
-          className="field-input"
+          className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-[9px] text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400/75 focus:ring-[3px] focus:ring-blue-500/[0.16]"
         >
           {PRIORITIES.map((priority) => (
             <option key={priority.value} value={priority.value}>
@@ -869,7 +843,7 @@ function ActionParamsField({
         onChange={(event) =>
           onChange((current) => ({ ...current, assigneeId: event.target.value }))
         }
-        className="field-input"
+        className="w-full rounded-lg border border-white/[0.12] bg-white/[0.05] px-3 py-[9px] text-sm text-white outline-none transition placeholder:text-white/30 focus:border-blue-400/75 focus:ring-[3px] focus:ring-blue-500/[0.16]"
       >
         <option value={UNASSIGNED}>Снять исполнителя</option>
         {members.map((member) => (
