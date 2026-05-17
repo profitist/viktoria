@@ -4,13 +4,14 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import InvalidToken, decode_token, get_current_user
 from app.auth.models import User
 from app.database import AsyncSessionLocal, get_session
 from app.notifications.hub import manager
+from app.notifications.models import Notification
 from app.notifications.schemas import NotificationListQuery, NotificationOut, ReadResponse
 from app.notifications.service import NotificationNotFound, get_notifications, mark_as_read
 from app.workspace.models import WorkspaceMember
@@ -89,6 +90,31 @@ async def list_notifications(
         unread_only=query.unread is True,
     )
     return [NotificationOut.model_validate(n) for n in notifications]
+
+
+@router.patch(
+    "/notifications/read-all",
+    status_code=200,
+)
+async def mark_all_notifications_read(
+    workspace_id: Annotated[UUID, Query(...)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict:
+    """
+    Помечает все непрочитанные уведомления текущего пользователя в workspace прочитанными.
+    """
+    await session.execute(
+        update(Notification)
+        .where(
+            Notification.user_id == current_user.id,
+            Notification.workspace_id == workspace_id,
+            Notification.read.is_(False),
+        )
+        .values(read=True)
+    )
+    await session.commit()
+    return {}
 
 
 @router.patch(
