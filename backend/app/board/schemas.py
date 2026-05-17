@@ -70,6 +70,7 @@ class BoardCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     description: str | None = None
     project_id: UUID | None = None
+    with_default_columns: bool = True
 
 
 class BoardPatch(BaseModel):
