@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated, Literal
 from uuid import UUID
 
 from aio_pika.abc import AbstractChannel
@@ -13,7 +14,16 @@ from app.auth.deps import get_current_user
 from app.auth.models import User
 from app.database import get_session
 from app.events.publisher import get_channel
-from app.tasks.schemas import SubtaskCreate, SubtaskOut, SubtaskUpdate, TaskCreate, TaskMoveRequest, TaskOut, TaskPatch
+from app.tasks.schemas import (
+    SubtaskCreate,
+    SubtaskOut,
+    SubtaskUpdate,
+    TaskCreate,
+    TaskListPage,
+    TaskMoveRequest,
+    TaskOut,
+    TaskPatch,
+)
 from app.tasks.service import (
     DuplicateTaskError,
     create_subtask,
@@ -29,6 +39,18 @@ from app.tasks.service import (
 )
 
 router = APIRouter(tags=["tasks"])
+
+TaskListSort = Literal[
+    "created_at",
+    "-created_at",
+    "deadline",
+    "-deadline",
+    "priority",
+    "-priority",
+    "title",
+    "-title",
+]
+TaskListView = Literal["table"]
 
 
 class TaskResponse(BaseModel):
@@ -225,7 +247,7 @@ async def delete_subtask_route(
 
 @router.get(
     "/workspaces/{workspace_id}/tasks",
-    response_model=list[TaskOut],
+    response_model=list[TaskOut] | TaskListPage,
     status_code=status.HTTP_200_OK,
 )
 async def list_tasks_route(
@@ -236,7 +258,14 @@ async def list_tasks_route(
     column_id: UUID | None = Query(default=None),
     assignee_id: UUID | None = Query(default=None),
     tag: str | None = Query(default=None),
-) -> list[TaskOut]:
+    sort: TaskListSort | None = Query(default=None),
+    page: int | None = Query(default=None, ge=1),
+    page_size: int = Query(default=50, ge=1, le=100),
+    deadline_from: datetime | None = Query(default=None),
+    deadline_to: datetime | None = Query(default=None),
+    view: TaskListView | None = Query(default=None),
+) -> list[TaskOut] | TaskListPage:
+    effective_page = 1 if page is None and view == "table" else page
     return await list_tasks(
         session=session,
         workspace_id=workspace_id,
@@ -245,4 +274,9 @@ async def list_tasks_route(
         column_id=column_id,
         assignee_id=assignee_id,
         tag=tag,
+        sort=sort,
+        page=effective_page,
+        page_size=page_size,
+        deadline_from=deadline_from,
+        deadline_to=deadline_to,
     )

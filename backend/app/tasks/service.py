@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 
 from aio_pika.abc import AbstractChannel
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -19,7 +19,16 @@ from app.tags.schemas import TagOut
 from app.tags.service import get_task_tags_by_task_id, replace_task_tags
 from app.tasks.models import DeadlineUrgency as DeadlineUrgencyModel
 from app.tasks.models import Subtask, Task, TaskPriority as TaskPriorityModel
-from app.tasks.schemas import SubtaskCreate, SubtaskOut, SubtaskUpdate, TaskCreate, TaskMoveRequest, TaskOut, TaskPatch
+from app.tasks.schemas import (
+    SubtaskCreate,
+    SubtaskOut,
+    SubtaskUpdate,
+    TaskCreate,
+    TaskListPage,
+    TaskMoveRequest,
+    TaskOut,
+    TaskPatch,
+)
 from app.workspace.models import WorkspaceMember
 
 
@@ -280,24 +289,87 @@ async def list_tasks(
     column_id: UUID | None = None,
     assignee_id: UUID | None = None,
     tag: str | None = None,
-) -> list[TaskOut]:
+    sort: str | None = None,
+    page: int | None = None,
+    page_size: int = 50,
+    deadline_from: datetime | None = None,
+    deadline_to: datetime | None = None,
+) -> list[TaskOut] | TaskListPage:
     await _require_workspace_member(session, workspace_id, current_user.id)
 
-    stmt = select(Task).where(Task.workspace_id == workspace_id)
+    filters = [Task.workspace_id == workspace_id]
 
     if board_id is not None:
-        stmt = stmt.where(Task.board_id == board_id)
+        filters.append(Task.board_id == board_id)
     if column_id is not None:
-        stmt = stmt.where(Task.column_id == column_id)
+        filters.append(Task.column_id == column_id)
     if assignee_id is not None:
-        stmt = stmt.where(Task.assignee_id == assignee_id)
+        filters.append(Task.assignee_id == assignee_id)
     if tag is not None:
-        stmt = stmt.where(Task.tags.contains([tag]))
+        filters.append(Task.tags.contains([tag]))
+    if deadline_from is not None:
+        filters.append(Task.deadline >= deadline_from)
+    if deadline_to is not None:
+        filters.append(Task.deadline <= deadline_to)
 
-    result = await session.execute(stmt.order_by(Task.created_at.asc(), Task.id.asc()))
+    order_by = _task_list_order_by(sort)
+    stmt = select(Task).where(*filters).order_by(*order_by)
+
+    if page is None:
+        result = await session.execute(stmt)
+        tasks = result.scalars().all()
+        return await _build_task_list(session, tasks)
+
+    total = await session.scalar(select(func.count(Task.id)).where(*filters))
+    offset = (page - 1) * page_size
+    result = await session.execute(stmt.offset(offset).limit(page_size))
     tasks = result.scalars().all()
+    return TaskListPage(
+        items=await _build_task_list(session, tasks),
+        total=total or 0,
+        page=page,
+        page_size=page_size,
+    )
+
+
+async def _build_task_list(session: AsyncSession, tasks: list[Task]) -> list[TaskOut]:
     tags_by_task_id = await get_task_tags_by_task_id(session, [task.id for task in tasks])
     return [_build_task_out(task, tags_by_task_id.get(task.id, [])) for task in tasks]
+
+
+def _task_list_order_by(sort: str | None) -> list[Any]:
+    if sort is None:
+        return [Task.created_at.asc(), Task.id.asc()]
+
+    descending = sort.startswith("-")
+    field = sort[1:] if descending else sort
+
+    if field == "created_at":
+        expression = Task.created_at
+    elif field == "deadline":
+        expression = Task.deadline
+    elif field == "priority":
+        expression = _priority_order_expression()
+    elif field == "title":
+        expression = Task.title
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="invalid sort",
+        )
+
+    ordered_expression = expression.desc() if descending else expression.asc()
+    tie_breaker = Task.id.desc() if descending else Task.id.asc()
+    return [ordered_expression, tie_breaker]
+
+
+def _priority_order_expression() -> Any:
+    return case(
+        *(
+            (Task.priority == priority, index)
+            for index, priority in enumerate(TaskPriorityModel)
+        )
+    )
 
 
 def compute_deadline_urgency(deadline: datetime | None) -> str:
@@ -435,6 +507,8 @@ def _build_task_out(task: Task, tags: list[TagOut]) -> TaskOut:
 
 def _serialize_tags(tags: list[TagOut]) -> list[dict[str, Any]]:
     return [tag.model_dump(mode="json") for tag in tags]
+
+
 async def get_subtasks(
     session: AsyncSession,
     task_id: UUID,
