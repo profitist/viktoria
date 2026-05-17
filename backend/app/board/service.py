@@ -35,6 +35,12 @@ from app.workspace.models import WorkspaceMember, WorkspaceRole
 DEFAULT_COLUMNS = ("To Do", "In Progress", "Done")
 
 
+async def create_default_columns(board_id: UUID, session: AsyncSession) -> None:
+    for position, name in enumerate(DEFAULT_COLUMNS):
+        session.add(Column(board_id=board_id, name=name, position=position))
+    await session.flush()
+
+
 async def get_or_create_board(
     session: AsyncSession,
     workspace_id: UUID,
@@ -48,15 +54,7 @@ async def get_or_create_board(
         created_or_changed = True
 
     if not board.columns:
-        for position, name in enumerate(DEFAULT_COLUMNS):
-            session.add(
-                Column(
-                    board_id=board.id,
-                    name=name,
-                    position=position,
-                )
-            )
-        await session.flush()
+        await create_default_columns(board.id, session)
         created_or_changed = True
         board = await _get_board_or_404(session, board.id)
 
@@ -112,8 +110,7 @@ async def create_board(
     session.add(board)
     await session.flush()
 
-    for position, name in enumerate(DEFAULT_COLUMNS):
-        session.add(Column(board_id=board.id, name=name, position=position))
+    await create_default_columns(board.id, session)
 
     await session.commit()
     await session.refresh(board)
