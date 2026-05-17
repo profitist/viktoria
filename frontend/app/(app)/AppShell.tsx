@@ -4,7 +4,6 @@ import { useSearchParams } from "next/navigation";
 
 import { WsProvider } from "@/contexts/WsContext";
 import Sidebar from "@/components/sidebar/Sidebar";
-import EventLogPanel from "@/components/event-log/EventLogPanel";
 import NotificationBell from "@/components/notifications/NotificationBell";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -19,7 +18,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <main className="flex-1 overflow-y-auto bg-[#050505]">
           {children}
         </main>
-        <EventLogPanel />
       </div>
     </WsProvider>
   );

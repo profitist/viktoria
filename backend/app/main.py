@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import app.models  # noqa: F401 — registers all ORM mappers before any query runs
 from app.analytics.router import router as analytics_router
 from app.analytics.snapshot import snapshot_loop
+from app.audit.recorder import AuditRecorder
 from app.attachments.storage import storage as _storage
 from app.config import get_settings
 from app.database import engine
@@ -64,6 +65,7 @@ async def _stop_rabbitmq_consumer(app: FastAPI) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.notification_hub = _notification_hub
+    app.state.audit_recorder = AuditRecorder()
     await _storage.ensure_bucket()
     await _start_rabbitmq_consumer(app)
     app.state.analytics_snapshot_task = asyncio.create_task(snapshot_loop())

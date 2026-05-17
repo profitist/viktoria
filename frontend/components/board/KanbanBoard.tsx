@@ -13,13 +13,16 @@ import {
 import type { Board, Column, Task } from "@/lib/types";
 import ColumnComponent from "./Column";
 import TaskCard from "./TaskCard";
+import TaskPanel from "./TaskPanel";
 import type { AddTaskData } from "./AddTaskForm";
 
 interface KanbanBoardProps {
   board: Board;
   onTaskMove: (taskId: string, targetColumnId: string, newPosition: number) => void;
   onTaskCreate: (columnId: string, data: AddTaskData) => Promise<void>;
-  onCardClick: (task: Task) => void;
+  onCardClick?: (task: Task) => void;
+  onTaskUpdate?: (task: Task) => void;
+  onTaskDelete?: (taskId: string) => void;
   isAdmin?: boolean;
   boardId?: string;
   onColumnUpdated?: (col: Column) => void;
@@ -31,7 +34,8 @@ export default function KanbanBoard({
   board,
   onTaskMove,
   onTaskCreate,
-  onCardClick,
+  onTaskUpdate,
+  onTaskDelete,
   isAdmin,
   boardId,
   onColumnUpdated,
@@ -39,6 +43,7 @@ export default function KanbanBoard({
   onColumnCreated,
 }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -102,35 +107,52 @@ export default function KanbanBoard({
   const lastIndex = board.columns.length - 1;
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
-    >
-      <div className="flex gap-6 px-8 py-6 overflow-x-auto min-h-screen items-start bg-[#050505] dot-texture">
-        {board.columns.map((column, idx) => (
-          <ColumnComponent
-            key={column.id}
-            column={column}
-            onTaskCreate={onTaskCreate}
-            onCardClick={onCardClick}
-            isAdmin={isAdmin}
-            boardId={boardId}
-            isLast={idx === lastIndex}
-            onColumnUpdated={onColumnUpdated}
-            onColumnDeleted={onColumnDeleted}
-            onColumnCreated={onColumnCreated}
-          />
-        ))}
-      </div>
-      <DragOverlay>
-        {activeTask ? (
-          <div className="rotate-2 scale-105 shadow-2xl cursor-grabbing">
-            <TaskCard task={activeTask} isDragging={false} />
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+    <>
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <div className="flex gap-6 px-8 py-6 overflow-x-auto min-h-screen items-start bg-[#050505] dot-texture">
+          {board.columns.map((column, idx) => (
+            <ColumnComponent
+              key={column.id}
+              column={column}
+              onTaskCreate={onTaskCreate}
+              onCardClick={setSelectedTask}
+              isAdmin={isAdmin}
+              boardId={boardId}
+              isLast={idx === lastIndex}
+              onColumnUpdated={onColumnUpdated}
+              onColumnDeleted={onColumnDeleted}
+              onColumnCreated={onColumnCreated}
+            />
+          ))}
+        </div>
+        <DragOverlay>
+          {activeTask ? (
+            <div className="rotate-2 scale-105 shadow-2xl cursor-grabbing">
+              <TaskCard task={activeTask} isDragging={false} />
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
+      <TaskPanel
+        taskId={selectedTask?.id ?? null}
+        workspaceId={selectedTask?.workspace_id ?? ""}
+        boardId={boardId}
+        onClose={() => setSelectedTask(null)}
+        onTaskUpdate={(updated) => {
+          setSelectedTask(updated);
+          onTaskUpdate?.(updated);
+        }}
+        onTaskDelete={(id) => {
+          setSelectedTask(null);
+          onTaskDelete?.(id);
+        }}
+      />
+    </>
   );
 }

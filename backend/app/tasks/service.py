@@ -247,6 +247,7 @@ async def delete_task(
     await _require_workspace_member(session, task.workspace_id, current_user.id)
 
     workspace_id = task.workspace_id
+    board_id = task.board_id
     column_id = task.column_id
     title = task.title
 
@@ -262,6 +263,7 @@ async def delete_task(
             payload=_serialize_value(
                 {
                     "task_id": task_id,
+                    "board_id": board_id,
                     "column_id": column_id,
                     "title": title,
                 }

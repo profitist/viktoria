@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers";
 import { api, ApiError, boardsApi, workspaceApi, tagsApi } from "@/lib/api";
 import { useWs } from "@/contexts/WsContext";
-import type { BoardDetail, Task, ViewMode } from "@/lib/types";
+import type { BoardDetail, Column, Task, ViewMode } from "@/lib/types";
 import { parseBoardTask, parseMoveParams } from "@/lib/types";
 import {
   moveTaskInBoard,
@@ -43,6 +43,7 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
   });
   const [members, setMembers] = useState<FilterSortMember[]>([]);
   const [tags, setTags] = useState<FilterSortTag[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [board, setBoard] = useState<BoardDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,15 +64,19 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
   }
 
   useEffect(() => {
-    if (!workspaceId) return;
+    if (!workspaceId || !user) return;
     // members and tags are supplementary filter data — failures degrade gracefully
     workspaceApi.getMembers(workspaceId)
-      .then((data) => setMembers(data.map((m) => ({ id: m.user_id, name: m.name }))))
+      .then((data) => {
+        setMembers(data.map((m) => ({ id: m.user_id, name: m.name })));
+        const me = data.find((m) => m.user_id === user.id);
+        setIsAdmin(me?.role === "owner" || me?.role === "admin");
+      })
       .catch(() => {});
     tagsApi.getBoardTags(boardId)
       .then((data) => setTags(data.map((t) => ({ id: t.id, name: t.name, color: t.color }))))
       .catch(() => {});
-  }, [workspaceId, boardId]);
+  }, [workspaceId, boardId, user]);
 
   const loadBoard = useCallback(async () => {
     setIsLoading(true);
@@ -100,7 +105,9 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
       return;
     }
 
-    loadBoard();
+    queueMicrotask(() => {
+      void loadBoard();
+    });
   }, [authLoading, isAuthenticated, boardId, loadBoard, router]);
 
   const handleTaskCreated = useCallback((params: Record<string, unknown>) => {
@@ -163,6 +170,51 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
     };
   }, [workspaceId, user, init, on, off, handleTaskCreated, handleTaskUpdated, handleTaskMoved, handleTaskDeleted]);
 
+  const handleColumnUpdated = useCallback((col: Column) => {
+    setBoard(prev => {
+      if (!prev) return prev;
+      const current = prev.columns.find(c => c.id === col.id);
+      if (!current) return prev;
+
+      const ordered = [...prev.columns].sort((a, b) => a.position - b.position);
+      const updated = { ...current, ...col, tasks: current.tasks };
+
+      if (current.position === col.position) {
+        const columns = ordered.map(c => (c.id === col.id ? updated : c));
+        return { ...prev, columns };
+      }
+
+      const columnsWithoutUpdated = ordered.filter(c => c.id !== col.id);
+      const targetPosition = Math.min(
+        Math.max(col.position, 0),
+        columnsWithoutUpdated.length
+      );
+      const columns = [
+        ...columnsWithoutUpdated.slice(0, targetPosition),
+        updated,
+        ...columnsWithoutUpdated.slice(targetPosition),
+      ].map((column, position) => ({ ...column, position }));
+
+      return { ...prev, columns };
+    });
+  }, []);
+
+  const handleColumnDeleted = useCallback((id: string) => {
+    setBoard(prev => {
+      if (!prev) return prev;
+      return { ...prev, columns: prev.columns.filter(c => c.id !== id) };
+    });
+  }, []);
+
+  const handleColumnCreated = useCallback((col: Column) => {
+    setBoard(prev => {
+      if (!prev) return prev;
+      const columns = [...prev.columns, col]
+        .sort((a, b) => a.position - b.position);
+      return { ...prev, columns };
+    });
+  }, []);
+
   const handleCardClick = useCallback((task: Task) => {
     setSelectedTask(task);
   }, []);
@@ -188,7 +240,11 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
         assignee_id: updatedTask.assignee_id,
         tags: updatedTask.tags,
       });
-      setBoard(prev => prev ? replaceTask(prev, saved) as BoardDetail : prev);
+      setBoard(prev => {
+        if (!prev) return prev;
+        const existing = prev.columns.flatMap(c => c.tasks).find(t => t.id === saved.id);
+        return replaceTask(prev, { ...saved, subtask_progress: saved.subtask_progress ?? existing?.subtask_progress }) as BoardDetail;
+      });
       setSelectedTask(null);
     } catch (e) {
       if (snapshot) setBoard(snapshot);
@@ -332,6 +388,13 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
           onTaskMove={handleTaskMove}
           onTaskCreate={handleTaskCreate}
           onCardClick={handleCardClick}
+          onTaskUpdate={(task) => setBoard(prev => prev ? replaceTask(prev, task) as BoardDetail : prev)}
+          onTaskDelete={(taskId) => setBoard(prev => prev ? deleteTask(prev, taskId) as BoardDetail : prev)}
+          isAdmin={isAdmin}
+          boardId={boardId}
+          onColumnUpdated={handleColumnUpdated}
+          onColumnDeleted={handleColumnDeleted}
+          onColumnCreated={handleColumnCreated}
         />
       )}
 
