@@ -80,6 +80,7 @@ export interface Task {
   assignee_id: string | null;
   created_at: string;
   deadline: string | null;
+  deadline_days_remaining: number | null;
   deadline_urgency: DeadlineUrgency;
 }
 

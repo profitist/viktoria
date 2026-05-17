@@ -10,6 +10,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import httpx
+from app.ai.groom import summarize_task
 from app.auth.deps import get_current_user
 from app.auth.models import User
 from app.database import get_session
@@ -176,6 +178,32 @@ async def mark_task_done_route(
         return _duplicate_task_response(exc)
 
     return TaskResponse(task=task)
+
+
+class TaskSummaryResponse(BaseModel):
+    summary: str
+
+
+@router.post(
+    "/tasks/{task_id}/summary",
+    response_model=TaskSummaryResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def summarize_task_route(
+    task_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> TaskSummaryResponse:
+    task = await get_task(session=session, task_id=task_id, current_user=current_user)
+    try:
+        summary = await summarize_task(task.title, task.description or "")
+    except (httpx.TimeoutException, httpx.HTTPError) as exc:
+        from fastapi import HTTPException as _HTTPException
+        raise _HTTPException(status_code=502, detail="llm request failed") from exc
+    except ValueError as exc:
+        from fastapi import HTTPException as _HTTPException
+        raise _HTTPException(status_code=502, detail="invalid llm response") from exc
+    return TaskSummaryResponse(summary=summary)
 
 
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
