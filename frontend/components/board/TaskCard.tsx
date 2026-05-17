@@ -1,6 +1,5 @@
 import type { Task, DeadlineUrgency } from "@/lib/types";
 import PriorityBadge from "./PriorityBadge";
-import DeadlineChip from "./DeadlineChip";
 
 function SubtaskProgressBar({ done, total }: { done: number; total: number }) {
   const pct = Math.round((done / total) * 100);
@@ -33,17 +32,25 @@ function SubtaskProgressBar({ done, total }: { done: number; total: number }) {
   );
 }
 
+function CalendarIcon() {
+  return (
+    <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path
+        d="M3.25 1.5v1M8.75 1.5v1M2 4.25h8M2.5 2.5h7A1.5 1.5 0 0 1 11 4v5A1.5 1.5 0 0 1 9.5 10.5h-7A1.5 1.5 0 0 1 1 9V4a1.5 1.5 0 0 1 1.5-1.5Z"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 interface TaskCardProps {
   task: Task;
   isDragging: boolean;
   onClick?: () => void;
 }
-
-const URGENCY_BORDER: Record<DeadlineUrgency, string> = {
-  none: "transparent",
-  soon: "rgba(245,158,11,0.7)",
-  critical: "#EF4444",
-};
 
 const URGENCY_SHADOW: Record<DeadlineUrgency, string> = {
   none: "0 2px 12px rgba(0,0,0,0.4)",
@@ -51,7 +58,44 @@ const URGENCY_SHADOW: Record<DeadlineUrgency, string> = {
   critical: "0 2px 12px rgba(0,0,0,0.4), 0 0 12px rgba(239,68,68,0.15)",
 };
 
+const DEADLINE_CHIP_CLASS: Record<DeadlineUrgency, string> = {
+  none: "bg-white/[0.04] text-white/45",
+  soon: "bg-yellow-50 text-yellow-600",
+  critical: "bg-red-50 text-red-600",
+};
+
+function formatDeadline(deadline: string): string {
+  const [year, month, day] = deadline.slice(0, 10).split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return deadline;
+  }
+
+  const date = new Date(year, month - 1, day);
+  const today = new Date();
+  const todayStart = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
+  const diffDays = Math.round(
+    (date.getTime() - todayStart.getTime()) / 86_400_000
+  );
+
+  if (diffDays === -1) return "Вчера";
+  if (diffDays === 0) return "Сегодня";
+  if (diffDays === 1) return "Завтра";
+
+  return `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}`;
+}
+
 export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
+  const isCritical = task.deadline_urgency === "critical";
+  const deadlineClassName = [
+    "flex items-center gap-1 text-xs px-1.5 py-0.5 rounded",
+    DEADLINE_CHIP_CLASS[task.deadline_urgency],
+  ].join(" ");
+
   return (
     <div
       className="w-full p-3 cursor-grab select-none group transition-all duration-150"
@@ -59,7 +103,9 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
       style={{
         background: "#111111",
         border: "1px solid rgba(255,255,255,0.08)",
-        borderLeft: `4px solid ${URGENCY_BORDER[task.deadline_urgency]}`,
+        borderLeft: isCritical
+          ? "2px solid #EF4444"
+          : "1px solid rgba(255,255,255,0.08)",
         borderRadius: "18px",
         boxShadow: URGENCY_SHADOW[task.deadline_urgency],
         opacity: isDragging ? 0.5 : 1,
@@ -68,6 +114,9 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
       onMouseEnter={(e) => {
         if (!isDragging) {
           e.currentTarget.style.borderColor = "rgba(255,255,255,0.16)";
+          if (isCritical) {
+            e.currentTarget.style.borderLeftColor = "#EF4444";
+          }
           e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.6)";
           e.currentTarget.style.transform = "translateY(-1px)";
         }
@@ -76,7 +125,9 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
         e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
         e.currentTarget.style.boxShadow = URGENCY_SHADOW[task.deadline_urgency];
         e.currentTarget.style.transform = isDragging ? "scale(1.02) rotate(1deg)" : "";
-        e.currentTarget.style.borderLeft = `4px solid ${URGENCY_BORDER[task.deadline_urgency]}`;
+        e.currentTarget.style.borderLeft = isCritical
+          ? "2px solid #EF4444"
+          : "1px solid rgba(255,255,255,0.08)";
       }}
     >
       <p className="text-sm font-medium text-white leading-snug">{task.title}</p>
@@ -93,7 +144,12 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
               </svg>
             </div>
           )}
-          <DeadlineChip deadline={task.deadline} urgency={task.deadline_urgency} />
+          {task.deadline && (
+            <div className={deadlineClassName}>
+              <CalendarIcon />
+              {formatDeadline(task.deadline)}
+            </div>
+          )}
         </div>
         <PriorityBadge priority={task.priority} />
       </div>
