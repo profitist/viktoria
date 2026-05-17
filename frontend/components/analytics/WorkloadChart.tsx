@@ -11,6 +11,10 @@ import {
   YAxis,
   type TooltipContentProps,
 } from "recharts";
+import type {
+  NameType,
+  ValueType,
+} from "recharts/types/component/DefaultTooltipContent";
 
 import {
   type AssigneeLoad,
@@ -36,19 +40,22 @@ export function WorkloadChart({ boardId }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
-    setError(null);
 
-    getWorkload(boardId)
-      .then((response) => {
-        if (!cancelled) setData(response);
-      })
-      .catch(() => {
-        if (!cancelled) setError("Не удалось загрузить нагрузку");
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
+    queueMicrotask(() => {
+      setIsLoading(true);
+      setError(null);
+
+      getWorkload(boardId)
+        .then((response) => {
+          if (!cancelled) setData(response);
+        })
+        .catch(() => {
+          if (!cancelled) setError("Не удалось загрузить нагрузку");
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoading(false);
+        });
+    });
 
     return () => {
       cancelled = true;
@@ -169,7 +176,10 @@ function toChartRow(item: AssigneeLoad): ChartRow {
   };
 }
 
-function WorkloadTooltip({ active, payload }: TooltipContentProps) {
+function WorkloadTooltip({
+  active,
+  payload,
+}: TooltipContentProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
   const row = payload[0]?.payload as ChartRow | undefined;
   if (!row) return null;
