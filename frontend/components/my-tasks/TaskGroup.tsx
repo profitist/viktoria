@@ -30,6 +30,7 @@ export default function TaskGroup({ group, onToggleDone, onTaskClick }: Props) {
     <div>
       {/* Header */}
       <div
+        className="ui-hover"
         style={{
           display: "flex",
           alignItems: "center",
@@ -38,11 +39,8 @@ export default function TaskGroup({ group, onToggleDone, onTaskClick }: Props) {
           borderRadius: "8px",
           cursor: "pointer",
           userSelect: "none",
-          transition: "background 150ms",
         }}
         onClick={() => setExpanded(v => !v)}
-        onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
       >
         <svg
           width="12"

@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={spaceGrotesk.variable}>
-      <body className="font-[var(--font-space-grotesk)] bg-[#050505] text-white">
+      <body className="font-[var(--font-space-grotesk)] text-white">
         <Providers>{children}</Providers>
       </body>
     </html>

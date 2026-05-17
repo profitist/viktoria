@@ -23,7 +23,7 @@ function SkeletonColumn({ cardCount }: { cardCount: number }) {
 
 export default function BoardSkeleton() {
   return (
-    <div className="flex gap-6 px-8 py-6 overflow-x-auto bg-[#050505] min-h-screen">
+    <div className="flex gap-6 px-8 py-6 overflow-x-auto min-h-screen">
       <SkeletonColumn cardCount={3} />
       <SkeletonColumn cardCount={2} />
       <SkeletonColumn cardCount={1} />

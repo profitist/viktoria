@@ -155,7 +155,7 @@ export default function KanbanBoard({
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="flex gap-6 px-8 py-6 overflow-x-auto min-h-screen items-start bg-[#050505] dot-texture">
+        <div className="flex gap-6 px-8 py-6 overflow-x-auto min-h-screen items-start dot-texture">
           {board.columns.map((column, idx) => (
             <ColumnComponent
               key={column.id}

@@ -8,7 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 
 import { useAuth } from "@/app/providers";
-import { api, boardsApi, getAccessToken } from "@/lib/api";
+import { api, boardsApi } from "@/lib/api";
 import type { BoardMeta, Workspace } from "@/lib/types";
 import { CreateBoardDialog } from "@/components/board/CreateBoardDialog";
 import WorkspaceSwitcher from "@/components/workspace/WorkspaceSwitcher";
@@ -56,7 +56,7 @@ function BoardRow({
         }}
         onMouseEnter={(e) => {
           if (!isActive) {
-            e.currentTarget.style.background = "#161616";
+            e.currentTarget.style.background = "rgba(255,255,255,0.08)";
             e.currentTarget.style.color = "rgba(255,255,255,0.82)";
           }
         }}
@@ -140,7 +140,7 @@ function NavItem({ href, label }: NavItemProps) {
   };
   const onMouseEnter = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!isActive) {
-      e.currentTarget.style.background = "#161616";
+      e.currentTarget.style.background = "rgba(255,255,255,0.08)";
       e.currentTarget.style.color = "rgba(255,255,255,0.72)";
     }
   };
@@ -180,37 +180,6 @@ function NavItem({ href, label }: NavItemProps) {
   );
 }
 
-function AutomationLink({ workspaceId }: { workspaceId?: string }) {
-  const AUTOMATION_BASE = "https://localhost3000.work.gd/automation";
-
-  function handleClick() {
-    const token = getAccessToken();
-    const params = new URLSearchParams();
-    if (workspaceId) params.set("workspace_id", workspaceId);
-    if (token) params.set("token", token);
-    const qs = params.toString();
-    window.open(qs ? `${AUTOMATION_BASE}?${qs}` : AUTOMATION_BASE, "_blank", "noreferrer");
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all relative w-full text-left"
-      style={{ color: "rgba(255,255,255,0.45)", background: "transparent", borderLeft: "2px solid transparent" }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "#161616";
-        e.currentTarget.style.color = "rgba(255,255,255,0.72)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "transparent";
-        e.currentTarget.style.color = "rgba(255,255,255,0.45)";
-      }}
-    >
-      Automation
-    </button>
-  );
-}
 
 interface SidebarProps {
   workspaceId?: string;
@@ -478,7 +447,6 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
         <SidebarSection title="Инструменты">
           <NavItem href={`/my-tasks${workspaceQuery}`} label="Мои задачи" />
           <NavItem href={`/event-log${workspaceQuery}`} label="Журнал событий" />
-          <NavItem href={`/automation${workspaceQuery}`} label="Автоматизация" />
           <NavItem href={`/ai-groom${workspaceQuery}`} label="AI Груминг" />
         </SidebarSection>
 
@@ -486,7 +454,7 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
           <SidebarSection title="Администрирование">
             <NavItem href={`/admin/members${workspaceQuery}`} label="Участники" />
             <NavItem href={`/admin/settings${workspaceQuery}`} label="Настройки" />
-            <AutomationLink workspaceId={effectiveWorkspaceId} />
+            <NavItem href={`/automation${workspaceQuery}`} label="Автоматизация" />
           </SidebarSection>
         )}
       </nav>

@@ -27,9 +27,7 @@ export default function LogEntry({ entry }: LogEntryProps) {
 
   return (
     <div
-      className="px-3 py-1 font-mono text-xs leading-5 transition-colors"
-      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+      className="px-3 py-1 font-mono text-xs leading-5 ui-hover"
     >
       <span style={{ color: "rgba(255,255,255,0.25)" }}>[{formatTime(entry.ts)}] </span>
       <span style={{ color: "rgba(255,255,255,0.72)" }}>{entry.event_type} </span>

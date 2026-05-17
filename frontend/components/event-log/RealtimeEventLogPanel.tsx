@@ -55,16 +55,8 @@ export default function RealtimeEventLogPanel() {
           Event Log
         </span>
         <button
-          className="text-xs px-2 py-1 rounded transition-colors"
-          style={{ color: "rgba(255,255,255,0.25)" }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = "rgba(255,255,255,0.72)";
-            e.currentTarget.style.background = "rgba(255,255,255,0.04)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = "rgba(255,255,255,0.25)";
-            e.currentTarget.style.background = "transparent";
-          }}
+          className="text-xs px-2 py-1 rounded ui-hover"
+          style={{ color: "rgba(255,255,255,0.45)" }}
           onClick={() => setEntries([])}
         >
           Очистить

@@ -25,7 +25,7 @@ export default function AiGroomPage() {
   if (!workspaceId) return null;
 
   return (
-    <div className="min-h-full" style={{ background: "#050505", padding: "32px 24px" }}>
+    <div className="min-h-full" style={{ padding: "32px 24px" }}>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         <h1 style={{ fontSize: "24px", fontWeight: 600, color: "#fff", marginBottom: "6px" }}>
           AI Груминг задач

@@ -34,16 +34,14 @@ function truncate(str: string, max: number) {
 export default function TaskRow({ task, onToggleDone, onTaskClick }: Props) {
   return (
     <div
+      className="ui-hover"
       style={{
         display: "flex",
         alignItems: "center",
         gap: "10px",
         padding: "6px 12px",
         borderRadius: "8px",
-        transition: "background 150ms",
       }}
-      onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
-      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
     >
       {/* Checkbox */}
       <button

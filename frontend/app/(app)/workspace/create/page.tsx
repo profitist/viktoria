@@ -79,7 +79,7 @@ export default function CreateWorkspacePage() {
   }
 
   return (
-    <div className="min-h-full bg-[#050505] flex items-center justify-center px-6 py-10">
+    <div className="min-h-full flex items-center justify-center px-6 py-10">
       <div
         className="w-full max-w-md rounded-2xl p-10"
         style={{

@@ -11,18 +11,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <WsProvider>
-      <div className="flex h-screen overflow-hidden bg-[#050505]">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar workspaceId={workspaceId} />
-        <main
-          className="flex-1 overflow-y-auto"
-          style={{
-            backgroundColor: "#050505",
-            backgroundImage: "url('/bg.jpg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundAttachment: "fixed",
-          }}
-        >
+        <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>

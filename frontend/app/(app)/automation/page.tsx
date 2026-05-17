@@ -11,20 +11,11 @@ export default async function AutomationPage({
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-white">Автоматизация</h1>
-          <p className="mt-1 text-sm text-white/45">
-            Настройте правила автоматического выполнения действий
-          </p>
-        </div>
-
-        <Link
-          href={`/admin${workspaceId ? `?workspace_id=${workspaceId}` : ""}`}
-          className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/65 transition hover:bg-white/[0.05] hover:text-white"
-        >
-          Admin
-        </Link>
+      <div>
+        <h1 className="text-2xl font-semibold text-white">Автоматизация</h1>
+        <p className="mt-1 text-sm text-white/45">
+          Настройте правила автоматического выполнения действий
+        </p>
       </div>
 
       {workspaceId ? (

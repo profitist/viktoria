@@ -57,9 +57,8 @@ function AssigneeGroupRow({
           transition: "background 150ms",
           userSelect: "none",
         }}
+        className="ui-hover"
         onClick={() => setExpanded(v => !v)}
-        onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
       >
         <svg
           width="12"
@@ -200,7 +199,7 @@ export default function MyTasksPage({ workspaceId }: Props) {
   const assigneeGroups = activeTab === "others" ? groupByAssignee(filtered) : [];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#050505", color: "#fff" }}>
+    <div style={{ minHeight: "100vh", color: "#fff" }}>
       {/* Header */}
       <div
         style={{

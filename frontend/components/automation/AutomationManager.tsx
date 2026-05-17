@@ -516,7 +516,7 @@ export function AutomationManager({ workspaceId }: AutomationManagerProps) {
         <button
           type="button"
           onClick={openCreateForm}
-          className="inline-flex h-11 items-center justify-center rounded-lg border border-white/10 bg-white text-sm font-medium text-black transition hover:bg-white/90"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-blue-500 px-4 text-sm font-medium text-white transition hover:bg-blue-400 whitespace-nowrap"
         >
           + Новое правило
         </button>
@@ -643,8 +643,8 @@ export function AutomationManager({ workspaceId }: AutomationManagerProps) {
             )}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Action">
+          <div className={form.actionType === "notify_members" ? "space-y-4" : "grid gap-4 md:grid-cols-2"}>
+            <Field label="Действие">
               <select
                 value={form.actionType}
                 onChange={(event) =>

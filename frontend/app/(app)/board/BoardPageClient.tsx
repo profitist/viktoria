@@ -357,7 +357,7 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
   if (!board) return null;
 
   return (
-    <div className="min-h-full bg-[#050505]">
+    <div className="min-h-full">
       {/* Board header */}
       <div
         style={{

@@ -17,7 +17,11 @@
 }
 
 body {
-  background: var(--background);
+  background-color: #050505;
+  background-image: url('/bg.jpg');
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center;
   color: var(--foreground);
 }
 
@@ -39,4 +43,11 @@ body {
 .dot-texture {
   background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 24px 24px;
+}
+
+.ui-hover {
+  transition: background-color 120ms;
+}
+.ui-hover:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
