@@ -47,6 +47,21 @@ class MemberOut(BaseModel):
     joined_at: datetime
 
 
+class MyTaskSchema(BaseModel):
+    id: UUID
+    title: str
+    priority: str
+    deadline: datetime | None
+    deadline_urgency: str
+    assignee_id: UUID | None
+    assignee_name: str | None
+    board_id: UUID
+    board_name: str
+    column_id: UUID
+    column_name: str
+    is_done: bool
+
+
 class WorkspaceSettingsPatch(BaseModel):
     """Частичное обновление настроек workspace. Все поля опциональны."""
 
