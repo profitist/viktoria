@@ -1,5 +1,58 @@
 # Kanban
 
+## Iteration I-17 (active) — Цель: Automation расширение + AI Grooming (backend + frontend wizard)
+
+**DoD:**
+- `POST /api/v1/ai/groom/start` → session_id + questions от LLM
+- `POST /api/v1/ai/groom/complete` → task_draft (title/description/priority/tags)
+- `/ai-groom` → 3-шаговый wizard: описание → вопросы → драфт → «Создать задачу»
+- Automation engine выполняет actions `set_priority` и `set_assignee`
+- `/automation` → standalone страница с rule builder и расширенными action types
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-095 | AI: groom.py — LLM-клиент + prompt templates | ai | — | todo | #200 | `backend/app/ai/groom.py`, `backend/app/ai/__init__.py` |
+| T-096 | AI: router.py (groom/start + groom/complete) | ai | — | todo | #201 | `backend/app/ai/router.py` |
+| T-097 | AI grooming frontend: api + типы | frontend | — | todo | #202 | `frontend/lib/ai-api.ts` |
+| T-098 | AI grooming: wizard-страница /ai-groom | frontend | — | todo | #203 | `frontend/app/(app)/ai-groom/page.tsx`, `frontend/components/ai/GroomingWizard.tsx` |
+| T-099 | Automation: action types set_priority + set_assignee в engine | automation | — | todo | #204 | `backend/app/automation/service.py` |
+| T-100 | Automation: standalone страница /automation + AutomationManager | frontend | — | todo | #205 | `frontend/app/(app)/automation/page.tsx`, `frontend/components/automation/AutomationManager.tsx` |
+
+## Iteration I-16 (active) — Цель: «Мои задачи» — личная очередь задач в sidebar
+
+**DoD:**
+- `/my-tasks` → вкладка «Мои задачи»: группы Важные / Входящие / Выполненные с collapse и счётчиком
+- Вкладка «Чужие задачи» → задачи сгруппированы по исполнителю (аватар + имя + expand)
+- `GET /api/v1/workspaces/{id}/me/tasks?view=mine|others&sort=priority|deadline|assignee` работает
+- «Порученные мной» и «Избранные» → empty state «Скоро»
+- Sidebar-ссылка добавляется после закрытия I-14 (layout.tsx залочен)
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-089 | Workspace: GET /me/tasks (view=mine\|others + sort + search) | workspace | — | todo | #189 | `backend/app/workspace/router.py` |
+| T-090 | My Tasks frontend: api + типы | frontend | — | todo | #190 | `frontend/lib/my-tasks-api.ts` |
+| T-091 | My Tasks: TaskRow компонент (строка задачи) | frontend | — | todo | #191 | `frontend/components/my-tasks/TaskRow.tsx` |
+| T-092 | My Tasks: TaskGroup (collapse + счётчик + иконки) | frontend | — | todo | #192 | `frontend/components/my-tasks/TaskGroup.tsx` |
+| T-093 | My Tasks: страница + 4 вкладки + группировка | frontend | — | todo | #194 | `frontend/components/my-tasks/MyTasksPage.tsx`, `frontend/app/(app)/my-tasks/page.tsx` |
+
+## Iteration I-15 (active) — Цель: Event Log в sidebar + TaskPanel справа вместо модального окна
+
+**DoD:**
+- `/event-log` → лента событий workspace, сгруппированная по датам; переключатель карточки ↔ таблица
+- Фильтр-вкладки: Все / Удалённые объекты / Загруженные файлы / Общение
+- `GET /api/v1/workspaces/{id}/audit-log?event_type=&board_id=` фильтрует и пагинирует
+- Клик по задаче на доске → правая панель slide-in с полным содержимым задачи
+- Sidebar-ссылка деферрится до закрытия I-14 (layout.tsx залочен)
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-083 | Audit: фильтр event_type + board_id в audit-log endpoint | audit | — | todo | #180 | `backend/app/audit/router.py` |
+| T-084 | Event Log frontend: api + типы | frontend | — | todo | #181 | `frontend/lib/event-log-api.ts` |
+| T-085 | Event Log: EventCard + EventTable компоненты | frontend | — | todo | #182 | `frontend/components/event-log/EventCard.tsx`, `frontend/components/event-log/EventTable.tsx` |
+| T-086 | Event Log: EventLogPanel (фильтры + вид-toggle) + страница | frontend | — | todo | #183 | `frontend/components/event-log/EventLogPanel.tsx`, `frontend/app/(app)/event-log/page.tsx` |
+| T-087 | TaskPanel: компонент детали задачи справа | frontend | — | todo | #184 | `frontend/components/board/TaskPanel.tsx` |
+| T-088 | TaskPanel: wiring в KanbanBoard (replace modal) | frontend | — | todo | #185 | `frontend/components/board/KanbanBoard.tsx` |
+
 ## Iteration I-14 (active) — Цель: Board UX — управление колонками + создание досок + realtime-баги
 
 **DoD:**
