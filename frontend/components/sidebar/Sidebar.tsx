@@ -184,6 +184,7 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
   const [workspaceRole, setWorkspaceRole] = useState<{
     workspaceId: string;
     isOwner: boolean;
+    isAdmin: boolean;
   } | null>(null);
   const [resolvedWorkspaceName, setResolvedWorkspaceName] = useState<string | null>(null);
   const [boards, setBoards] = useState<BoardMeta[]>([]);
@@ -214,6 +215,7 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
         setWorkspaceRole({
           workspaceId: effectiveWorkspaceId,
           isOwner: currentWorkspace?.role === "owner",
+          isAdmin: currentWorkspace?.role === "admin",
         });
         if (!workspaceName) {
           setResolvedWorkspaceName(currentWorkspace?.name ?? null);
@@ -221,7 +223,7 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
       })
       .catch(() => {
         if (!cancelled) {
-          setWorkspaceRole({ workspaceId: effectiveWorkspaceId, isOwner: false });
+          setWorkspaceRole({ workspaceId: effectiveWorkspaceId, isOwner: false, isAdmin: false });
           if (!workspaceName) {
             setResolvedWorkspaceName(null);
           }
@@ -332,6 +334,10 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
     workspaceRole !== null &&
     workspaceRole.workspaceId === effectiveWorkspaceId &&
     workspaceRole.isOwner;
+  const canAccessAdmin =
+    workspaceRole !== null &&
+    workspaceRole.workspaceId === effectiveWorkspaceId &&
+    (workspaceRole.isOwner || workspaceRole.isAdmin);
   const userInitial = useMemo(() => getInitial(displayUserName, "U"), [displayUserName]);
   const favoriteBoards = useMemo(
     () => boards.filter((board) => board.is_favorite),
@@ -420,7 +426,7 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
 
         <SidebarSection title="Tools">
           <NavItem href={`/ai-groom${workspaceQuery}`} label="AI Groom" />
-          {isOwner && (
+          {canAccessAdmin && (
             <NavItem href={`/admin${workspaceQuery}`} label="Admin" />
           )}
         </SidebarSection>
