@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers";
-import { api, ApiError, boardsApi } from "@/lib/api";
+import { api, ApiError, boardsApi, workspaceApi, tagsApi } from "@/lib/api";
 import { useWs } from "@/contexts/WsContext";
-import type { BoardDetail, Task } from "@/lib/types";
+import type { BoardDetail, Task, ViewMode } from "@/lib/types";
 import { parseBoardTask, parseMoveParams } from "@/lib/types";
 import {
   moveTaskInBoard,
@@ -19,6 +19,10 @@ import type { AddTaskData } from "@/components/board/AddTaskForm";
 import BoardSkeleton from "@/components/board/BoardSkeleton";
 import ErrorBanner from "@/components/board/ErrorBanner";
 import BoardSwitcher from "@/components/board/BoardSwitcher";
+import ViewTabs from "@/components/views/ViewTabs";
+import TableView from "@/components/views/TableView";
+import CalendarView from "@/components/views/CalendarView";
+import type { FilterSortMember, FilterSortTag } from "@/components/views/FilterSortBar";
 
 interface BoardPageClientProps {
   boardId: string;
@@ -33,6 +37,13 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
 
   const { init, on, off } = useWs();
 
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const v = searchParams.get("view");
+    return v === "table" || v === "calendar" ? v : "board";
+  });
+  const [members, setMembers] = useState<FilterSortMember[]>([]);
+  const [tags, setTags] = useState<FilterSortTag[]>([]);
+
   const [board, setBoard] = useState<BoardDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +54,24 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 4000);
   }
+
+  function handleViewChange(mode: ViewMode) {
+    setViewMode(mode);
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", mode);
+    window.history.replaceState(null, "", url.toString());
+  }
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    // members and tags are supplementary filter data — failures degrade gracefully
+    workspaceApi.getMembers(workspaceId)
+      .then((data) => setMembers(data.map((m) => ({ id: m.user_id, name: m.name }))))
+      .catch(() => {});
+    tagsApi.getBoardTags(boardId)
+      .then((data) => setTags(data.map((t) => ({ id: t.id, name: t.name, color: t.color }))))
+      .catch(() => {});
+  }, [workspaceId, boardId]);
 
   const loadBoard = useCallback(async () => {
     setIsLoading(true);
@@ -275,6 +304,7 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
           display: "flex",
           alignItems: "center",
           padding: "0 24px",
+          gap: "16px",
           background: "#080808",
           borderBottom: "1px solid rgba(255,255,255,0.05)",
           position: "sticky",
@@ -291,14 +321,43 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
             setBoard(prev => prev ? { ...prev, is_favorite: isFav } : prev)
           }
         />
+        <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+          <ViewTabs value={viewMode} onChange={handleViewChange} />
+        </div>
       </div>
 
-      <KanbanBoard
-        board={board}
-        onTaskMove={handleTaskMove}
-        onTaskCreate={handleTaskCreate}
-        onCardClick={handleCardClick}
-      />
+      {viewMode === "board" && (
+        <KanbanBoard
+          board={board}
+          onTaskMove={handleTaskMove}
+          onTaskCreate={handleTaskCreate}
+          onCardClick={handleCardClick}
+        />
+      )}
+
+      {viewMode === "table" && workspaceId && (
+        <div style={{ height: "calc(100vh - 52px)" }}>
+          <TableView
+            workspaceId={workspaceId}
+            boardId={boardId}
+            members={members}
+            tags={tags}
+            onTaskClick={setSelectedTask}
+          />
+        </div>
+      )}
+
+      {viewMode === "calendar" && workspaceId && (
+        <div style={{ height: "calc(100vh - 52px)" }}>
+          <CalendarView
+            workspaceId={workspaceId}
+            boardId={boardId}
+            members={members}
+            tags={tags}
+            onTaskClick={setSelectedTask}
+          />
+        </div>
+      )}
 
       {selectedTask && workspaceId && (
         <TaskModal
