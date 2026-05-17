@@ -7,9 +7,10 @@ import type { Subtask } from "@/lib/types";
 interface SubtaskListProps {
   taskId: string;
   subtasks?: Subtask[];
+  onItemsChange?: (items: Subtask[]) => void;
 }
 
-export default function SubtaskList({ taskId, subtasks: initialSubtasks }: SubtaskListProps) {
+export default function SubtaskList({ taskId, subtasks: initialSubtasks, onItemsChange }: SubtaskListProps) {
   const [items, setItems] = useState<Subtask[]>(initialSubtasks ?? []);
   const [isLoading, setIsLoading] = useState(initialSubtasks === undefined);
   const [newTitle, setNewTitle] = useState("");
@@ -21,10 +22,11 @@ export default function SubtaskList({ taskId, subtasks: initialSubtasks }: Subta
     try {
       const data = await subtasksApi.getSubtasks(taskId);
       setItems(data);
+      onItemsChange?.(data);
     } finally {
       setIsLoading(false);
     }
-  }, [taskId]);
+  }, [taskId, onItemsChange]);
 
   useEffect(() => {
     if (initialSubtasks === undefined) {
@@ -32,15 +34,21 @@ export default function SubtaskList({ taskId, subtasks: initialSubtasks }: Subta
     }
   }, [fetchSubtasks, initialSubtasks]);
 
+  function updateItems(fn: (prev: Subtask[]) => Subtask[]) {
+    setItems(prev => {
+      const next = fn(prev);
+      onItemsChange?.(next);
+      return next;
+    });
+  }
+
   async function handleToggle(subtask: Subtask) {
     const next = !subtask.is_done;
-    setItems(prev =>
-      prev.map(s => (s.id === subtask.id ? { ...s, is_done: next } : s))
-    );
+    updateItems(prev => prev.map(s => (s.id === subtask.id ? { ...s, is_done: next } : s)));
     try {
       await subtasksApi.updateSubtask(taskId, subtask.id, { is_done: next });
     } catch {
-      await fetchSubtasks();
+      updateItems(prev => prev.map(s => (s.id === subtask.id ? { ...s, is_done: !next } : s)));
     }
   }
 
@@ -50,7 +58,7 @@ export default function SubtaskList({ taskId, subtasks: initialSubtasks }: Subta
     setIsAdding(true);
     try {
       const created = await subtasksApi.createSubtask(taskId, title);
-      setItems(prev => [...prev, created]);
+      updateItems(prev => [...prev, created]);
       setNewTitle("");
     } finally {
       setIsAdding(false);
