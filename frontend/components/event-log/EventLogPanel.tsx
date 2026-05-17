@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { api, ApiError } from "@/lib/api";
+import { useWs } from "@/contexts/WsContext";
 import {
   FILTER_EVENT_TYPES,
   type AuditEntry,
+  type EventType,
   type EventLogFilter,
   getAuditLog,
   groupByDate,
@@ -25,6 +27,20 @@ interface WorkspaceSummary {
 }
 
 const PAGE_SIZE = 50;
+const HIGHLIGHT_MS = 2_000;
+
+const EVENT_TYPES = new Set<string>([
+  "task.created",
+  "task.updated",
+  "task.moved",
+  "task.deleted",
+  "comment.created",
+  "attachment.created",
+  "attachment.deleted",
+  "member.added",
+  "member.removed",
+  "rule.fired",
+]);
 
 const FILTER_LABELS: Record<EventLogFilter, string> = {
   all: "Все",
@@ -34,9 +50,9 @@ const FILTER_LABELS: Record<EventLogFilter, string> = {
 };
 
 export default function EventLogPanel({ workspaceId }: EventLogPanelProps) {
-  const [resolvedWorkspaceId, setResolvedWorkspaceId] = useState<string | null>(
-    workspaceId ?? null
-  );
+  const { init, on, off } = useWs();
+  const [fallbackWorkspaceId, setFallbackWorkspaceId] = useState<string | null>(null);
+  const resolvedWorkspaceId = workspaceId ?? fallbackWorkspaceId;
   const [activeFilter, setActiveFilter] = useState<EventLogFilter>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [entries, setEntries] = useState<AuditEntry[]>([]);
@@ -45,23 +61,25 @@ export default function EventLogPanel({ workspaceId }: EventLogPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [resolveAttempt, setResolveAttempt] = useState(0);
+  const [highlightedEntryIds, setHighlightedEntryIds] = useState<Set<string>>(
+    () => new Set()
+  );
+  const highlightTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
-    if (workspaceId) {
-      setResolvedWorkspaceId(workspaceId);
-      return;
-    }
+    if (workspaceId) return;
 
     let cancelled = false;
 
     async function resolveWorkspace() {
+      if (cancelled) return;
       setLoading(true);
       setError(null);
 
       try {
         const workspaces = await api.get<WorkspaceSummary[]>("/api/v1/workspaces/me");
         if (cancelled) return;
-        setResolvedWorkspaceId(workspaces[0]?.id ?? null);
+        setFallbackWorkspaceId(workspaces[0]?.id ?? null);
         if (!workspaces.length) {
           setEntries([]);
           setHasMore(false);
@@ -69,7 +87,7 @@ export default function EventLogPanel({ workspaceId }: EventLogPanelProps) {
         }
       } catch (err) {
         if (cancelled) return;
-        setResolvedWorkspaceId(null);
+        setFallbackWorkspaceId(null);
         setEntries([]);
         setHasMore(false);
         setError(errorMessage(err));
@@ -78,7 +96,9 @@ export default function EventLogPanel({ workspaceId }: EventLogPanelProps) {
       }
     }
 
-    resolveWorkspace();
+    queueMicrotask(() => {
+      void resolveWorkspace();
+    });
 
     return () => {
       cancelled = true;
@@ -120,8 +140,71 @@ export default function EventLogPanel({ workspaceId }: EventLogPanelProps) {
 
   useEffect(() => {
     if (!resolvedWorkspaceId) return;
-    void loadEntries(0, "replace");
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (!cancelled) {
+        void loadEntries(0, "replace");
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [loadEntries, resolvedWorkspaceId]);
+
+  const queueHighlight = useCallback((entryId: string) => {
+    setHighlightedEntryIds((current) => {
+      const next = new Set(current);
+      next.add(entryId);
+      return next;
+    });
+
+    const timeoutId = setTimeout(() => {
+      setHighlightedEntryIds((current) => {
+        if (!current.has(entryId)) return current;
+        const next = new Set(current);
+        next.delete(entryId);
+        return next;
+      });
+    }, HIGHLIGHT_MS);
+
+    highlightTimersRef.current.push(timeoutId);
+  }, []);
+
+  const handleAuditEventCreated = useCallback(
+    (params: Record<string, unknown>) => {
+      const entry = auditEventCreatedToEntry(params);
+      if (!entry || !matchesFilter(entry.event_type, activeFilter)) return;
+
+      setEntries((current) => {
+        if (current.some((item) => item.id === entry.id)) return current;
+        return [entry, ...current];
+      });
+      queueHighlight(entry.id);
+    },
+    [activeFilter, queueHighlight]
+  );
+
+  useEffect(() => {
+    if (!resolvedWorkspaceId) return;
+
+    init(resolvedWorkspaceId);
+    on("audit.event_created", handleAuditEventCreated);
+
+    return () => {
+      off("audit.event_created", handleAuditEventCreated);
+    };
+  }, [resolvedWorkspaceId, init, on, off, handleAuditEventCreated]);
+
+  useEffect(() => {
+    return () => {
+      for (const timeoutId of highlightTimersRef.current) {
+        clearTimeout(timeoutId);
+      }
+      highlightTimersRef.current = [];
+    };
+  }, []);
 
   const groupedEntries = useMemo(
     () => Array.from(groupByDate(entries)),
@@ -156,14 +239,26 @@ export default function EventLogPanel({ workspaceId }: EventLogPanelProps) {
               <h2 className="text-sm font-medium text-white/45">{date}</h2>
               <div className="space-y-3">
                 {items.map((entry) => (
-                  <EventCard key={entry.id} entry={entry} />
+                  <div
+                    key={entry.id}
+                    className={`rounded-md transition-all duration-500 ${
+                      highlightedEntryIds.has(entry.id)
+                        ? "animate-pulse bg-sky-400/[0.08] shadow-[0_0_32px_rgba(56,189,248,0.18)] ring-1 ring-sky-300/40"
+                        : "bg-transparent shadow-none ring-0"
+                    }`}
+                  >
+                    <EventCard entry={entry} />
+                  </div>
                 ))}
               </div>
             </section>
           ))}
         </div>
       ) : (
-        <EventTable entries={entries} />
+        <EventTable
+          entries={entries}
+          highlightedEntryIds={highlightedEntryIds}
+        />
       )}
 
       {!loading && !error && entries.length > 0 && hasMore && (
@@ -325,4 +420,66 @@ function errorMessage(err: unknown): string {
     return "Нет соединения с сервером";
   }
   return "Не удалось загрузить события";
+}
+function auditEventCreatedToEntry(
+  params: Record<string, unknown>
+): AuditEntry | null {
+  const eventType = params["event_type"];
+  const entityType = params["entity_type"];
+  const entityId = params["entity_id"];
+  const actorId = params["actor_id"];
+  const actorName = params["actor_name"];
+  const createdAt = params["created_at"];
+  const boardId = params["board_id"];
+
+  if (
+    !isEventType(eventType) ||
+    typeof entityId !== "string" ||
+    typeof actorId !== "string" ||
+    typeof createdAt !== "string"
+  ) {
+    return null;
+  }
+
+  const normalizedEntityType =
+    typeof entityType === "string" ? entityType : "task";
+  const normalizedActorName =
+    typeof actorName === "string" && actorName.trim()
+      ? actorName
+      : "Unknown";
+  const normalizedBoardId = typeof boardId === "string" ? boardId : null;
+
+  return {
+    id: auditEntryId(params, eventType, entityId, createdAt),
+    event_type: eventType,
+    actor: {
+      id: actorId,
+      name: normalizedActorName,
+    },
+    task_id: normalizedEntityType === "task" ? entityId : null,
+    task_title: null,
+    board_id: normalizedBoardId,
+    changes: [],
+    created_at: createdAt,
+  };
+}
+
+function auditEntryId(
+  params: Record<string, unknown>,
+  eventType: EventType,
+  entityId: string,
+  createdAt: string
+): string {
+  const id = params["id"];
+  if (typeof id === "string" && id.length > 0) return id;
+  return `ws:${createdAt}:${eventType}:${entityId}`;
+}
+
+function isEventType(value: unknown): value is EventType {
+  return typeof value === "string" && EVENT_TYPES.has(value);
+}
+
+function matchesFilter(eventType: EventType, filter: EventLogFilter): boolean {
+  const allowedTypes = FILTER_EVENT_TYPES[filter];
+  return allowedTypes.length === 0 || allowedTypes.includes(eventType);
 }

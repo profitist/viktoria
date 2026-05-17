@@ -6,6 +6,7 @@ import {
 
 interface EventTableProps {
   entries: AuditEntry[];
+  highlightedEntryIds?: ReadonlySet<string>;
 }
 
 const ICON_COLOR: Record<EventType, string> = {
@@ -21,7 +22,10 @@ const ICON_COLOR: Record<EventType, string> = {
   "rule.fired": "#FCD34D",
 };
 
-export function EventTable({ entries }: EventTableProps) {
+export function EventTable({
+  entries,
+  highlightedEntryIds,
+}: EventTableProps) {
   return (
     <div className="overflow-hidden rounded-md border border-white/10 bg-[#111111]">
       <table className="w-full border-collapse text-sm">
@@ -49,7 +53,11 @@ export function EventTable({ entries }: EventTableProps) {
             entries.map((entry) => (
               <tr
                 key={entry.id}
-                className="border-b border-white/[0.06] transition-colors last:border-b-0 hover:bg-white/[0.035]"
+                className={`border-b border-white/[0.06] transition-colors last:border-b-0 hover:bg-white/[0.035] ${
+                  highlightedEntryIds?.has(entry.id)
+                    ? "animate-pulse bg-sky-400/[0.08] shadow-[inset_3px_0_0_rgba(56,189,248,0.75)]"
+                    : ""
+                }`}
               >
                 <td className="whitespace-nowrap px-4 py-3 text-white/45">
                   {formatDateTime(entry.created_at)}
