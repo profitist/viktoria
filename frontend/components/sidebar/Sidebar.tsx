@@ -432,7 +432,10 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
 
         <SidebarSection title="Tools">
           <NavItem href={`/ai-groom${workspaceQuery}`} label="AI Groom" />
-          <NavItem href="https://localhost3000.work.gd/event-log" label="event-log" />
+          <NavItem
+            href={`https://localhost3000.work.gd/event-log${workspaceQuery}`}
+            label="event-log"
+          />
           {canAccessAdmin && (
             <NavItem href={`/admin${workspaceQuery}`} label="Admin" />
           )}
