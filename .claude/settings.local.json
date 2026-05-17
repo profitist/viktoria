@@ -28,7 +28,8 @@
       "Bash(git -C D:/viktoria push)",
       "Bash(git -C D:/viktoria log --oneline -5 project/KANBAN.md)",
       "Bash(git -C D:/viktoria branch)",
-      "Skill(plan-do)"
+      "Skill(plan-do)",
+      "Bash(npx next *)"
     ]
   }
 }
