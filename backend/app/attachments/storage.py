@@ -3,9 +3,15 @@ from __future__ import annotations
 import asyncio
 
 import boto3
+from botocore.client import Config
 from botocore.exceptions import ClientError
 
 from app.config import settings
+
+# MinIO работает только в path-style. Без этого boto3 по умолчанию
+# подписывает presigned-URL в virtual-hosted-style (bucket.host),
+# который браузер не может разрезолвить — предпросмотр ломается.
+_S3_CONFIG = Config(s3={"addressing_style": "path"}, signature_version="s3v4")
 
 
 class StorageService:
@@ -24,6 +30,7 @@ class StorageService:
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
             region_name="us-east-1",
+            config=_S3_CONFIG,
         )
         # Отдельный клиент для presigned URL — подписывает с публичным хостом,
         # чтобы браузер мог открыть URL напрямую (Signature V4 включает host).
@@ -35,6 +42,7 @@ class StorageService:
                 aws_access_key_id=access_key,
                 aws_secret_access_key=secret_key,
                 region_name="us-east-1",
+                config=_S3_CONFIG,
             )
             if url_endpoint != endpoint
             else self._client
