@@ -308,6 +308,7 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
       assignee_id: null,
       created_at: new Date().toISOString(),
       deadline: data.deadline ?? null,
+      deadline_days_remaining: null,
       deadline_urgency: "none",
       description: data.description ?? "",
     };
