@@ -24,7 +24,10 @@ from app.board.schemas import (
 )
 from app.tasks.models import Subtask, Task
 from app.tasks.schemas import SubtaskProgress, TaskOut
-from app.tasks.service import compute_deadline_urgency
+from app.tasks.service import (
+    compute_deadline_days_remaining,
+    compute_deadline_urgency,
+)
 from app.tags.schemas import TagOut
 from app.tags.service import get_task_tags_by_task_id
 from app.workspace.models import WorkspaceMember, WorkspaceRole
@@ -555,6 +558,9 @@ def _build_board_out(
                         assignee_id=task.assignee_id,
                         created_at=task.created_at,
                         deadline=task.deadline,
+                        deadline_days_remaining=compute_deadline_days_remaining(
+                            task.deadline
+                        ),
                         deadline_urgency=compute_deadline_urgency(task.deadline),
                         subtask_progress=SubtaskProgress(
                             done_count=sum(1 for st in task.subtasks if st.is_done),
