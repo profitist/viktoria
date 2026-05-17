@@ -114,7 +114,7 @@ export default function AutomationRules({ workspaceId }: AutomationRulesProps) {
         className="rounded-xl p-6"
         style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}
       >
-        <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.45)" }}>
+        <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
           Правила автоматизации
         </p>
         {[1, 2].map((i) => (
@@ -151,13 +151,13 @@ export default function AutomationRules({ workspaceId }: AutomationRulesProps) {
       className="rounded-xl p-6"
       style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}
     >
-      <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.45)" }}>
+      <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
         Правила автоматизации
       </p>
 
       <div className="space-y-1 mb-4">
         {rules.length === 0 && (
-          <p className="text-sm py-2" style={{ color: "rgba(255,255,255,0.45)" }}>
+          <p className="text-sm py-2" style={{ color: "rgba(255,255,255,0.65)" }}>
             Правил нет
           </p>
         )}
@@ -169,7 +169,7 @@ export default function AutomationRules({ workspaceId }: AutomationRulesProps) {
                 <span className="text-sm flex-1 font-mono" style={{ color: "rgba(255,255,255,0.72)" }}>
                   {rule.trigger_event} → {rule.action_type}
                 </span>
-                <span className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+                <span className="text-xs" style={{ color: "rgba(255,255,255,0.65)" }}>
                   Удалить?
                 </span>
                 <button
@@ -216,13 +216,13 @@ export default function AutomationRules({ workspaceId }: AutomationRulesProps) {
         className="pt-4 space-y-3"
         style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
       >
-        <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+        <p className="text-xs" style={{ color: "rgba(255,255,255,0.65)" }}>
           Новое правило
         </p>
 
         <div className="flex gap-3 flex-wrap">
           <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>Триггер</label>
+            <label className="text-xs" style={{ color: "rgba(255,255,255,0.65)" }}>Триггер</label>
             <select
               value={formTrigger}
               onChange={(e) => setFormTrigger(e.target.value)}
@@ -237,7 +237,7 @@ export default function AutomationRules({ workspaceId }: AutomationRulesProps) {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>Действие</label>
+            <label className="text-xs" style={{ color: "rgba(255,255,255,0.65)" }}>Действие</label>
             <select
               value={formAction}
               onChange={(e) => setFormAction(e.target.value)}
@@ -253,7 +253,7 @@ export default function AutomationRules({ workspaceId }: AutomationRulesProps) {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>Payload (JSON)</label>
+          <label className="text-xs" style={{ color: "rgba(255,255,255,0.65)" }}>Payload (JSON)</label>
           <textarea
             value={formPayload}
             onChange={(e) => { setFormPayload(e.target.value); setPayloadError(null); }}

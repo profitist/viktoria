@@ -179,11 +179,11 @@ export default function BoardSwitcher({
           }}
         >
           {loading && boards.length === 0 ? (
-            <div style={{ padding: "14px 16px", color: "rgba(255,255,255,0.40)", fontSize: "12px", textAlign: "center" }}>
+            <div style={{ padding: "14px 16px", color: "rgba(255,255,255,0.60)", fontSize: "12px", textAlign: "center" }}>
               Загрузка...
             </div>
           ) : boards.length === 0 ? (
-            <div style={{ padding: "14px 16px", color: "rgba(255,255,255,0.40)", fontSize: "12px", textAlign: "center" }}>
+            <div style={{ padding: "14px 16px", color: "rgba(255,255,255,0.60)", fontSize: "12px", textAlign: "center" }}>
               Нет доступных досок
             </div>
           ) : (
@@ -217,7 +217,7 @@ function ChevronIcon({ open }: { open: boolean }) {
         transform: open ? "rotate(180deg)" : "none",
         transition: "transform 0.15s ease",
         flexShrink: 0,
-        color: "rgba(255,255,255,0.40)",
+        color: "rgba(255,255,255,0.60)",
       }}
     >
       <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

@@ -307,7 +307,7 @@ export default function GroomingWizard({ workspaceId, onTaskCreated }: Props) {
         {/* ── Step 2: Questions ── */}
         {step === "questions" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", margin: 0 }}>
+            <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", margin: 0 }}>
               AI задаёт уточняющие вопросы. Ответьте, чтобы сформулировать задачу точнее.
             </p>
             {questions.map((q) => (
@@ -374,7 +374,7 @@ export default function GroomingWizard({ workspaceId, onTaskCreated }: Props) {
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             {/* Title */}
             <div>
-              <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+              <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
                 Заголовок
               </label>
               <input
@@ -389,7 +389,7 @@ export default function GroomingWizard({ workspaceId, onTaskCreated }: Props) {
 
             {/* Description */}
             <div>
-              <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+              <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
                 Описание
               </label>
               <textarea
@@ -404,7 +404,7 @@ export default function GroomingWizard({ workspaceId, onTaskCreated }: Props) {
 
             {/* Priority */}
             <div>
-              <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+              <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
                 Приоритет
               </label>
               <select
@@ -422,7 +422,7 @@ export default function GroomingWizard({ workspaceId, onTaskCreated }: Props) {
 
             {/* Tags */}
             <div>
-              <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+              <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
                 Теги
               </label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
@@ -531,7 +531,7 @@ export default function GroomingWizard({ workspaceId, onTaskCreated }: Props) {
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
-                  <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                  <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
                     Доска
                   </label>
                   <select
@@ -547,7 +547,7 @@ export default function GroomingWizard({ workspaceId, onTaskCreated }: Props) {
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                  <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
                     Колонка
                   </label>
                   <select

@@ -12,7 +12,7 @@ function formatTime(isoTs: string): string {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  received: "rgba(255,255,255,0.45)",
+  received: "rgba(255,255,255,0.65)",
   deduped: "#FCD34D",
   enriched: "#93C5FD",
   broadcast: "#6EE7B7",

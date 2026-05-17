@@ -53,7 +53,7 @@ export default function TaskGroup({ group, onToggleDone, onTaskClick }: Props) {
             transition: "transform 150ms ease",
           }}
         >
-          <path d="M4 2l4 4-4 4" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M4 2l4 4-4 4" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
 
         <span style={{ fontSize: "13px", fontWeight: 600, color: "rgba(255,255,255,0.65)", letterSpacing: "0.01em" }}>
@@ -63,7 +63,7 @@ export default function TaskGroup({ group, onToggleDone, onTaskClick }: Props) {
         <span
           style={{
             fontSize: "11px",
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(255,255,255,0.55)",
             background: "rgba(255,255,255,0.06)",
             borderRadius: "999px",
             padding: "1px 7px",

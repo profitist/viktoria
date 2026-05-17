@@ -328,7 +328,7 @@ export default function CalendarView({
                     <div
                       style={{
                         fontSize: "11px",
-                        color: "rgba(255,255,255,0.35)",
+                        color: "rgba(255,255,255,0.55)",
                         paddingLeft: "2px",
                         flexShrink: 0,
                       }}
