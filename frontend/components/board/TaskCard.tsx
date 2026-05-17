@@ -131,6 +131,29 @@ export default function TaskCard({ task, isDragging, onClick }: TaskCardProps) {
       }}
     >
       <p className="text-sm font-medium text-white leading-snug">{task.title}</p>
+
+      {task.tags.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "8px" }}>
+          {task.tags.map(tag => (
+            <span
+              key={tag.id}
+              style={{
+                fontSize: "11px",
+                fontWeight: 500,
+                padding: "2px 7px",
+                borderRadius: "999px",
+                background: tag.color ? `${tag.color}22` : "rgba(59,130,246,0.12)",
+                border: `1px solid ${tag.color ? `${tag.color}40` : "rgba(59,130,246,0.25)"}`,
+                color: tag.color ?? "#93C5FD",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {tag.name}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-1.5">
           {task.assignee_id !== null && (

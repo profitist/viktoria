@@ -388,7 +388,14 @@ export default function BoardPageClient({ boardId }: BoardPageClientProps) {
           onTaskMove={handleTaskMove}
           onTaskCreate={handleTaskCreate}
           onCardClick={handleCardClick}
-          onTaskUpdate={(task) => setBoard(prev => prev ? replaceTask(prev, task) as BoardDetail : prev)}
+          onTaskUpdate={(task) => setBoard(prev => {
+            if (!prev) return prev;
+            const existing = prev.columns.flatMap(c => c.tasks).find(t => t.id === task.id);
+            return replaceTask(prev, {
+              ...task,
+              subtask_progress: task.subtask_progress ?? existing?.subtask_progress,
+            }) as BoardDetail;
+          })}
           onTaskDelete={(taskId) => setBoard(prev => prev ? deleteTask(prev, taskId) as BoardDetail : prev)}
           isAdmin={isAdmin}
           boardId={boardId}

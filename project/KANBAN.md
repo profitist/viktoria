@@ -1,6 +1,59 @@
 # Kanban
 
-## Iteration I-14 (active) — Цель: Board UX — управление колонками + создание досок + realtime-баги
+## Iteration I-17 (active) — Цель: Automation расширение + AI Grooming (backend + frontend wizard)
+
+**DoD:**
+- `POST /api/v1/ai/groom/start` → session_id + questions от LLM
+- `POST /api/v1/ai/groom/complete` → task_draft (title/description/priority/tags)
+- `/ai-groom` → 3-шаговый wizard: описание → вопросы → драфт → «Создать задачу»
+- Automation engine выполняет actions `set_priority` и `set_assignee`
+- `/automation` → standalone страница с rule builder и расширенными action types
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-095 | AI: groom.py — LLM-клиент + prompt templates | ai | — | todo | #200 | `backend/app/ai/groom.py`, `backend/app/ai/__init__.py` |
+| T-096 | AI: router.py (groom/start + groom/complete) | ai | — | todo | #201 | `backend/app/ai/router.py` |
+| T-097 | AI grooming frontend: api + типы | frontend | — | todo | #202 | `frontend/lib/ai-api.ts` |
+| T-098 | AI grooming: wizard-страница /ai-groom | frontend | — | todo | #203 | `frontend/app/(app)/ai-groom/page.tsx`, `frontend/components/ai/GroomingWizard.tsx` |
+| T-099 | Automation: action types set_priority + set_assignee в engine | automation | — | todo | #204 | `backend/app/automation/service.py` |
+| T-100 | Automation: standalone страница /automation + AutomationManager | frontend | — | todo | #205 | `frontend/app/(app)/automation/page.tsx`, `frontend/components/automation/AutomationManager.tsx` |
+
+## Iteration I-16 (closed) — Цель: «Мои задачи» — личная очередь задач в sidebar
+
+**DoD:**
+- `/my-tasks` → вкладка «Мои задачи»: группы Важные / Входящие / Выполненные с collapse и счётчиком
+- Вкладка «Чужие задачи» → задачи сгруппированы по исполнителю (аватар + имя + expand)
+- `GET /api/v1/workspaces/{id}/me/tasks?view=mine|others&sort=priority|deadline|assignee` работает
+- «Порученные мной» и «Избранные» → empty state «Скоро»
+- Sidebar-ссылка добавляется после закрытия I-14 (layout.tsx залочен)
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-089 | Workspace: GET /me/tasks (view=mine\|others + sort + search) | workspace | — | todo | #189 | `backend/app/workspace/router.py` |
+| T-090 | My Tasks frontend: api + типы | frontend | — | todo | #190 | `frontend/lib/my-tasks-api.ts` |
+| T-091 | My Tasks: TaskRow компонент (строка задачи) | frontend | — | todo | #191 | `frontend/components/my-tasks/TaskRow.tsx` |
+| T-092 | My Tasks: TaskGroup (collapse + счётчик + иконки) | frontend | — | todo | #192 | `frontend/components/my-tasks/TaskGroup.tsx` |
+| T-093 | My Tasks: страница + 4 вкладки + группировка | frontend | — | todo | #194 | `frontend/components/my-tasks/MyTasksPage.tsx`, `frontend/app/(app)/my-tasks/page.tsx` |
+
+## Iteration I-15 (closed) — Цель: Event Log в sidebar + TaskPanel справа вместо модального окна
+
+**DoD:**
+- `/event-log` → лента событий workspace, сгруппированная по датам; переключатель карточки ↔ таблица
+- Фильтр-вкладки: Все / Удалённые объекты / Загруженные файлы / Общение
+- `GET /api/v1/workspaces/{id}/audit-log?event_type=&board_id=` фильтрует и пагинирует
+- Клик по задаче на доске → правая панель slide-in с полным содержимым задачи
+- Sidebar-ссылка деферрится до закрытия I-14 (layout.tsx залочен)
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-083 | Audit: фильтр event_type + board_id в audit-log endpoint | audit | — | todo | #180 | `backend/app/audit/router.py` |
+| T-084 | Event Log frontend: api + типы | frontend | — | todo | #181 | `frontend/lib/event-log-api.ts` |
+| T-085 | Event Log: EventCard + EventTable компоненты | frontend | — | todo | #182 | `frontend/components/event-log/EventCard.tsx`, `frontend/components/event-log/EventTable.tsx` |
+| T-086 | Event Log: EventLogPanel (фильтры + вид-toggle) + страница | frontend | — | todo | #183 | `frontend/components/event-log/EventLogPanel.tsx`, `frontend/app/(app)/event-log/page.tsx` |
+| T-087 | TaskPanel: компонент детали задачи справа | frontend | — | todo | #184 | `frontend/components/board/TaskPanel.tsx` |
+| T-088 | TaskPanel: wiring в KanbanBoard (replace modal) | frontend | — | todo | #185 | `frontend/components/board/KanbanBoard.tsx` |
+
+## Iteration I-14 (closed) — Цель: Board UX — управление колонками + создание досок + realtime-баги
 
 **DoD:**
 - Owner/admin: «+ Колонка», меню колонки (rename / ←→ / delete с confirm) — через API, без reload
@@ -16,7 +69,7 @@
 | T-081 | TaskCard: fix deadline urgency display (soon/critical) | frontend | — | todo | #171 | `frontend/components/board/TaskCard.tsx` |
 | T-082 | TaskModal: subtask progress bar real-time | frontend | — | todo | #172 | `frontend/components/board/TaskModal.tsx` |
 
-## Iteration I-13 (active) — Цель: Analytics frontend (3 чарта) + Notifications mark-all-read
+## Iteration I-13 (closed) — Цель: Analytics frontend (3 чарта) + Notifications mark-all-read
 
 **DoD:**
 - `/board/{boardId}/analytics` рендерит три секции: Donut «по статусу», Line «прогресс + done%», Bar «нагрузка по assignee»
@@ -33,7 +86,7 @@
 | T-076 | Analytics: страница /board/[boardId]/analytics | frontend | — | todo | #156 | `frontend/app/(app)/board/[boardId]/analytics/page.tsx` |
 | T-077 | Notifications: PATCH /notifications/read-all | notifications | @xionter | done | #157 | `backend/app/notifications/router.py` |
 
-## Iteration I-12 (active) — Цель: Admin panel — управление workspace для owner/admin
+## Iteration I-12 (closed) — Цель: Admin panel — управление workspace для owner/admin
 
 **DoD:**
 - `/admin` как owner/admin → три вкладки (Members / Automation / Settings) работают, данные грузятся с бэкенда
@@ -50,7 +103,7 @@
 | T-070 | Admin: вкладка Settings (automation_enabled toggle) | frontend | — | todo | #141 | `frontend/components/admin/SettingsTab.tsx` |
 | T-071 | Admin: страница /admin с вкладками + role-guard | frontend | — | todo | #142 | `frontend/app/(app)/admin/page.tsx` |
 
-## Iteration I-11 (active) — Цель: Фаза 5 — Analytics backend (live-агрегации + снапшоты)
+## Iteration I-11 (closed) — Цель: Фаза 5 — Analytics backend (live-агрегации + снапшоты)
 
 **DoD:**
 - `GET /api/v1/boards/{id}/analytics/overview` → `{ by_status: [{column_id, column_name, count}], total }`
@@ -68,7 +121,7 @@
 | T-065 | Analytics: snapshot writer (фоновая задача) | analytics | — | todo | #135 | `backend/app/analytics/snapshot.py` |
 | T-066 | Analytics: router + регистрация в main.py | analytics | — | todo | #136 | `backend/app/analytics/router.py`, `backend/app/main.py` |
 
-## Iteration I-10 (active) — Цель: техдолг T-B02 — WsClient переиспользуем (параметры в connect())
+## Iteration I-10 (closed) — Цель: техдолг T-B02 — WsClient переиспользуем (параметры в connect())
 
 **DoD:** `new WsClient()` без аргументов; `client.connect(workspaceId, getToken)` коннектит; `WsContext.init()` на новой сигнатуре; смена воркспейса по-прежнему переподключает WS; `npx tsc --noEmit` чисто
 
@@ -77,7 +130,7 @@
 | T-060 | WsClient: параметры из конструктора в connect(workspaceId, getToken) | frontend | — | todo | #126 | `frontend/lib/ws.ts` |
 | T-061 | WsContext: переход на новую сигнатуру connect() | frontend | — | todo | #127 | `frontend/contexts/WsContext.tsx` |
 
-## Iteration I-09 (active) — Цель: Фаза 3 — представления Table + Calendar поверх задач
+## Iteration I-09 (closed) — Цель: Фаза 3 — представления Table + Calendar поверх задач
 
 **DoD:**
 - `GET /workspaces/{id}/tasks?board_id=&page=&page_size=&sort=` → `{items,total,page,page_size}`; без `page` — массив (обратная совместимость)
