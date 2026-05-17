@@ -76,6 +76,11 @@ class Task(Base):
         nullable=False,
     )
     deadline: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    done: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("false"),
+    )
     deadline_urgency: Mapped[DeadlineUrgency] = mapped_column(
         Enum(
             DeadlineUrgency,
