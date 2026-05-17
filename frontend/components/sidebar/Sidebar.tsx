@@ -419,6 +419,7 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
         </SidebarSection>
 
         <SidebarSection title="Tools">
+          <NavItem href={`/my-tasks${workspaceQuery}`} label="Мои задачи" />
           <NavItem href={`/ai-groom${workspaceQuery}`} label="AI Groom" />
           {canAccessAdmin && (
             <NavItem href={`/admin${workspaceQuery}`} label="Admin" />
