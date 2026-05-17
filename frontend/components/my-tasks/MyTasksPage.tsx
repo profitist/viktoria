@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getMyTasks,
   groupMyTasks,
   groupByAssignee,
 } from "@/lib/my-tasks-api";
 import type { MyTask, MyTasksSort, AssigneeGroup } from "@/lib/my-tasks-api";
+import { useWs } from "@/contexts/WsContext";
 import TaskGroup from "./TaskGroup";
 import TaskRow from "./TaskRow";
 import TaskPanel from "@/components/board/TaskPanel";
@@ -145,6 +146,8 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
+const WS_TASK_EVENTS = ["board.task_created", "board.task_updated", "board.task_moved"];
+
 export default function MyTasksPage({ workspaceId }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("mine");
   const [tasks, setTasks] = useState<MyTask[]>([]);
@@ -152,6 +155,8 @@ export default function MyTasksPage({ workspaceId }: Props) {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const { on, off } = useWs();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchTasks = useCallback(async () => {
     if (activeTab === "delegated" || activeTab === "favorites") return;
@@ -169,6 +174,19 @@ export default function MyTasksPage({ workspaceId }: Props) {
     setTasks([]);
     fetchTasks();
   }, [fetchTasks]);
+
+  // Re-fetch on WS task events (debounced 500ms)
+  useEffect(() => {
+    const handleTaskEvent = () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => { void fetchTasks(); }, 500);
+    };
+    for (const event of WS_TASK_EVENTS) on(event, handleTaskEvent);
+    return () => {
+      for (const event of WS_TASK_EVENTS) off(event, handleTaskEvent);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [on, off, fetchTasks]);
 
   function handleToggleDone(taskId: string, done: boolean) {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, is_done: done } : t));
