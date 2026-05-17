@@ -51,11 +51,15 @@ class Settings(BaseSettings):
     s3_bucket: str = Field(default="victory-attachments", alias="S3_BUCKET")
     attachment_max_size: int = Field(default=10_485_760, alias="ATTACHMENT_MAX_SIZE")
     attachment_url_ttl: int = Field(default=3600, alias="ATTACHMENT_URL_TTL")
-    smtp_host: str = Field(alias="SMTP_HOST")
-    smtp_port: int = Field(alias="SMTP_PORT")
-    smtp_user: str = Field(alias="SMTP_USER")
-    smtp_password: str = Field(alias="SMTP_PASSWORD")
-    smtp_from: str = Field(alias="SMTP_FROM")
+    smtp_host: str = Field(default="", alias="SMTP_HOST")
+    smtp_port: int = Field(default=587, alias="SMTP_PORT")
+    smtp_user: str = Field(default="", alias="SMTP_USER")
+    smtp_password: str = Field(default="", alias="SMTP_PASSWORD")
+    smtp_from: str = Field(default="", alias="SMTP_FROM")
+
+    @property
+    def smtp_configured(self) -> bool:
+        return bool(self.smtp_host and self.smtp_user and self.smtp_from)
 
     @field_validator("cors_origins", mode="before")
     @classmethod

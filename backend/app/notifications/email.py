@@ -1,13 +1,24 @@
 from __future__ import annotations
 
+import logging
 from email.message import EmailMessage
 
 import aiosmtplib
 
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
 
 async def send_email(to: str, subject: str, html: str) -> None:
+    if not settings.smtp_configured:
+        logger.warning(
+            "SMTP не настроен (SMTP_HOST/SMTP_USER/SMTP_FROM пусты) — "
+            "email-уведомление для %s пропущено",
+            to,
+        )
+        return
+
     message = EmailMessage()
     message["From"] = settings.smtp_from
     message["To"] = to
