@@ -25,6 +25,7 @@ interface KanbanBoardProps {
   onTaskUpdate?: (task: Task) => void;
   onTaskDelete?: (taskId: string) => void;
   isAdmin?: boolean;
+  deadlineDecayEnabled?: boolean;
   boardId?: string;
   onColumnUpdated?: (col: Column) => void;
   onColumnDeleted?: (id: string) => void;
@@ -38,6 +39,7 @@ export default function KanbanBoard({
   onTaskUpdate,
   onTaskDelete,
   isAdmin,
+  deadlineDecayEnabled = false,
   boardId,
   onColumnUpdated,
   onColumnDeleted,
@@ -162,6 +164,7 @@ export default function KanbanBoard({
               onCardClick={setSelectedTask}
               isAdmin={isAdmin}
               isLast={idx === lastIndex}
+              deadlineDecayEnabled={deadlineDecayEnabled}
               onColumnUpdated={onColumnUpdated}
               onColumnDeleted={onColumnDeleted}
             />
@@ -199,7 +202,11 @@ export default function KanbanBoard({
         <DragOverlay>
           {activeTask ? (
             <div className="rotate-2 scale-105 shadow-2xl cursor-grabbing">
-              <TaskCard task={activeTask} isDragging={false} />
+              <TaskCard
+                task={activeTask}
+                isDragging={false}
+                deadlineDecayEnabled={deadlineDecayEnabled}
+              />
             </div>
           ) : null}
         </DragOverlay>
