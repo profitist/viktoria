@@ -1,5 +1,48 @@
 # Kanban
 
+## Iteration I-26 (active) — Цель: Catch-up технического долга из I-24/I-25
+
+**DoD:**
+- В сайдбаре есть пункт «API Spec» → ведёт на `/api-spec`
+- Клик по чекбоксу «выполнено» на карточке ставит `done`, но НЕ перемещает карточку в колонку Done
+- `GET /api/v1/boards/{id}` и `GET /api/v1/tasks/{id}` → каждая задача содержит поле `done: bool`
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-143 | Sidebar: пункт «API Spec» → /api-spec | frontend | — | todo | #301 | `frontend/app/(app)/layout.tsx` |
+| T-144 | TaskCard: чекбокс done без перемещения в колонку Done | frontend | — | todo | #302 | `frontend/components/board/TaskCard.tsx` |
+| T-145 | Tasks schema: поле done:bool в TaskResponse | tasks | — | todo | #303 | `backend/app/tasks/schemas.py` |
+
+## Iteration I-25 (active) — Цель: Дефолтные колонки при создании доски
+
+**DoD:**
+- `POST /api/v1/boards` с `with_default_columns: true` → ответ содержит 3 колонки: To Do / In Progress / Done
+- `POST /api/v1/boards` с `with_default_columns: false` → 0 колонок (старое поведение)
+- CreateBoardDialog: чекбокс «Создать дефолтные колонки» включён по умолчанию
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-139 | Boards schema: поле with_default_columns | boards | @xionter | in progress | #294 | `backend/app/boards/schemas.py` |
+| T-140 | Boards service: create_default_columns() | boards | — | todo | #295 | `backend/app/boards/service.py` |
+| T-141 | Boards router: вызов create_default_columns в POST /boards | boards | — | todo | #296 | `backend/app/boards/router.py` |
+| T-142 | Frontend: CreateBoardDialog чекбокс дефолтных колонок | frontend | — | todo | #297 | `frontend/components/board/CreateBoardDialog.tsx` |
+
+## Iteration I-24 (active) — Цель: Email-уведомления + API Spec + done-flag wiring (router-level)
+
+**DoD:**
+- `POST /api/v1/notifications/subscribe` — подписка на события задачи; при assign/comment → письмо на email участника
+- `PATCH /api/v1/tasks/{id}/done` — прямой ORM-вызов, устанавливает `done: bool` в БД
+- `GET /api-spec` → страница с Swagger UI (embed `/api/v1/openapi.json`)
+- `alembic upgrade head` создаёт таблицу `email_subscriptions`
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-134 | Email: SMTP клиент + шаблоны | notifications | @xionter | done | #285 | `backend/app/notifications/email.py`, `backend/app/notifications/templates.py` |
+| T-135 | Alembic: email_subscriptions table | infra | — | done | #286 | `backend/alembic/versions/20260519_000001_email_subscriptions.py` |
+| T-136 | Email: service + router (subscribe / send) | notifications | — | todo | #287 | `backend/app/notifications/service.py`, `backend/app/notifications/router.py` |
+| T-137 | Tasks router: PATCH /tasks/{id}/done (direct ORM) | tasks | — | done | #288 | `backend/app/tasks/router.py`, `frontend/lib/api.ts` |
+| T-138 | API spec page (Swagger UI embed) | frontend | @frakin-000 | done | #289 | `frontend/app/(app)/api-spec/page.tsx` |
+
 ## Iteration I-23 (active) — Цель: Fixes + CreateTaskDialog + done field foundation
 
 **DoD:**
@@ -13,14 +56,14 @@
 
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
-| T-125 | Fix: notifications mark-all-read | frontend | — | todo | #268 | `frontend/components/notifications/NotificationDropdown.tsx` |
-| T-126 | Audit: UUID → имена в event log response | audit | — | todo | #270 | `backend/app/audit/router.py` |
-| T-127 | BoardPageClient: re-fetch при mount (fix My Tasks → board sync) | frontend | — | todo | #271 | `frontend/app/(app)/board/BoardPageClient.tsx` |
-| T-128 | My Tasks: board_name в строке задачи | frontend | — | todo | #272 | `frontend/components/my-tasks/MyTasksPage.tsx` |
-| T-129 | SubtaskList: edit/delete UI | frontend | — | todo | #273 | `frontend/components/board/SubtaskList.tsx` |
-| T-130 | CreateTaskDialog: полная форма (теги, приоритет, дедлайн, assignee) | frontend | — | todo | #274 | `frontend/components/board/CreateTaskDialog.tsx` |
-| T-131 | Column: кнопка «+ Задача» сверху → CreateTaskDialog | frontend | — | todo | #275 | `frontend/components/board/Column.tsx` |
-| T-133 | Alembic: done field в Task + models.py | infra | — | todo | #276 | `backend/alembic/versions/20260518_000008_task_done.py`, `backend/app/tasks/models.py` |
+| T-125 | Fix: notifications mark-all-read | frontend | @xionter | done | #268 | `frontend/components/notifications/NotificationDropdown.tsx` |
+| T-126 | Audit: UUID → имена в event log response | audit | @xionter | done | #270 | `backend/app/audit/router.py` |
+| T-127 | BoardPageClient: re-fetch при mount (fix My Tasks → board sync) | frontend | — | done | #271 | `frontend/app/(app)/board/BoardPageClient.tsx` |
+| T-128 | My Tasks: board_name в строке задачи | frontend | @frakin-000 | done | #272 | `frontend/components/my-tasks/MyTasksPage.tsx` |
+| T-129 | SubtaskList: edit/delete UI | frontend | @frakin-000 | done | #273 | `frontend/components/board/SubtaskList.tsx` |
+| T-130 | CreateTaskDialog: полная форма (теги, приоритет, дедлайн, assignee) | frontend | — | done | #274 | `frontend/components/board/CreateTaskDialog.tsx` |
+| T-131 | Column: кнопка «+ Задача» сверху → CreateTaskDialog | frontend | — | done | #275 | `frontend/components/board/Column.tsx` |
+| T-133 | Alembic: done field в Task + models.py | infra | — | done | #276 | `backend/alembic/versions/20260518_000008_task_done.py`, `backend/app/tasks/models.py` |
 
 ## Iteration I-22 (active) — Цель: Deadline gradient на карточках + AI резюме задачи
 
@@ -31,10 +74,10 @@
 
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
-| T-121 | TaskCard: deadline gradient ring (useDeadlineColor) | frontend | — | todo | #261 | `frontend/components/board/TaskCard.tsx` |
-| T-122 | TaskPanel: deadline badge + TaskSummary wiring | frontend | — | todo | #262 | `frontend/components/board/TaskPanel.tsx` |
-| T-123 | AI: POST /ai/summarize-task endpoint | ai | — | todo | #263 | `backend/app/ai/router.py` |
-| T-124 | AI: TaskSummary компонент (кнопка + резюме) | frontend | — | todo | #264 | `frontend/components/ai/TaskSummary.tsx` |
+| T-121 | TaskCard: deadline gradient ring (useDeadlineColor) | frontend | — | done | #261 | `frontend/components/board/TaskCard.tsx` |
+| T-122 | TaskPanel: deadline badge + TaskSummary wiring | frontend | — | done | #262 | `frontend/components/board/TaskPanel.tsx` |
+| T-123 | AI: POST /ai/summarize-task endpoint | ai | — | done | #263 | `backend/app/ai/router.py` |
+| T-124 | AI: TaskSummary компонент (кнопка + резюме) | frontend | — | done | #264 | `frontend/components/ai/TaskSummary.tsx` |
 
 ## Iteration I-21 (active) — Цель: Deadline decay инфраструктура + Automation auth fix
 
@@ -47,12 +90,12 @@
 
 | ID | Title | Module | Owner | Status | Issue | Files |
 |----|-------|--------|-------|--------|-------|-------|
-| T-115 | Alembic: deadline_decay_enabled в Workspace | infra | — | todo | #247 | `backend/alembic/versions/20260518_000007_deadline_decay.py` |
-| T-116 | Workspace: deadline_decay_enabled в settings CRUD | workspace | — | todo | #248 | `backend/app/workspace/service.py`, `backend/app/workspace/router.py` |
-| T-117 | Tasks: deadline_days_remaining в TaskResponse | tasks | — | todo | #249 | `backend/app/tasks/service.py`, `backend/app/tasks/schemas.py` |
-| T-118 | Frontend: useDeadlineColor hook (gradient calculator) | frontend | — | todo | #250 | `frontend/hooks/useDeadlineColor.ts` |
-| T-119 | SettingsTab: тоггл deadline_decay_enabled | frontend | — | todo | #251 | `frontend/components/admin/SettingsTab.tsx` |
-| T-120 | Sidebar: Automation URL → ?workspace_id + token | frontend | — | todo | #252 | `frontend/app/(app)/layout.tsx` |
+| T-115 | Alembic: deadline_decay_enabled в Workspace | infra | — | done | #247 | `backend/alembic/versions/20260518_000007_deadline_decay.py` |
+| T-116 | Workspace: deadline_decay_enabled в settings CRUD | workspace | @xionter | done | #248 | `backend/app/workspace/service.py`, `backend/app/workspace/router.py` |
+| T-117 | Tasks: deadline_days_remaining в TaskResponse | tasks | — | done | #249 | `backend/app/tasks/service.py`, `backend/app/tasks/schemas.py` |
+| T-118 | Frontend: useDeadlineColor hook (gradient calculator) | frontend | — | done | #250 | `frontend/hooks/useDeadlineColor.ts` |
+| T-119 | SettingsTab: тоггл deadline_decay_enabled | frontend | @frakin-000 | done | #251 | `frontend/components/admin/SettingsTab.tsx` |
+| T-120 | Sidebar: Automation URL → ?workspace_id + token | frontend | @profitist | done | #252 | `frontend/app/(app)/layout.tsx` |
 
 ## Iteration I-20 (closed) — Цель: Mark as Done на канбан-доске
 

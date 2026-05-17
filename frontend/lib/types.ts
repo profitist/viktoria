@@ -82,6 +82,7 @@ export interface Task {
   deadline: string | null;
   deadline_days_remaining: number | null;
   deadline_urgency: DeadlineUrgency;
+  done: boolean;
 }
 
 export interface TaskFilters {
