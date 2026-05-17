@@ -8,16 +8,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers";
 import { api, boardsApi } from "@/lib/api";
 import type { BoardMeta, Workspace } from "@/lib/types";
+import { CreateBoardDialog } from "@/components/board/CreateBoardDialog";
 import WorkspaceSwitcher from "@/components/workspace/WorkspaceSwitcher";
-
-interface BoardCreateResponse {
-  board: {
-    id: string;
-    name: string;
-    description: string | null;
-    project_id: string | null;
-  };
-}
 
 interface BoardRowProps {
   board: BoardMeta;
@@ -106,17 +98,21 @@ function BoardRow({
 
 interface SectionProps {
   title: string;
+  action?: ReactNode;
   children: ReactNode;
 }
 
-function SidebarSection({ title, children }: SectionProps) {
+function SidebarSection({ title, action, children }: SectionProps) {
   return (
     <section className="space-y-2">
-      <div
-        className="px-2 text-[10px] uppercase tracking-[0.18em]"
-        style={{ color: "rgba(255,255,255,0.34)" }}
-      >
-        {title}
+      <div className="flex items-center justify-between gap-2 px-2">
+        <div
+          className="text-[10px] uppercase tracking-[0.18em]"
+          style={{ color: "rgba(255,255,255,0.34)" }}
+        >
+          {title}
+        </div>
+        {action}
       </div>
       <div className="space-y-1">{children}</div>
     </section>
@@ -191,8 +187,7 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
   const [boardsLoading, setBoardsLoading] = useState(false);
   const [boardsError, setBoardsError] = useState<string | null>(null);
   const [favoriteLoadingId, setFavoriteLoadingId] = useState<string | null>(null);
-  const [creatingBoard, setCreatingBoard] = useState(false);
-  const [createBoardError, setCreateBoardError] = useState<string | null>(null);
+  const [createBoardOpen, setCreateBoardOpen] = useState(false);
 
   const activeBoardId = useMemo(() => getActiveBoardId(pathname), [pathname]);
 
@@ -244,7 +239,6 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
 
     setBoardsLoading(true);
     setBoardsError(null);
-    setCreateBoardError(null);
     try {
       const data = await boardsApi.list(effectiveWorkspaceId);
       setBoards(data);
@@ -301,29 +295,18 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
     [boards, favoriteLoadingId]
   );
 
-  const handleCreateFirstBoard = useCallback(async () => {
-    if (!effectiveWorkspaceId || creatingBoard) return;
-
-    setCreatingBoard(true);
-    setCreateBoardError(null);
-
-    try {
-      const { board } = await api.post<BoardCreateResponse>(
-        `/api/v1/workspaces/${effectiveWorkspaceId}/boards`,
-        { name: "Main" }
+  const handleBoardCreated = useCallback(
+    (board: BoardMeta) => {
+      setBoards((current) =>
+        current.some((item) => item.id === board.id) ? current : [...current, board]
       );
-      const createdBoard: BoardMeta = {
-        ...board,
-        is_favorite: false,
-      };
-      setBoards([createdBoard]);
-      router.push(`/board/${board.id}?workspace_id=${encodeURIComponent(effectiveWorkspaceId)}`);
-    } catch {
-      setCreateBoardError("Не удалось создать доску");
-    } finally {
-      setCreatingBoard(false);
-    }
-  }, [creatingBoard, effectiveWorkspaceId, router]);
+      setBoardsError(null);
+      if (effectiveWorkspaceId) {
+        router.push(`/board/${board.id}?workspace_id=${encodeURIComponent(effectiveWorkspaceId)}`);
+      }
+    },
+    [effectiveWorkspaceId, router]
+  );
 
   const displayWorkspaceName = workspaceName ?? resolvedWorkspaceName ?? "Workspace";
   const displayUserName = userName ?? user?.name ?? "User";
@@ -379,7 +362,23 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
           )}
         </SidebarSection>
 
-        <SidebarSection title="Boards">
+        <SidebarSection
+          title="Boards"
+          action={
+            canAccessAdmin && effectiveWorkspaceId ? (
+              <button
+                type="button"
+                onClick={() => setCreateBoardOpen(true)}
+                title="Новая доска"
+                aria-label="Новая доска"
+                className="h-6 rounded-md px-1.5 text-[10px] font-medium transition-colors hover:bg-white/[0.06]"
+                style={{ color: "rgba(255,255,255,0.52)" }}
+              >
+                + Новая доска
+              </button>
+            ) : null
+          }
+        >
           {boardsLoading && boards.length === 0 ? (
             <div className="px-2 py-2 text-xs" style={{ color: "rgba(255,255,255,0.34)" }}>
               Загрузка...
@@ -406,19 +405,14 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
             ))
           ) : (
             <div className="space-y-1">
-              {createBoardError && (
-                <div className="px-2 text-xs" style={{ color: "#FCA5A5" }}>
-                  {createBoardError}
-                </div>
-              )}
               <button
                 type="button"
-                onClick={handleCreateFirstBoard}
-                disabled={!effectiveWorkspaceId || creatingBoard}
-                className="block w-full px-2 py-2 text-left text-xs rounded-md transition-colors disabled:cursor-wait"
+                onClick={() => setCreateBoardOpen(true)}
+                disabled={!effectiveWorkspaceId || !canAccessAdmin}
+                className="block w-full px-2 py-2 text-left text-xs rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 style={{ color: "rgba(255,255,255,0.52)" }}
               >
-                {creatingBoard ? "Создание..." : "Нет досок — создай первую"}
+                Нет досок — создай первую
               </button>
             </div>
           )}
@@ -466,6 +460,14 @@ export default function Sidebar({ workspaceId, workspaceName, userName }: Sideba
           </button>
         </div>
       </div>
+      {effectiveWorkspaceId && (
+        <CreateBoardDialog
+          workspaceId={effectiveWorkspaceId}
+          open={createBoardOpen}
+          onOpenChange={setCreateBoardOpen}
+          onCreated={handleBoardCreated}
+        />
+      )}
     </aside>
   );
 }
