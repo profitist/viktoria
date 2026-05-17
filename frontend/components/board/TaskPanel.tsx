@@ -71,6 +71,8 @@ function auditLabel(entry: AuditLogEntry): string {
 
 // ── shared style ───────────────────────────────────────────────────────────────
 
+const TAG_COLORS = ["#EF4444","#F97316","#EAB308","#22C55E","#14B8A6","#3B82F6","#8B5CF6","#EC4899"];
+
 const LABEL_STYLE: React.CSSProperties = {
   fontSize: "11px",
   fontWeight: 500,
@@ -481,24 +483,43 @@ function TagsField({
   boardTags,
   onAdd,
   onRemove,
+  onCreate,
 }: {
   taskTags: Tag[];
   boardTags: Tag[];
   onAdd: (tag: Tag) => void;
   onRemove: (tagId: string) => void;
+  onCreate?: (name: string, color: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [pickedColor, setPickedColor] = useState(TAG_COLORS[5]);
   const ref = useRef<HTMLDivElement>(null);
-  const available = boardTags.filter(bt => !taskTags.find(tt => tt.id === bt.id));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const available = boardTags.filter(
+    bt => !taskTags.find(tt => tt.id === bt.id) &&
+      (query === "" || bt.name.toLowerCase().includes(query.toLowerCase()))
+  );
+  const canCreate = query.trim().length > 0 &&
+    !boardTags.find(t => t.name.toLowerCase() === query.trim().toLowerCase());
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) { setQuery(""); return; }
+    setTimeout(() => inputRef.current?.focus(), 50);
     function out(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", out);
     return () => document.removeEventListener("mousedown", out);
   }, [open]);
+
+  function handleCreate() {
+    const name = query.trim();
+    if (!name || !onCreate) return;
+    onCreate(name, pickedColor);
+    setOpen(false);
+  }
 
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
@@ -521,72 +542,115 @@ function TagsField({
           {tag.name}
           <button
             onClick={() => onRemove(tag.id)}
-            style={{
-              background: "none",
-              border: "none",
-              color: "inherit",
-              cursor: "pointer",
-              padding: "0 1px",
-              lineHeight: 1,
-              fontSize: "14px",
-              opacity: 0.6,
-            }}
+            style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "0 1px", lineHeight: 1, fontSize: "14px", opacity: 0.6 }}
             onMouseEnter={e => { e.currentTarget.style.opacity = "1"; }}
             onMouseLeave={e => { e.currentTarget.style.opacity = "0.6"; }}
-          >
-            ×
-          </button>
+          >×</button>
         </span>
       ))}
 
-      {available.length > 0 && (
-        <div ref={ref} style={{ position: "relative" }}>
-          <button
-            onClick={() => setOpen(v => !v)}
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px dashed rgba(255,255,255,0.2)",
-              color: "rgba(255,255,255,0.45)",
-              borderRadius: "999px",
-              padding: "3px 10px",
-              fontSize: "12px",
-              cursor: "pointer",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = "rgba(255,255,255,0.72)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.45)"; }}
-          >
-            + Тег
-          </button>
-          {open && (
-            <div style={{ ...DROPDOWN_WRAP, minWidth: "160px" }}>
+      <div ref={ref} style={{ position: "relative" }}>
+        <button
+          onClick={() => setOpen(v => !v)}
+          style={{
+            background: open ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
+            border: "1px dashed rgba(255,255,255,0.2)",
+            color: "rgba(255,255,255,0.45)",
+            borderRadius: "999px",
+            padding: "3px 10px",
+            fontSize: "12px",
+            cursor: "pointer",
+            transition: "all 150ms",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = "rgba(255,255,255,0.72)"; }}
+          onMouseLeave={e => { if (!open) e.currentTarget.style.color = "rgba(255,255,255,0.45)"; }}
+        >
+          + Тег
+        </button>
+
+        {open && (
+          <div style={{ ...DROPDOWN_WRAP, minWidth: "220px", padding: "8px" }}>
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && canCreate) handleCreate();
+                if (e.key === "Escape") setOpen(false);
+              }}
+              placeholder="Поиск или создание..."
+              style={{
+                width: "100%",
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "6px",
+                padding: "6px 8px",
+                fontSize: "13px",
+                color: "rgba(255,255,255,0.8)",
+                outline: "none",
+                boxSizing: "border-box",
+                marginBottom: "6px",
+              }}
+            />
+
+            <div style={{ maxHeight: "160px", overflowY: "auto" }}>
               {available.map(tag => (
                 <button
                   key={tag.id}
-                  onClick={() => { onAdd(tag); setOpen(false); }}
-                  style={{ ...DROP_ITEM, color: tag.color ?? "rgba(255,255,255,0.75)" }}
+                  onClick={() => { onAdd(tag); setOpen(false); setQuery(""); }}
+                  style={{ ...DROP_ITEM, color: "rgba(255,255,255,0.75)", display: "flex", alignItems: "center" }}
                   onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
                   onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
                 >
-                  <span
-                    style={{
-                      display: "inline-block",
-                      width: "8px",
-                      height: "8px",
-                      borderRadius: "50%",
-                      background: tag.color ?? "#3B82F6",
-                      marginRight: "8px",
-                      verticalAlign: "middle",
-                    }}
-                  />
+                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: tag.color ?? "#3B82F6", marginRight: "8px", flexShrink: 0, display: "inline-block" }} />
                   {tag.name}
                 </button>
               ))}
+              {available.length === 0 && !canCreate && (
+                <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)", padding: "4px 8px", margin: 0 }}>Теги не найдены</p>
+              )}
             </div>
-          )}
-        </div>
-      )}
 
-      {taskTags.length === 0 && available.length === 0 && (
+            {canCreate && onCreate && (
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: "6px", paddingTop: "8px" }}>
+                <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginBottom: "8px" }}>
+                  {TAG_COLORS.map(c => (
+                    <button
+                      key={c}
+                      onClick={() => setPickedColor(c)}
+                      style={{
+                        width: "18px", height: "18px", borderRadius: "50%",
+                        background: c, padding: 0, cursor: "pointer", flexShrink: 0,
+                        border: pickedColor === c ? "2px solid white" : "2px solid transparent",
+                        outline: pickedColor === c ? `2px solid ${c}` : "none",
+                        outlineOffset: "1px",
+                        transition: "all 100ms",
+                      }}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={handleCreate}
+                  style={{
+                    width: "100%", background: "rgba(59,130,246,0.12)",
+                    border: "1px solid rgba(59,130,246,0.25)", color: "#93C5FD",
+                    borderRadius: "6px", padding: "6px 8px", fontSize: "12px",
+                    cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: "6px",
+                    transition: "background 150ms",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(59,130,246,0.22)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(59,130,246,0.12)"; }}
+                >
+                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: pickedColor, flexShrink: 0 }} />
+                  Создать «{query.trim()}»
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {taskTags.length === 0 && !open && (
         <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)" }}>Нет тегов</span>
       )}
     </div>
@@ -776,24 +840,43 @@ export default function TaskPanel({
 
   async function handleAddTag(tag: Tag) {
     if (!task) return;
-    setTask(t => t ? { ...t, tags: [...t.tags, tag] } : t);
+    const prev = task;
+    const updated = { ...task, tags: [...task.tags, tag] };
+    setTask(updated);
     try {
       await tagsApi.addTagToTask(task.id, tag.id);
+      onTaskUpdate?.(updated);
     } catch {
-      setTask(t => t ? { ...t, tags: t.tags.filter(tt => tt.id !== tag.id) } : t);
+      setTask(prev);
       showToast("Не удалось добавить тег");
     }
   }
 
   async function handleRemoveTag(tagId: string) {
     if (!task) return;
-    const removed = task.tags.find(t => t.id === tagId);
-    setTask(t => t ? { ...t, tags: t.tags.filter(tt => tt.id !== tagId) } : t);
+    const prev = task;
+    const updated = { ...task, tags: task.tags.filter(t => t.id !== tagId) };
+    setTask(updated);
     try {
       await tagsApi.removeTagFromTask(task.id, tagId);
+      onTaskUpdate?.(updated);
     } catch {
-      if (removed) setTask(t => t ? { ...t, tags: [...t.tags, removed] } : t);
+      setTask(prev);
       showToast("Не удалось удалить тег");
+    }
+  }
+
+  async function handleCreateTag(name: string, color: string) {
+    if (!task || !boardId) return;
+    try {
+      const newTag = await tagsApi.createTag(boardId, { name, color });
+      setBoardTags(prev => [...prev, newTag]);
+      const updated = { ...task, tags: [...task.tags, newTag] };
+      setTask(updated);
+      await tagsApi.addTagToTask(task.id, newTag.id);
+      onTaskUpdate?.(updated);
+    } catch {
+      showToast("Не удалось создать тег");
     }
   }
 
@@ -865,15 +948,6 @@ export default function TaskPanel({
                 flexShrink: 0,
               }}
             >
-              {/* Status badge (column) */}
-              <div style={{ flexShrink: 0, paddingTop: "2px" }}>
-                <StatusField
-                  columnId={task.column_id}
-                  columns={columns}
-                  onChange={id => patchTask({ column_id: id })}
-                />
-              </div>
-
               {/* Title */}
               <p
                 style={{
@@ -998,6 +1072,7 @@ export default function TaskPanel({
                     boardTags={boardTags}
                     onAdd={handleAddTag}
                     onRemove={handleRemoveTag}
+                    onCreate={boardId ? handleCreateTag : undefined}
                   />
                 </FieldRow>
               </div>

@@ -88,26 +88,41 @@ export default function SubtaskList({ taskId, subtasks: initialSubtasks, onItems
       {items.map(subtask => (
         <label
           key={subtask.id}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            cursor: "pointer",
-            padding: "3px 0",
-          }}
+          style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", padding: "4px 0" }}
         >
           <input
             type="checkbox"
             checked={subtask.is_done}
             onChange={() => handleToggle(subtask)}
-            style={{ accentColor: "#3B82F6", width: "14px", height: "14px", flexShrink: 0, cursor: "pointer" }}
+            style={{ display: "none" }}
           />
+          <div
+            style={{
+              width: "16px",
+              height: "16px",
+              borderRadius: "4px",
+              border: subtask.is_done ? "1.5px solid #3B82F6" : "1.5px solid rgba(255,255,255,0.2)",
+              background: subtask.is_done ? "#3B82F6" : "transparent",
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 150ms ease",
+            }}
+          >
+            {subtask.is_done && (
+              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </div>
           <span
             style={{
               fontSize: "13px",
-              color: subtask.is_done ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.80)",
+              color: subtask.is_done ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.80)",
               textDecoration: subtask.is_done ? "line-through" : "none",
               lineHeight: 1.4,
+              transition: "color 150ms ease",
             }}
           >
             {subtask.title}
