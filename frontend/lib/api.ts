@@ -222,6 +222,15 @@ export const api = {
   },
 };
 
+export async function markTaskDone(taskId: string): Promise<Task> {
+  const res = await apiFetch(`/api/v1/tasks/${taskId}/mark-done`, {
+    method: "PATCH",
+  });
+  if (!res.ok) return handleError(res);
+  const body = (await res.json()) as { task: Task };
+  return body.task;
+}
+
 function buildTaskListPath(
   workspaceId: string,
   filters: TaskFilters,
