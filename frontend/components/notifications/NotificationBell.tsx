@@ -151,12 +151,22 @@ export default function NotificationBell({ workspaceId }: NotificationBellProps)
         type="button"
         onClick={togglePanel}
         aria-label="Уведомления"
-        className="fixed top-4 left-[236px] z-40 h-10 w-10 rounded-xl flex items-center justify-center transition-colors"
+        className="relative flex-shrink-0 h-8 w-8 rounded-lg flex items-center justify-center transition-colors"
         style={{
-          background: "#111111",
-          border: "1px solid rgba(255,255,255,0.08)",
-          color: isOpen ? "#FFFFFF" : "rgba(255,255,255,0.72)",
-          boxShadow: "0 8px 28px rgba(0,0,0,0.35)",
+          background: isOpen ? "rgba(255,255,255,0.10)" : "transparent",
+          color: isOpen ? "#FFFFFF" : "rgba(255,255,255,0.55)",
+        }}
+        onMouseEnter={(e) => {
+          if (!isOpen) {
+            e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+            e.currentTarget.style.color = "rgba(255,255,255,0.82)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isOpen) {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "rgba(255,255,255,0.55)";
+          }
         }}
         disabled={!workspaceId}
       >

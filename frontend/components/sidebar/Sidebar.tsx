@@ -5,11 +5,14 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import Image from "next/image";
+
 import { useAuth } from "@/app/providers";
 import { api, boardsApi } from "@/lib/api";
 import type { BoardMeta, Workspace } from "@/lib/types";
 import { CreateBoardDialog } from "@/components/board/CreateBoardDialog";
 import WorkspaceSwitcher from "@/components/workspace/WorkspaceSwitcher";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 interface BoardRowProps {
   board: BoardMeta;
@@ -350,9 +353,17 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
       }}
     >
       <div
-        className="px-3 py-4"
+        className="px-3 py-3 flex items-center gap-2.5"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
       >
+        <Image
+          src="/logo.webp"
+          alt="Victory"
+          width={28}
+          height={28}
+          className="rounded-md flex-shrink-0"
+          priority
+        />
         <WorkspaceSwitcher workspaceId={effectiveWorkspaceId} />
       </div>
 
@@ -449,7 +460,7 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
       </nav>
 
       <div
-        className="px-4 py-4 flex items-center gap-3"
+        className="px-3 py-3 flex items-center gap-2"
         style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
       >
         <div
@@ -469,7 +480,7 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
           <button
             type="button"
             onClick={logout}
-            className="text-xs mt-1 transition-colors"
+            className="text-xs mt-0.5 transition-colors"
             style={{ color: "rgba(255,255,255,0.45)" }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = "rgba(255,255,255,0.82)";
@@ -481,6 +492,7 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
             Выйти
           </button>
         </div>
+        <NotificationBell workspaceId={effectiveWorkspaceId} />
       </div>
       {effectiveWorkspaceId && (
         <CreateBoardDialog

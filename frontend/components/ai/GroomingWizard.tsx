@@ -104,6 +104,7 @@ export default function GroomingWizard({ workspaceId, onTaskCreated }: Props) {
   const [questions, setQuestions] = useState<GroomQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [draft, setDraft] = useState<TaskDraft | null>(null);
+  const [newTagInput, setNewTagInput] = useState("");
   const [boards, setBoards] = useState<BoardMeta[]>([]);
   const [columns, setColumns] = useState<Column[]>([]);
   const [selectedBoardId, setSelectedBoardId] = useState("");
@@ -420,31 +421,98 @@ export default function GroomingWizard({ workspaceId, onTaskCreated }: Props) {
             </div>
 
             {/* Tags */}
-            {draft.tags.length > 0 && (
-              <div>
-                <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
-                  Теги (предложены AI)
-                </label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {draft.tags.map((tag, i) => (
-                    <span
-                      key={tag}
+            <div>
+              <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                Теги
+              </label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
+                {draft.tags.map((tag, i) => (
+                  <span
+                    key={tag}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      padding: "3px 8px 3px 10px",
+                      borderRadius: "999px",
+                      background: `${TAG_COLORS[i % TAG_COLORS.length]}22`,
+                      border: `1px solid ${TAG_COLORS[i % TAG_COLORS.length]}44`,
+                      color: TAG_COLORS[i % TAG_COLORS.length],
+                    }}
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => setDraft((d) => d ? { ...d, tags: d.tags.filter((t) => t !== tag) } : d)}
                       style={{
-                        fontSize: "12px",
-                        fontWeight: 500,
-                        padding: "3px 10px",
-                        borderRadius: "999px",
-                        background: `${TAG_COLORS[i % TAG_COLORS.length]}22`,
-                        border: `1px solid ${TAG_COLORS[i % TAG_COLORS.length]}44`,
-                        color: TAG_COLORS[i % TAG_COLORS.length],
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                        color: "inherit",
+                        opacity: 0.6,
+                        lineHeight: 1,
+                        fontSize: "13px",
+                        display: "flex",
+                        alignItems: "center",
                       }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.6"; }}
+                      aria-label={`Удалить тег ${tag}`}
                     >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+                      ×
+                    </button>
+                  </span>
+                ))}
               </div>
-            )}
+              <div style={{ display: "flex", gap: "6px" }}>
+                <input
+                  type="text"
+                  value={newTagInput}
+                  onChange={(e) => setNewTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const tag = newTagInput.trim();
+                      if (tag && !draft.tags.includes(tag)) {
+                        setDraft((d) => d ? { ...d, tags: [...d.tags, tag] } : d);
+                      }
+                      setNewTagInput("");
+                    }
+                  }}
+                  placeholder="Новый тег..."
+                  style={{ ...inputStyle(), resize: undefined, flex: 1 }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)"; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const tag = newTagInput.trim();
+                    if (tag && !draft.tags.includes(tag)) {
+                      setDraft((d) => d ? { ...d, tags: [...d.tags, tag] } : d);
+                    }
+                    setNewTagInput("");
+                  }}
+                  disabled={!newTagInput.trim()}
+                  style={{
+                    padding: "10px 14px",
+                    background: newTagInput.trim() ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    color: newTagInput.trim() ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.25)",
+                    cursor: newTagInput.trim() ? "pointer" : "not-allowed",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                  }}
+                >
+                  + Добавить
+                </button>
+              </div>
+            </div>
 
             {/* Board + Column */}
             {boards.length === 0 ? (
