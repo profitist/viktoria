@@ -1,5 +1,40 @@
 # Kanban
 
+## Iteration I-12 (active) — Цель: Admin panel — управление workspace для owner/admin
+
+**DoD:**
+- `/admin` как owner/admin → три вкладки (Members / Automation / Settings) работают, данные грузятся с бэкенда
+- Members: список членов, invite по email с ролью, Remove для не-owner членов
+- Automation: список правил с trigger/condition/action, создание + toggle active + удаление
+- Settings: toggle `automation_enabled` → `PATCH /workspaces/{id}/settings` → 200
+- `/admin` как member → заглушка «нет доступа»
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-067 | Admin: типы + api-методы (members, rules, settings) | frontend | — | todo | #138 | `frontend/lib/admin-types.ts`, `frontend/lib/admin-api.ts` |
+| T-068 | Admin: вкладка Members (список + invite + remove) | frontend | — | todo | #139 | `frontend/components/admin/MembersTab.tsx` |
+| T-069 | Admin: вкладка Automation (список + создать + toggle + удалить) | frontend | — | todo | #140 | `frontend/components/admin/AutomationTab.tsx` |
+| T-070 | Admin: вкладка Settings (automation_enabled toggle) | frontend | — | todo | #141 | `frontend/components/admin/SettingsTab.tsx` |
+| T-071 | Admin: страница /admin с вкладками + role-guard | frontend | — | todo | #142 | `frontend/app/(app)/admin/page.tsx` |
+
+## Iteration I-11 (active) — Цель: Фаза 5 — Analytics backend (live-агрегации + снапшоты)
+
+**DoD:**
+- `GET /api/v1/boards/{id}/analytics/overview` → `{ by_status: [{column_id, column_name, count}], total }`
+- `GET /api/v1/boards/{id}/analytics/progress?range=week|month` → `{ done_pct, trend: [{date, done, total}] }`
+- `GET /api/v1/boards/{id}/analytics/workload` → `{ by_assignee: [{assignee_id, name, count, done}] }`
+- `alembic upgrade head` создаёт таблицу `board_metric_snapshot`
+- Snapshot writer пишет снапшот раз в час (фоновая задача, видно в логах)
+- `pytest backend/tests/analytics` — все тесты зелёные
+
+| ID | Title | Module | Owner | Status | Issue | Files |
+|----|-------|--------|-------|--------|-------|-------|
+| T-062 | Alembic: миграция board_metric_snapshot | infra | — | todo | #132 | `backend/alembic/versions/20260518_000006_analytics.py` |
+| T-063 | Analytics: модели + схемы | analytics | — | todo | #133 | `backend/app/analytics/models.py`, `backend/app/analytics/schemas.py`, `backend/app/analytics/__init__.py` |
+| T-064 | Analytics: service — live-агрегации | analytics | — | todo | #134 | `backend/app/analytics/service.py` |
+| T-065 | Analytics: snapshot writer (фоновая задача) | analytics | — | todo | #135 | `backend/app/analytics/snapshot.py` |
+| T-066 | Analytics: router + регистрация в main.py | analytics | — | todo | #136 | `backend/app/analytics/router.py`, `backend/app/main.py` |
+
 ## Iteration I-10 (active) — Цель: техдолг T-B02 — WsClient переиспользуем (параметры в connect())
 
 **DoD:** `new WsClient()` без аргументов; `client.connect(workspaceId, getToken)` коннектит; `WsContext.init()` на новой сигнатуре; смена воркспейса по-прежнему переподключает WS; `npx tsc --noEmit` чисто
