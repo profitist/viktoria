@@ -152,6 +152,8 @@ function NavItem({ href, label }: NavItemProps) {
     return (
       <a
         href={href}
+        target="_blank"
+        rel="noreferrer"
         className={className}
         style={style}
         onMouseEnter={onMouseEnter}
@@ -435,10 +437,15 @@ export default function Sidebar({ workspaceId, userName }: SidebarProps) {
           <NavItem href={`/event-log${workspaceQuery}`} label="Журнал событий" />
           <NavItem href={`/automation${workspaceQuery}`} label="Автоматизация" />
           <NavItem href={`/ai-groom${workspaceQuery}`} label="AI Груминг" />
-          {canAccessAdmin && (
-            <NavItem href={`/admin${workspaceQuery}`} label="Администрирование" />
-          )}
         </SidebarSection>
+
+        {canAccessAdmin && (
+          <SidebarSection title="Администрирование">
+            <NavItem href={`/admin/members${workspaceQuery}`} label="Участники" />
+            <NavItem href={`/admin/settings${workspaceQuery}`} label="Настройки" />
+            <NavItem href="https://localhost3000.work.gd/automation" label="Automation" />
+          </SidebarSection>
+        )}
       </nav>
 
       <div
