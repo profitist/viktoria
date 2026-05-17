@@ -1,6 +1,7 @@
 """Import all ORM models so SQLAlchemy metadata is fully populated."""
 
 from app.attachments.models import Attachment
+from app.analytics.models import BoardMetricSnapshot
 from app.audit.models import AuditLog
 from app.auth.models import User
 from app.comments.models import Comment
@@ -14,6 +15,7 @@ from app.workspace.models import Workspace, WorkspaceMember, WorkspaceRole, Work
 
 __all__ = [
     "Attachment",
+    "BoardMetricSnapshot",
     "AuditLog",
     "Comment",
     "AutomationRule",
