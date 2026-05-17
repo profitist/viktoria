@@ -215,23 +215,67 @@ async def move_task(
     await session.commit()
     await session.refresh(task)
 
-    await publish(
-        _build_event(
-            event_type="task.moved",
-            workspace_id=task.workspace_id,
-            task_id=task.id,
-            actor_id=current_user.id,
-            payload=_serialize_value(
-                {
-                    "from_board_id": from_board_id,
-                    "board_id": task.board_id,
-                    "from_column_id": from_column_id,
-                    "column_id": task.column_id,
-                    "position": payload.position,
-                }
-            ),
-        ),
-        channel,
+    await _publish_task_moved(
+        channel=channel,
+        task=task,
+        actor_id=current_user.id,
+        from_board_id=from_board_id,
+        from_column_id=from_column_id,
+        position=payload.position,
+    )
+
+    return await _to_task_out(session, task)
+
+
+async def mark_task_done(
+    session: AsyncSession,
+    task_id: UUID,
+    current_user: User,
+    channel: AbstractChannel,
+) -> TaskOut:
+    task = await _get_task_or_404(session, task_id)
+    await _require_workspace_member(session, task.workspace_id, current_user.id)
+
+    result = await session.execute(
+        select(Column)
+        .where(Column.board_id == task.board_id)
+        .order_by(Column.position.asc(), Column.id.asc())
+    )
+    columns = result.scalars().all()
+    if not columns:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="column not found",
+        )
+
+    first_column = columns[0]
+    last_column = columns[-1]
+    target_column = first_column if task.column_id == last_column.id else last_column
+
+    duplicate = await _find_duplicate_task(
+        session=session,
+        board_id=task.board_id,
+        column_id=target_column.id,
+        title=task.title,
+        exclude_task_id=task.id,
+    )
+    if duplicate is not None:
+        raise DuplicateTaskError(duplicate.id)
+
+    from_column_id = task.column_id
+    from_board_id = task.board_id
+    task.column_id = target_column.id
+
+    await session.commit()
+    await session.refresh(task)
+
+    await _publish_task_moved(
+        channel=channel,
+        task=task,
+        actor_id=current_user.id,
+        from_board_id=from_board_id,
+        from_column_id=from_column_id,
+        position=target_column.position,
     )
 
     return await _to_task_out(session, task)
@@ -463,6 +507,34 @@ def _build_event(
         timestamp=datetime.now(UTC),
         actor_id=actor_id,
         payload=payload,
+    )
+
+
+async def _publish_task_moved(
+    channel: AbstractChannel,
+    task: Task,
+    actor_id: UUID,
+    from_board_id: UUID,
+    from_column_id: UUID,
+    position: int,
+) -> None:
+    await publish(
+        _build_event(
+            event_type="task.moved",
+            workspace_id=task.workspace_id,
+            task_id=task.id,
+            actor_id=actor_id,
+            payload=_serialize_value(
+                {
+                    "from_board_id": from_board_id,
+                    "board_id": task.board_id,
+                    "from_column_id": from_column_id,
+                    "column_id": task.column_id,
+                    "position": position,
+                }
+            ),
+        ),
+        channel,
     )
 
 

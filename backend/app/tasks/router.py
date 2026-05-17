@@ -33,6 +33,7 @@ from app.tasks.service import (
     get_subtasks,
     get_task,
     list_tasks,
+    mark_task_done,
     move_task,
     update_subtask,
     update_task,
@@ -144,6 +145,30 @@ async def move_task_route(
             session=session,
             task_id=task_id,
             payload=payload,
+            current_user=current_user,
+            channel=channel,
+        )
+    except DuplicateTaskError as exc:
+        return _duplicate_task_response(exc)
+
+    return TaskResponse(task=task)
+
+
+@router.patch(
+    "/tasks/{task_id}/mark-done",
+    response_model=TaskResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def mark_task_done_route(
+    task_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    channel: Annotated[AbstractChannel, Depends(_get_publish_channel)],
+) -> TaskResponse | JSONResponse:
+    try:
+        task = await mark_task_done(
+            session=session,
+            task_id=task_id,
             current_user=current_user,
             channel=channel,
         )
