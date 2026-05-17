@@ -13,12 +13,12 @@ from app.tasks.models import Task
 
 
 class AuditRecorder:
-    async def record(self, enriched_event: dict[str, Any]) -> None:
+    async def record(self, enriched_event: dict[str, Any]) -> AuditLog | None:
         workspace_id = _as_uuid(enriched_event.get("workspace_id"))
         task_id = _as_uuid(enriched_event.get("task_id"))
         actor_id = _as_uuid(enriched_event.get("actor_id"))
         if workspace_id is None or task_id is None or actor_id is None:
-            return
+            return None
 
         payload = enriched_event.get("payload")
         payload_dict = payload if isinstance(payload, dict) else {}
@@ -32,17 +32,18 @@ class AuditRecorder:
             if board_id is None:
                 board_id = existing_board_id
 
-            session.add(
-                AuditLog(
-                    workspace_id=workspace_id,
-                    task_id=audit_task_id,
-                    board_id=board_id,
-                    event_type=str(enriched_event.get("event_type", "")),
-                    actor_id=actor_id,
-                    changes=_build_changes(str(enriched_event.get("event_type", "")), payload_dict),
-                )
+            audit_log = AuditLog(
+                workspace_id=workspace_id,
+                task_id=audit_task_id,
+                board_id=board_id,
+                event_type=str(enriched_event.get("event_type", "")),
+                actor_id=actor_id,
+                changes=_build_changes(str(enriched_event.get("event_type", "")), payload_dict),
             )
+            session.add(audit_log)
             await session.commit()
+            await session.refresh(audit_log)
+            return audit_log
 
 
 def _extract_board_id(
