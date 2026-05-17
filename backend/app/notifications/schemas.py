@@ -12,6 +12,19 @@ class NotificationListQuery(BaseModel):
     unread: bool | None = None
 
 
+class SubscribeRequest(BaseModel):
+    workspace_id: UUID
+    event_type: str
+    task_id: UUID | None = None
+
+
+class SubscribeResponse(BaseModel):
+    id: UUID
+    workspace_id: UUID
+    event_type: str
+    task_id: UUID | None = None
+
+
 class ReadResponse(BaseModel):
     """Ответ на PATCH /api/v1/notifications/{id}/read. Сериализуется в {}."""
 

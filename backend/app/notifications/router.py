@@ -12,8 +12,19 @@ from app.auth.models import User
 from app.database import AsyncSessionLocal, get_session
 from app.notifications.hub import manager
 from app.notifications.models import Notification
-from app.notifications.schemas import NotificationListQuery, NotificationOut, ReadResponse
-from app.notifications.service import NotificationNotFound, get_notifications, mark_as_read
+from app.notifications.schemas import (
+    NotificationListQuery,
+    NotificationOut,
+    ReadResponse,
+    SubscribeRequest,
+    SubscribeResponse,
+)
+from app.notifications.service import (
+    NotificationNotFound,
+    get_notifications,
+    mark_as_read,
+    subscribe,
+)
 from app.workspace.models import WorkspaceMember
 
 ws_router = APIRouter()
@@ -90,6 +101,29 @@ async def list_notifications(
         unread_only=query.unread is True,
     )
     return [NotificationOut.model_validate(n) for n in notifications]
+
+
+@router.post(
+    "/notifications/subscribe",
+    response_model=SubscribeResponse,
+    status_code=201,
+)
+async def subscribe_notifications(
+    payload: SubscribeRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> SubscribeResponse:
+    subscription = await subscribe(
+        user_id=current_user.id,
+        workspace_id=payload.workspace_id,
+        event_type=payload.event_type,
+        task_id=payload.task_id,
+    )
+    return SubscribeResponse(
+        id=subscription.id,
+        workspace_id=subscription.workspace_id,
+        event_type=subscription.event_type,
+        task_id=subscription.task_id,
+    )
 
 
 @router.patch(
