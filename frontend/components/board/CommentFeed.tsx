@@ -65,7 +65,7 @@ export default function CommentFeed({ taskId }: Props) {
       created_at: new Date().toISOString(),
     };
 
-    setComments(prev => [...prev, optimistic]);
+    setComments(prev => [optimistic, ...prev]);
     setBody("");
     setIsSending(true);
 

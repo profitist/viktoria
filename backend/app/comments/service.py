@@ -20,7 +20,7 @@ async def list_comments(session: AsyncSession, task_id: UUID) -> list[Comment]:
         select(Comment)
         .where(Comment.task_id == task_id)
         .options(selectinload(Comment.author))
-        .order_by(Comment.created_at.asc())
+        .order_by(Comment.created_at.desc(), Comment.id.desc())
     )
     return list(result.scalars().all())
 
